@@ -50,7 +50,7 @@ Relay is a complete franchise management system that allows:
 
 **Frontend:** React + Vite + Tailwind CSS  
 **Backend:** Flask (Python)  
-**Database:** MySQL
+**Database:** SQLite (auto-configured)
 
 ---
 
@@ -67,7 +67,7 @@ Relay is a complete franchise management system that allows:
 
 2. **Start Backend:**
    ```bash
-   cd backend && source venv/bin/activate && python app.py
+   cd backend && source venv/bin/activate && python run.py
    ```
 
 3. **Start Frontend:**
@@ -94,8 +94,9 @@ Relay is a complete franchise management system that allows:
 ```
 Relay/
 ├── backend/
-│   ├── app.py                 # Flask application and API endpoints
-│   ├── requirements.txt       # Python dependencies
+│   ├── app/                  # Flask application package (modular blueprints)
+│   ├── run.py                # Application entry point
+│   ├── requirements.txt      # Python dependencies
 │   └── .env.example          # Environment variables template
 ├── frontend/
 │   ├── src/

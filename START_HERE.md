@@ -28,13 +28,13 @@ cd /Users/prayag/Desktop/Relay/backend
 source venv/bin/activate
 
 # Start Flask server
-python app.py
+python run.py
 ```
 
 **Expected Output:**
 ```
 ✅ Database initialized successfully!
- * Running on http://127.0.0.1:5001
+ * Running on http://127.0.0.1:5000
 ```
 
 ✅ **Leave this terminal running!**
@@ -113,7 +113,7 @@ brew install node
 ```bash
 cd /Users/prayag/Desktop/Relay/backend
 rm relay.db
-python app.py
+python run.py
 ```
 
 Database recreates automatically with sample data!
@@ -315,7 +315,7 @@ lsof -ti:5001 | xargs kill -9
 # Restart backend
 cd /Users/prayag/Desktop/Relay/backend
 source venv/bin/activate
-python app.py
+python run.py
 ```
 
 ---
@@ -344,7 +344,7 @@ cd /Users/prayag/Desktop/Relay/backend
 rm relay.db
 
 # Restart backend (auto-creates fresh database)
-python app.py
+python run.py
 ```
 
 ---
@@ -376,7 +376,7 @@ npm install
 ```bash
 cd /Users/prayag/Desktop/Relay/backend
 source venv/bin/activate
-python app.py
+python run.py
 ```
 Wait for: `✅ Database initialized successfully!`
 
