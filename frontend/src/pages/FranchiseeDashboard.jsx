@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { api } from '../api';
 import Toast from '../components/Toast';
@@ -12,7 +12,7 @@ const TABS = [
 ];
 
 export default function FranchiseeDashboard() {
-  const { user, logout } = useAuth();
+  const { user, scope, getBranchId, logout } = useAuth();
   const [franchise, setFranchise] = useState(null);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [sales, setSales] = useState([]);
@@ -36,14 +36,15 @@ export default function FranchiseeDashboard() {
   const [salesSubmitting, setSalesSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const franchiseId = user?.franchise_id;
+  const branchId = getBranchId();
 
-  const loadData = async () => {
-    if (!franchiseId) {
+  const loadData = useCallback(async () => {
+    if (!branchId) {
       setFranchise(null);
       setInventoryItems([]);
       setSales([]);
       setLoading(false);
+      setError('No branch is currently assigned to your account. Please contact support.');
       return;
     }
 
@@ -51,16 +52,18 @@ export default function FranchiseeDashboard() {
     setError('');
 
     try {
+      const inventoryUrl = `/inventory${branchId ? `?branch_id=${branchId}` : ''}`;
+      const salesUrl = `/sales${branchId ? `?branch_id=${branchId}` : ''}`;
       const [franchiseResponse, inventoryResponse, salesResponse] = await Promise.allSettled([
         api.get('/franchises'),
-        api.get('/inventory'),
-        api.get('/sales'),
+        api.get(inventoryUrl),
+        api.get(salesUrl),
       ]);
 
       if (franchiseResponse.status === 'fulfilled') {
         const list = Array.isArray(franchiseResponse.value) ? franchiseResponse.value : [];
         // backend returns list with single item for franchisees
-        setFranchise(list.find((item) => item.id === franchiseId) || list[0] || null);
+        setFranchise(list.find((item) => item.id === branchId) || list[0] || null);
       } else {
         throw franchiseResponse.reason;
       }
@@ -79,12 +82,12 @@ export default function FranchiseeDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [branchId]);
 
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [franchiseId]);
+  }, [branchId]);
 
   const isPending = franchise?.status === 'pending';
 
@@ -429,7 +432,9 @@ export default function FranchiseeDashboard() {
                     reorder_level: Number(inventoryForm.reorder_level),
                   };
 
-                  await api.post('/inventory', payload);
+                  const inventoryEndpoint = branchId ? `/inventory?branch_id=${branchId}` : '/inventory';
+                  await api.post(inventoryEndpoint, payload);
+
                   setShowInventoryModal(false);
                   setToast({ message: 'Inventory item added successfully!', variant: 'success' });
                   await loadData();
@@ -556,11 +561,13 @@ export default function FranchiseeDashboard() {
                 event.preventDefault();
                 setSalesSubmitting(true);
                 try {
-                  await api.post('/sales', {
+                  const salesEndpoint = branchId ? `/sales?branch_id=${branchId}` : '/sales';
+                  await api.post(salesEndpoint, {
                     sale_date: salesForm.sale_date,
                     total_amount: Number(salesForm.total_amount),
                     payment_mode: salesForm.payment_mode,
                   });
+
                   setShowSalesModal(false);
                   setToast({ message: 'Sale logged successfully!', variant: 'success' });
                   await loadData();

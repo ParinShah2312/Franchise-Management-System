@@ -1,10 +1,16 @@
 import { Navigate } from 'react-router-dom';
 import PropTypes from 'prop-types';
+import { useMemo } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 
 export default function ProtectedRoute({ allowedRoles = [], children }) {
   const { isAuthenticated, user, loading } = useAuth();
+  const normalizedRole = (user?.role || '').toUpperCase();
+  const allowedSet = useMemo(
+    () => allowedRoles.map((role) => role.toUpperCase()),
+    [allowedRoles],
+  );
 
   if (loading) {
     return (
@@ -18,7 +24,7 @@ export default function ProtectedRoute({ allowedRoles = [], children }) {
     return <Navigate to="/" replace />;
   }
 
-  if (allowedRoles.length > 0 && !allowedRoles.includes(user.role)) {
+  if (allowedSet.length > 0 && !allowedSet.includes(normalizedRole)) {
     return <Navigate to="/" replace />;
   }
 

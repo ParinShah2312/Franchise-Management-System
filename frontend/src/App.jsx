@@ -6,7 +6,7 @@ import AdminDashboard from './pages/AdminDashboard';
 import FranchiseeDashboard from './pages/FranchiseeDashboard';
 import Login from './pages/Login';
 import RegisterFranchise from './pages/RegisterFranchise';
-import RegisterStaff from './pages/RegisterStaff';
+import RegisterFranchisor from './pages/RegisterFranchisor';
 import SignupSelection from './pages/SignupSelection';
 import StaffDashboard from './pages/StaffDashboard';
 
@@ -18,11 +18,11 @@ export default function App() {
           <Route path="/" element={<Login />} />
           <Route path="/register" element={<SignupSelection />} />
           <Route path="/register/franchise" element={<RegisterFranchise />} />
-          <Route path="/register/staff" element={<RegisterStaff />} />
+          <Route path="/register/franchisor" element={<RegisterFranchisor />} />
           <Route
             path="/admin"
             element={
-              <ProtectedRoute allowedRoles={['admin']}>
+              <ProtectedRoute allowedRoles={['FRANCHISOR']}>
                 <AdminDashboard />
               </ProtectedRoute>
             }
@@ -30,7 +30,7 @@ export default function App() {
           <Route
             path="/dashboard"
             element={
-              <ProtectedRoute allowedRoles={['franchisee']}>
+              <ProtectedRoute allowedRoles={['BRANCH_OWNER', 'MANAGER']}>
                 <FranchiseeDashboard />
               </ProtectedRoute>
             }
@@ -38,7 +38,7 @@ export default function App() {
           <Route
             path="/staff"
             element={
-              <ProtectedRoute allowedRoles={['staff']}>
+              <ProtectedRoute allowedRoles={['STAFF']}>
                 <StaffDashboard />
               </ProtectedRoute>
             }

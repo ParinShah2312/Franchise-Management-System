@@ -12,7 +12,11 @@ from dotenv import load_dotenv
 from .extensions import db, migrate
 
 
-def create_app(config_object: str | None = None) -> Flask:
+def create_app(
+    config_object: str | None = None,
+    *,
+    register_blueprints_flag: bool = True,
+) -> Flask:
     """Create and configure the Flask application."""
 
     load_dotenv()
@@ -34,7 +38,8 @@ def create_app(config_object: str | None = None) -> Flask:
         app.config.from_object(config_object)
 
     register_extensions(app)
-    register_blueprints(app)
+    if register_blueprints_flag:
+        register_blueprints(app)
 
     return app
 
@@ -54,9 +59,9 @@ def register_blueprints(app: Flask) -> None:
 
     from .routes.auth_routes import auth_bp
     from .routes.dashboard_routes import dashboard_bp
-    from .routes.expenses_routes import expenses_bp
     from .routes.franchise_routes import franchise_bp
     from .routes.inventory_routes import inventory_bp
+    from .routes.request_routes import request_bp
     from .routes.report_routes import report_bp
     from .routes.sales_routes import sales_bp
 
@@ -64,7 +69,7 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(franchise_bp)
     app.register_blueprint(sales_bp)
     app.register_blueprint(inventory_bp)
-    app.register_blueprint(expenses_bp)
+    app.register_blueprint(request_bp)
     app.register_blueprint(report_bp)
     app.register_blueprint(dashboard_bp)
     CORS(app)

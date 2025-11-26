@@ -3,14 +3,12 @@ import { Link, useNavigate } from 'react-router-dom';
 
 import { api } from '../api';
 
-const ALLOWED_EMAIL_DOMAINS = ['gmail.com', 'yahoo.com', 'outlook.com', 'hotmail.com', 'icloud.com'];
-
 const initialState = {
   email: '',
   password: '',
   name: '',
   phone: '',
-  franchise_name: '',
+  franchise_id: '',
   location: '',
   property_size: '',
   investment_capacity: '',
@@ -44,15 +42,15 @@ export default function RegisterFranchise() {
         const brandsResponse = await api.get('/franchises/brands');
         if (!isMounted) return;
 
-        const brandNames = Array.isArray(brandsResponse)
-          ? [...new Set(brandsResponse.map((brand) => brand?.name).filter(Boolean))]
+        const normalizedBrands = Array.isArray(brandsResponse)
+          ? brandsResponse.filter((brand) => brand && brand.id && brand.name)
           : [];
 
-        if (brandNames.length === 0) {
+        if (normalizedBrands.length === 0) {
           setBrandsError('No franchise brands are currently available. Please contact the admin team.');
         }
 
-        setBrandOptions(brandNames);
+        setBrandOptions(normalizedBrands);
       } catch (err) {
         if (!isMounted) return;
         setBrandOptions([]);
@@ -84,15 +82,10 @@ export default function RegisterFranchise() {
   const validateForm = () => {
     const errors = {};
 
-    const emailLower = formState.email.toLowerCase().trim();
+    const emailLower = formState.email.toLowerCase();
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(formState.email)) {
       errors.email = 'Invalid email format.';
-    } else {
-      const domain = emailLower.split('@')[1] || '';
-      if (!ALLOWED_EMAIL_DOMAINS.includes(domain)) {
-        errors.email = 'Please use a standard email provider.';
-      }
     }
 
     const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
@@ -109,14 +102,14 @@ export default function RegisterFranchise() {
       errors.name = 'Full name is required.';
     }
 
-    if (!formState.franchise_name.trim()) {
-      errors.franchise_name = 'Select a franchise brand.';
+    if (!formState.franchise_id) {
+      errors.franchise_id = 'Select a franchise brand.';
     } else if (
       !loadingBrands &&
       brandOptions.length > 0 &&
-      !brandOptions.includes(formState.franchise_name)
+      !brandOptions.some((brand) => String(brand.id) === String(formState.franchise_id))
     ) {
-      errors.franchise_name = 'Please choose a valid brand option.';
+      errors.franchise_id = 'Please choose a valid brand option.';
     }
 
     if (!formState.location.trim()) {
@@ -170,8 +163,8 @@ export default function RegisterFranchise() {
       submission.append('password', formState.password);
       submission.append('name', formState.name.trim());
       submission.append('phone', formState.phone.trim());
-      submission.append('franchise_name', formState.franchise_name);
-      submission.append('location', formState.location.trim());
+      submission.append('franchise_id', String(formState.franchise_id));
+      submission.append('proposed_location', formState.location.trim());
       submission.append('property_size', formState.property_size);
       submission.append('investment_capacity', formState.investment_capacity);
       submission.append('business_experience', formState.business_experience.trim());
@@ -316,28 +309,28 @@ export default function RegisterFranchise() {
             <h2 className="text-lg font-semibold text-gray-700 mb-4">Franchise Details</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="franchise_name">
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="franchise_id">
                   Select Franchise Brand*
                 </label>
                 <select
-                  id="franchise_name"
-                  name="franchise_name"
+                  id="franchise_id"
+                  name="franchise_id"
                   required
                   disabled={loadingBrands || brandOptions.length === 0}
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  value={formState.franchise_name}
+                  value={formState.franchise_id}
                   onChange={handleChange}
                 >
                   <option value="">{loadingBrands ? 'Loading brands…' : 'Select a franchise brand'}</option>
                   {brandOptions.map((brand) => (
-                    <option key={brand} value={brand}>
-                      {brand}
+                    <option key={brand.id} value={brand.id}>
+                      {brand.name}
                     </option>
                   ))}
                 </select>
                 {brandsError ? <p className="mt-1 text-xs text-amber-600">{brandsError}</p> : null}
-                {formErrors.franchise_name ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.franchise_name}</p>
+                {formErrors.franchise_id ? (
+                  <p className="mt-1 text-xs text-red-600">{formErrors.franchise_id}</p>
                 ) : null}
               </div>
               <div>

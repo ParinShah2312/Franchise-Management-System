@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 
 import { api } from '../api';
 import Toast from '../components/Toast';
@@ -10,7 +10,7 @@ const TABS = [
 ];
 
 export default function StaffDashboard() {
-  const { user, logout } = useAuth();
+  const { user, getBranchId, logout } = useAuth();
   const [inventoryItems, setInventoryItems] = useState([]);
   const [sales, setSales] = useState([]);
   const [activeTab, setActiveTab] = useState('inventory');
@@ -33,13 +33,14 @@ export default function StaffDashboard() {
   const [salesSubmitting, setSalesSubmitting] = useState(false);
   const [toast, setToast] = useState(null);
 
-  const franchiseId = user?.franchise_id;
+  const branchId = getBranchId();
 
-  const loadData = async () => {
-    if (!franchiseId) {
+  const loadData = useCallback(async () => {
+    if (!branchId) {
       setInventoryItems([]);
       setSales([]);
       setLoading(false);
+      setError('No branch is currently assigned to your account. Please contact your manager.');
       return;
     }
 
@@ -47,9 +48,11 @@ export default function StaffDashboard() {
     setError('');
 
     try {
+      const inventoryUrl = `/inventory${branchId ? `?branch_id=${branchId}` : ''}`;
+      const salesUrl = `/sales${branchId ? `?branch_id=${branchId}` : ''}`;
       const [inventoryResponse, salesResponse] = await Promise.allSettled([
-        api.get('/inventory'),
-        api.get('/sales'),
+        api.get(inventoryUrl),
+        api.get(salesUrl),
       ]);
 
       if (inventoryResponse.status === 'fulfilled') {
@@ -68,12 +71,12 @@ export default function StaffDashboard() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [branchId]);
 
   useEffect(() => {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [franchiseId]);
+  }, [branchId]);
 
   const renderInventory = () => (
     <div className="bg-white border border-gray-200 rounded-xl">
@@ -304,7 +307,8 @@ export default function StaffDashboard() {
                     reorder_level: Number(inventoryForm.reorder_level),
                   };
 
-                  await api.post('/inventory', payload);
+                  const inventoryEndpoint = branchId ? `/inventory?branch_id=${branchId}` : '/inventory';
+                  await api.post(inventoryEndpoint, payload);
                   setShowInventoryModal(false);
                   setToast({ message: 'Inventory item added successfully!', variant: 'success' });
                   await loadData();
@@ -431,7 +435,8 @@ export default function StaffDashboard() {
                 event.preventDefault();
                 setSalesSubmitting(true);
                 try {
-                  await api.post('/sales', {
+                  const salesEndpoint = branchId ? `/sales?branch_id=${branchId}` : '/sales';
+                  await api.post(salesEndpoint, {
                     sale_date: salesForm.sale_date,
                     total_amount: Number(salesForm.total_amount),
                     payment_mode: salesForm.payment_mode,

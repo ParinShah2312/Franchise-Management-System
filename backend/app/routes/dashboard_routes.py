@@ -9,8 +9,15 @@ from flask import Blueprint, jsonify
 from sqlalchemy import func
 
 from ..extensions import db
-from ..models import Franchise, FranchiseStatus, Sales, UserRole
-from ..utils.auth import login_required
+from ..models import (
+    ApplicationStatus,
+    Branch,
+    BranchStatus,
+    Franchise,
+    FranchiseApplication,
+    Sale,
+)
+from ..utils.security import token_required
 
 
 def _floatify(value: object) -> float:
@@ -39,74 +46,87 @@ dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
 
 
 @dashboard_bp.route("/metrics", methods=["GET"])
-@login_required(roles=[UserRole.ADMIN])
+@token_required({"SYSTEM_ADMIN"})
 def get_dashboard_metrics() -> tuple[dict[str, object], int]:
     """Aggregate high-level business metrics for the admin dashboard."""
 
     total_revenue = (
-        db.session.query(func.coalesce(func.sum(Sales.total_amount), 0))
-        .scalar()
-        or 0
+        db.session.query(func.coalesce(func.sum(Sale.total_amount), 0)).scalar() or 0
     )
 
     today = date.today()
     month_start, month_end = _month_bounds(today)
     monthly_revenue = (
-        db.session.query(func.coalesce(func.sum(Sales.total_amount), 0))
-        .filter(Sales.sale_date >= month_start, Sales.sale_date < month_end)
+        db.session.query(func.coalesce(func.sum(Sale.total_amount), 0))
+        .filter(Sale.sale_datetime >= month_start, Sale.sale_datetime < month_end)
         .scalar()
         or 0
     )
 
     total_franchises = Franchise.query.count()
-    active_franchises = Franchise.query.filter_by(status=FranchiseStatus.ACTIVE).count()
-    pending_franchises = Franchise.query.filter_by(status=FranchiseStatus.PENDING).count()
+    active_branches = (
+        Branch.query.join(BranchStatus, Branch.status_id == BranchStatus.status_id)
+        .filter(BranchStatus.status_name == "ACTIVE")
+        .count()
+    )
+    pending_applications = (
+        FranchiseApplication.query.join(
+            ApplicationStatus, FranchiseApplication.status_id == ApplicationStatus.status_id
+        )
+        .filter(ApplicationStatus.status_name == "PENDING")
+        .count()
+    )
 
     payload = {
         "total_revenue": _floatify(total_revenue),
         "monthly_revenue": _floatify(monthly_revenue),
         "total_franchises": total_franchises,
-        "active_franchises": active_franchises,
-        "pending_franchises": pending_franchises,
+        "active_branches": active_branches,
+        "pending_applications": pending_applications,
     }
 
     return jsonify(payload), HTTPStatus.OK
 
 
 @dashboard_bp.route("/recent-sales", methods=["GET"])
-@login_required(roles=[UserRole.ADMIN])
+@token_required({"SYSTEM_ADMIN"})
 def get_recent_sales() -> tuple[list[dict[str, object]], int]:
     """Return the latest sales across all franchises for admin visibility."""
 
     # Join with Franchise to surface contextual details.
     results = (
         db.session.query(
-            Sales.id.label("sale_id"),
-            Sales.sale_date,
-            Sales.total_amount,
-            Sales.payment_mode,
-            Sales.franchise_id,
+            Sale.sale_id,
+            Sale.sale_datetime,
+            Sale.total_amount,
+            Branch.branch_id,
+            Branch.name.label("branch_name"),
+            Franchise.franchise_id,
             Franchise.name.label("franchise_name"),
-            Franchise.owner_name.label("owner_name"),
         )
-        .join(Franchise, Sales.franchise_id == Franchise.id)
-        .order_by(Sales.sale_date.desc(), Sales.id.desc())
+        .join(Branch, Sale.branch_id == Branch.branch_id)
+        .join(Franchise, Branch.franchise_id == Franchise.franchise_id)
+        .order_by(Sale.sale_datetime.desc(), Sale.sale_id.desc())
         .limit(10)
         .all()
     )
 
     sales_data: list[dict[str, object]] = []
     for row in results:
-        sale_date = row.sale_date.isoformat() if hasattr(row.sale_date, "isoformat") else str(row.sale_date)
+        sale_datetime = (
+            row.sale_datetime.isoformat()
+            if hasattr(row.sale_datetime, "isoformat")
+            else str(row.sale_datetime)
+        )
         sales_data.append(
             {
                 "id": row.sale_id,
-                "sale_date": sale_date,
+                "sale_datetime": sale_datetime,
                 "total_amount": _floatify(row.total_amount),
-                "payment_mode": row.payment_mode,
+                "branch_id": row.branch_id,
+                "branch_name": row.branch_name,
                 "franchise_id": row.franchise_id,
                 "franchise_name": row.franchise_name,
-                "owner_name": row.owner_name,
             }
         )
 

@@ -23,12 +23,16 @@ export default function Login() {
 
     try {
       const session = await login(formState.email, formState.password);
-      if (session.role === 'admin') {
+      const role = (session.role || '').toUpperCase();
+
+      if (role === 'FRANCHISOR') {
         navigate('/admin', { replace: true });
-      } else if (session.role === 'staff') {
+      } else if (role === 'BRANCH_OWNER' || role === 'MANAGER') {
+        navigate('/dashboard', { replace: true });
+      } else if (role === 'STAFF') {
         navigate('/staff', { replace: true });
       } else {
-        navigate('/dashboard', { replace: true });
+        navigate('/', { replace: true });
       }
     } catch (err) {
       setError(err.message || 'Unable to sign in.');

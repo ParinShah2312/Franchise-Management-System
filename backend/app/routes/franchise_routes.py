@@ -1,180 +1,233 @@
-"""Franchise management routes."""
+"""Public-facing franchise routes plus admin application workflows."""
 
 from __future__ import annotations
 
+from datetime import datetime
 from http import HTTPStatus
 
 from flask import Blueprint, jsonify
+from sqlalchemy.orm import joinedload
 
 from ..extensions import db
-from ..models import Franchise, FranchiseStatus, UserRole
-from ..utils.auth import current_user, login_required
+from ..models import (
+    Address,
+    ApplicationStatus,
+    Branch,
+    BranchStatus,
+    Franchise,
+    FranchiseApplication,
+    Role,
+    UserRole,
+)
+from ..utils.security import token_required
 
 
 franchise_bp = Blueprint("franchises", __name__, url_prefix="/api/franchises")
 
 
-@franchise_bp.route("/public", methods=["GET"])
-def list_public_franchises() -> tuple[list[str], int]:
-    """Return distinct franchise brand names for backward compatibility."""
-
-    distinct_names = (
-        db.session.query(Franchise.name)
-        .filter(Franchise.name.isnot(None))
-        .order_by(Franchise.name.asc())
-        .distinct()
-        .all()
-    )
-
-    brands = [name for (name,) in distinct_names if name]
-
-    return jsonify(brands), HTTPStatus.OK
-
-
 @franchise_bp.route("/brands", methods=["GET"])
-def list_public_brands() -> tuple[list[dict[str, str]], int]:
-    """Return distinct franchise brand names for franchise registration."""
+def list_brands() -> tuple[list[dict[str, object]], int]:
+    """Return all franchises (id + name) for public selection."""
 
-    distinct_names = (
-        db.session.query(Franchise.name)
-        .filter(Franchise.name.isnot(None))
-        .order_by(Franchise.name.asc())
-        .distinct()
-        .all()
-    )
-
-    brands = [
-        {"name": name}
-        for (name,) in distinct_names
-        if name
+    franchises = Franchise.query.order_by(Franchise.name.asc()).all()
+    payload = [
+        {"id": franchise.franchise_id, "name": franchise.name}
+        for franchise in franchises
     ]
+    return jsonify(payload), HTTPStatus.OK
 
-    return jsonify(brands), HTTPStatus.OK
 
+@franchise_bp.route("/active-branches", methods=["GET"])
+def list_active_branches() -> tuple[list[dict[str, object]], int]:
+    """Expose active branches for staff signup flows."""
 
-@franchise_bp.route("/active-locations", methods=["GET"])
-def list_active_locations() -> tuple[list[dict[str, object]], int]:
-    """Return active franchise locations for staff registration."""
+    active_status = BranchStatus.query.filter_by(status_name="ACTIVE").first()
+    if not active_status:
+        return jsonify({"error": "ACTIVE branch status not configured."}), HTTPStatus.INTERNAL_SERVER_ERROR
 
-    active_franchises = (
-        Franchise.query.filter(Franchise.status == FranchiseStatus.ACTIVE)
-        .order_by(Franchise.name.asc(), Franchise.location.asc())
+    branches = (
+        Branch.query.options(joinedload(Branch.franchise))
+        .filter(Branch.status_id == active_status.status_id)
+        .order_by(Branch.name.asc())
         .all()
     )
 
-    data = [
+    payload = [
         {
-            "id": franchise.id,
-            "name": franchise.name,
-            "location": franchise.location,
+            "id": branch.branch_id,
+            "name": branch.name,
+            "franchise_id": branch.franchise_id,
+            "franchise_name": branch.franchise.name if branch.franchise else None,
+            "location": branch.address.city if branch.address else "Unknown", # Added location for UI
         }
-        for franchise in active_franchises
+        for branch in branches
     ]
-
-    return jsonify(data), HTTPStatus.OK
-
-
-# ✅ FIXED: Changed "/" to "" to prevent 308 Redirect / CORS errors
-@franchise_bp.route("", methods=["GET"])
-@login_required()
-def list_franchises() -> tuple[dict[str, object], int]:
-    """Return franchises filtered by the requesting user's role."""
-
-    user = current_user()
-
-    if user.role == UserRole.ADMIN:
-        franchises = Franchise.query.order_by(Franchise.created_at.desc()).all()
-    else:
-        if not user.franchise_id:
-            return jsonify([]), HTTPStatus.OK
-        franchises = [Franchise.query.get(user.franchise_id)]
-
-    data = []
-    for franchise in franchises:
-        if not franchise:
-            continue
-
-        record = {
-            "id": franchise.id,
-            "franchise_name": franchise.name,
-            "location": franchise.location,
-            "status": franchise.status.value,
-            "owner_id": franchise.owner_id,
-            "owner_name": franchise.owner_name,
-            "phone": franchise.phone,
-            "property_size": franchise.property_size,
-            "investment_capacity": franchise.investment_capacity,
-        }
-
-        if user.role == UserRole.ADMIN:
-            record.update(
-                {
-                    "application_file": franchise.application_file,
-                    "business_experience": franchise.business_experience,
-                    "reason_for_franchise": franchise.reason_for_franchise,
-                    "expected_opening_date": (
-                        franchise.expected_opening_date.isoformat()
-                        if franchise.expected_opening_date
-                        else None
-                    ),
-                }
-            )
-
-        data.append(record)
-
-    return jsonify(data), HTTPStatus.OK
+    return jsonify(payload), HTTPStatus.OK
 
 
-@franchise_bp.route("/<int:franchise_id>/approve", methods=["PUT"])
-@login_required(roles=[UserRole.ADMIN])
-def approve_franchise(franchise_id: int) -> tuple[dict[str, object], int]:
-    """Approve a pending franchise (admin only)."""
+@franchise_bp.route("/applications", methods=["GET"])
+@token_required({"SYSTEM_ADMIN"})
+def list_pending_applications() -> tuple[list[dict[str, object]], int]:
+    """Return all pending franchise applications for admins."""
 
-    franchise = Franchise.query.get(franchise_id)
-    if not franchise:
-        return jsonify({"error": "Franchise not found."}), HTTPStatus.NOT_FOUND
+    pending_status = ApplicationStatus.query.filter_by(status_name="PENDING").first()
+    if not pending_status:
+        return jsonify({"error": "PENDING application status not configured."}), HTTPStatus.INTERNAL_SERVER_ERROR
 
-    franchise.status = FranchiseStatus.ACTIVE
-    db.session.commit()
+    applications = (
+        FranchiseApplication.query.options(
+            joinedload(FranchiseApplication.branch_owner_user),
+            joinedload(FranchiseApplication.franchise),
+        )
+        .filter(FranchiseApplication.status_id == pending_status.status_id)
+        .order_by(FranchiseApplication.created_at.asc())
+        .all()
+    )
 
-    return (
-        jsonify(
+    payload = []
+    for application in applications:
+        applicant = application.branch_owner_user
+        payload.append(
             {
-                "id": franchise.id,
-                "status": franchise.status.value,
-                "message": "Franchise approved successfully"
+                "application_id": application.application_id,
+                "franchise_id": application.franchise_id,
+                "franchise_name": application.franchise.name if application.franchise else None,
+                "applicant_id": applicant.user_id if applicant else None,
+                "applicant_name": applicant.name if applicant else None,
+                "proposed_location": application.proposed_location,
+                "investment": str(application.investment_capacity) if application.investment_capacity else "0",
+                "experience": application.reason, 
+                "document_url": f"/uploads/{application.document_path}" if application.document_path else None, # Fixed path
+                "submitted_at": application.created_at.isoformat() if application.created_at else None,
             }
-        ),
-        HTTPStatus.OK,
+        )
+
+    return jsonify(payload), HTTPStatus.OK
+
+
+def _hydrate_address(location: str) -> Address:
+    """Helper to create an Address object from a location string."""
+    # Simple parsing logic: "City, State, Country - Pincode"
+    # Fallback: Just put everything in address_line
+    parts = [segment.strip() for segment in (location or "").split(",") if segment.strip()]
+    city = parts[0] if parts else location or "UNKNOWN"
+    state = parts[1] if len(parts) > 1 else "UNKNOWN"
+    country = parts[2] if len(parts) > 2 else "India"
+    pincode = parts[3] if len(parts) > 3 else "000000"
+
+    return Address(
+        address_line=location or city,
+        city=city,
+        state=state,
+        country=country,
+        pincode=pincode,
     )
 
 
-@franchise_bp.route("/<int:franchise_id>/reject", methods=["PUT"])
-@login_required(roles=[UserRole.ADMIN])
-def reject_franchise(franchise_id: int) -> tuple[dict[str, object], int]:
-    """Reject a pending franchise (admin only)."""
+def _ensure_supporting_rows() -> dict[str, object]:
+    """Helper to fetch required status/role objects."""
+    branch_active = BranchStatus.query.filter_by(status_name="ACTIVE").first()
+    if not branch_active:
+        raise LookupError("ACTIVE branch status not configured.")
 
-    franchise = Franchise.query.get(franchise_id)
-    if not franchise:
-        return jsonify({"error": "Franchise not found."}), HTTPStatus.NOT_FOUND
+    app_approved = ApplicationStatus.query.filter_by(status_name="APPROVED").first()
+    if not app_approved:
+        raise LookupError("APPROVED application status not configured.")
 
-    franchise.status = FranchiseStatus.REJECTED
+    owner_role = Role.query.filter_by(name="BRANCH_OWNER").first()
+    if not owner_role:
+        raise LookupError("BRANCH_OWNER role not configured.")
 
-    if franchise.owner_id:
-        owner = franchise.owner
-        if owner:
-            owner.franchise_id = None
+    return {
+        "branch_status": branch_active,
+        "app_status": app_approved,
+        "owner_role": owner_role,
+    }
 
-    franchise.owner_id = None
+
+# Changed to PUT to match standard REST conventions for updates
+@franchise_bp.route("/applications/<int:application_id>/approve", methods=["PUT"])
+@token_required({"SYSTEM_ADMIN"})
+def approve_application(application_id: int) -> tuple[dict[str, object], int]:
+    """Approve a pending franchise application and bootstrap a branch."""
+
+    application = (
+        FranchiseApplication.query.options(
+            joinedload(FranchiseApplication.franchise),
+            joinedload(FranchiseApplication.branch_owner_user),
+            joinedload(FranchiseApplication.status),
+        )
+        .filter_by(application_id=application_id)
+        .first()
+    )
+
+    if not application:
+        return jsonify({"error": "Application not found."}), HTTPStatus.NOT_FOUND
+
+    if not application.branch_owner_user:
+        return jsonify({"error": "Application is missing an associated applicant user."}), HTTPStatus.BAD_REQUEST
+
+    if application.status and application.status.status_name != "PENDING":
+        return jsonify({"error": "Only pending applications can be approved."}), HTTPStatus.BAD_REQUEST
+
+    try:
+        support = _ensure_supporting_rows()
+    except LookupError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+    # 1. Create Address
+    address = _hydrate_address(application.proposed_location)
+    db.session.add(address)
+    db.session.flush() # To get address_id
+
+    # 2. Create Branch
+    city_suffix = address.city if address.city and address.city != "UNKNOWN" else application.proposed_location
+    branch_name = f"{application.franchise.name if application.franchise else 'Franchise'} - {city_suffix}".strip()
+    
+    # Unique code generation
+    timestamp_code = datetime.utcnow().strftime('%y%m%d')
+    branch_code = f"BR-{application.application_id}-{timestamp_code}"
+
+    branch = Branch(
+        franchise_id=application.franchise_id,
+        name=branch_name,
+        code=branch_code,
+        address_id=address.address_id,
+        branch_owner_user_id=application.branch_owner_user.user_id,
+        status_id=support["branch_status"].status_id,
+    )
+    db.session.add(branch)
+    db.session.flush() # To get branch_id
+
+    # 3. Assign Role (BRANCH_OWNER)
+    existing_assignment = UserRole.query.filter_by(
+        user_id=application.branch_owner_user.user_id,
+        role_id=support["owner_role"].role_id,
+        scope_type="BRANCH",
+        scope_id=branch.branch_id,
+    ).first()
+
+    if not existing_assignment:
+        db.session.add(
+            UserRole(
+                user_id=application.branch_owner_user.user_id,
+                role_id=support["owner_role"].role_id,
+                scope_type="BRANCH",
+                scope_id=branch.branch_id,
+            )
+        )
+
+    # 4. Update Application Status
+    application.status_id = support["app_status"].status_id
+    # Optional: Link decision maker if current_user is available in context
+    # application.decision_by_franchisor_id = g.user.id 
+    
     db.session.commit()
 
     return (
-        jsonify(
-            {
-                "id": franchise.id,
-                "status": franchise.status.value,
-                "message": "Franchise rejected successfully",
-            }
-        ),
+        jsonify({
+            "message": "Application approved and Branch created", 
+            "branch_id": branch.branch_id
+        }),
         HTTPStatus.OK,
     )
