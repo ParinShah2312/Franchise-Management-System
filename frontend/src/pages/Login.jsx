@@ -23,6 +23,12 @@ export default function Login() {
 
     try {
       const session = await login(formState.email, formState.password);
+
+      if (session.mustResetPassword) {
+        navigate('/reset-password', { replace: true });
+        return;
+      }
+
       const role = (session.role || '').toUpperCase();
 
       if (role === 'FRANCHISOR') {

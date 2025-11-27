@@ -1,4 +1,4 @@
-import { createContext, useContext, useEffect, useMemo, useState } from 'react';
+import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 
 import { api, clearAuthToken, setAuthToken } from '../api';
@@ -46,6 +46,7 @@ export function AuthProvider({ children }) {
       name: data?.user?.name ?? data?.name ?? null,
       email: data?.user?.email ?? data?.email ?? email,
       role: data?.role ?? null,
+      mustResetPassword: Boolean(data?.user?.must_reset_password ?? data?.must_reset_password),
     };
     const sessionScope = data?.scope ?? null;
 
@@ -75,6 +76,17 @@ export function AuthProvider({ children }) {
     setScope(null);
   };
 
+  const updateUser = useCallback((updates) => {
+    setUser((previous) => {
+      if (!previous) {
+        return previous;
+      }
+      const next = { ...previous, ...updates };
+      localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(next));
+      return next;
+    });
+  }, []);
+
   const value = useMemo(() => ({
     user,
     token,
@@ -82,9 +94,10 @@ export function AuthProvider({ children }) {
     loading,
     login,
     logout,
+    updateUser,
     isAuthenticated: Boolean(user && token),
     getBranchId: () => (scope?.type === 'BRANCH' ? scope.id ?? null : null),
-  }), [user, token, scope, loading]);
+  }), [user, token, scope, loading, login, logout, updateUser]);
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;
 }

@@ -12,6 +12,8 @@ const TABS = [
   { id: 'requests', label: 'Stock Requests' },
 ];
 
+const PAYMENT_MODES = ['Cash', 'Card', 'UPI', 'Other'];
+
 const initialStaffForm = {
   name: '',
   email: '',
@@ -20,17 +22,16 @@ const initialStaffForm = {
 };
 
 const initialInventoryForm = {
-  item_name: '',
-  category: 'General',
+  stock_item_id: '',
   quantity: '',
   reorder_level: '',
 };
 
-const initialSaleForm = {
+const createInitialSaleForm = () => ({
   sale_date: new Date().toISOString().slice(0, 10),
-  total_amount: '',
-  payment_mode: 'Cash',
-};
+  payment_mode: PAYMENT_MODES[0],
+  items: [{ product_id: '', quantity: '' }],
+});
 
 const initialRequestForm = {
   stock_item_id: '',
@@ -51,12 +52,13 @@ export default function ManagerDashboard() {
   const [staff, setStaff] = useState([]);
   const [inventoryItems, setInventoryItems] = useState([]);
   const [sales, setSales] = useState([]);
+  const [products, setProducts] = useState([]);
   const [requests, setRequests] = useState([]);
   const [stockItems, setStockItems] = useState([]);
 
   const [showAddStaffModal, setShowAddStaffModal] = useState(false);
   const [showInventoryModal, setShowInventoryModal] = useState(false);
-  const [showSaleModal, setShowSaleModal] = useState(false);
+  const [showSalesModal, setShowSalesModal] = useState(false);
   const [showRequestModal, setShowRequestModal] = useState(false);
 
   const [staffSubmitting, setStaffSubmitting] = useState(false);
@@ -65,8 +67,9 @@ export default function ManagerDashboard() {
   const [requestSubmitting, setRequestSubmitting] = useState(false);
 
   const [staffForm, setStaffForm] = useState(initialStaffForm);
+  const [staffErrors, setStaffErrors] = useState({});
   const [inventoryForm, setInventoryForm] = useState(initialInventoryForm);
-  const [saleForm, setSaleForm] = useState(initialSaleForm);
+  const [saleForm, setSaleForm] = useState(() => createInitialSaleForm());
   const [requestForm, setRequestForm] = useState(initialRequestForm);
 
   const loadData = useCallback(async () => {
@@ -76,6 +79,7 @@ export default function ManagerDashboard() {
       setStaff([]);
       setInventoryItems([]);
       setSales([]);
+      setProducts([]);
       setRequests([]);
       setStockItems([]);
       return;
@@ -87,12 +91,20 @@ export default function ManagerDashboard() {
     const branchQuery = `?branch_id=${branchId}`;
 
     try {
-      const [staffRes, inventoryRes, salesRes, requestsRes, stockItemsRes] = await Promise.allSettled([
+      const [
+        staffRes,
+        inventoryRes,
+        salesRes,
+        requestsRes,
+        stockItemsRes,
+        productsRes,
+      ] = await Promise.allSettled([
         api.get('/branch/staff'),
         api.get(`/inventory${branchQuery}`),
         api.get(`/sales${branchQuery}`),
         api.get(`/requests${branchQuery}`),
         api.get('/inventory/stock-items').catch(() => []),
+        api.get(`/sales/products${branchQuery}`),
       ]);
 
       if (staffRes.status === 'fulfilled') {
@@ -113,6 +125,10 @@ export default function ManagerDashboard() {
 
       if (stockItemsRes.status === 'fulfilled') {
         setStockItems(Array.isArray(stockItemsRes.value) ? stockItemsRes.value : []);
+      }
+
+      if (productsRes.status === 'fulfilled') {
+        setProducts(Array.isArray(productsRes.value) ? productsRes.value : []);
       }
     } catch (err) {
       const message = err.message || 'Failed to load dashboard data.';
@@ -141,6 +157,83 @@ export default function ManagerDashboard() {
       }),
     [inventoryItems],
   );
+
+  const closeSaleModal = () => {
+    if (salesSubmitting) {
+      return;
+    }
+    setShowSalesModal(false);
+    setSaleForm(createInitialSaleForm());
+  };
+
+  const handleAddSaleRow = () => {
+    setSaleForm((prev) => ({
+      ...prev,
+      items: [...prev.items, { product_id: '', quantity: '' }],
+    }));
+  };
+
+  const handleRemoveSaleRow = (index) => {
+    setSaleForm((prev) => ({
+      ...prev,
+      items: prev.items.filter((_, rowIndex) => rowIndex !== index),
+    }));
+  };
+
+  const handleSaleItemChange = (index, key, value) => {
+    setSaleForm((prev) => ({
+      ...prev,
+      items: prev.items.map((item, rowIndex) =>
+        rowIndex === index ? { ...item, [key]: value } : item,
+      ),
+    }));
+  };
+
+  const submitSale = async (event) => {
+    event.preventDefault();
+
+    if (!branchId) {
+      setToast({ message: 'No branch scope detected.', variant: 'error' });
+      return;
+    }
+
+    const sanitizedItems = saleForm.items
+      .filter((item) => item.product_id && item.quantity)
+      .map((item) => ({
+        product_id: Number(item.product_id),
+        quantity: Number(item.quantity),
+      }));
+
+    if (sanitizedItems.length === 0) {
+      setToast({ message: 'Add at least one product to the sale.', variant: 'error' });
+      return;
+    }
+
+    if (sanitizedItems.some((item) => item.quantity <= 0 || Number.isNaN(item.quantity))) {
+      setToast({ message: 'Sale quantities must be positive numbers.', variant: 'error' });
+      return;
+    }
+
+    const payload = {
+      sale_date: saleForm.sale_date,
+      payment_mode: saleForm.payment_mode,
+      items: sanitizedItems,
+    };
+
+    setSalesSubmitting(true);
+
+    try {
+      await api.post(`/sales${branchId ? `?branch_id=${branchId}` : ''}`, payload);
+      setToast({ message: 'Sale logged successfully!', variant: 'success' });
+      setShowSalesModal(false);
+      setSaleForm(createInitialSaleForm());
+      await loadData();
+    } catch (err) {
+      setToast({ message: err.message || 'Failed to log sale.', variant: 'error' });
+    } finally {
+      setSalesSubmitting(false);
+    }
+  };
 
   const todaySalesTotal = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
@@ -182,6 +275,7 @@ export default function ManagerDashboard() {
           type="button"
           onClick={() => {
             setStaffForm(initialStaffForm);
+            setStaffErrors({});
             setShowAddStaffModal(true);
           }}
           className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
@@ -298,8 +392,8 @@ export default function ManagerDashboard() {
           <button
             type="button"
             onClick={() => {
-              setSaleForm(initialSaleForm);
-              setShowSaleModal(true);
+              setSaleForm(createInitialSaleForm());
+              setShowSalesModal(true);
             }}
             className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
           >
@@ -454,8 +548,26 @@ export default function ManagerDashboard() {
     </header>
   );
 
+  const validateStaffForm = () => {
+    const errors = {};
+
+    if (staffForm.phone.length !== 10) {
+      errors.phone = 'Phone number must be exactly 10 digits.';
+    }
+
+    return errors;
+  };
+
   const handleAddStaff = async (event) => {
     event.preventDefault();
+
+    const validationErrors = validateStaffForm();
+    if (Object.keys(validationErrors).length > 0) {
+      setStaffErrors(validationErrors);
+      return;
+    }
+
+    setStaffErrors({});
     setStaffSubmitting(true);
 
     try {
@@ -479,11 +591,14 @@ export default function ManagerDashboard() {
 
     try {
       const payload = {
-        item_name: inventoryForm.item_name.trim(),
-        category: inventoryForm.category,
+        stock_item_id: inventoryForm.stock_item_id ? Number(inventoryForm.stock_item_id) : null,
         quantity: Number(inventoryForm.quantity || 0),
         reorder_level: Number(inventoryForm.reorder_level || 0),
       };
+
+      if (!payload.stock_item_id) {
+        throw new Error('Select a stock item to add.');
+      }
 
       await api.post(`/inventory${branchId ? `?branch_id=${branchId}` : ''}`, payload);
       setShowInventoryModal(false);
@@ -642,11 +757,19 @@ export default function ManagerDashboard() {
                   id="manager_staff_phone"
                   type="tel"
                   required
+                  inputMode="numeric"
+                  maxLength={10}
                   value={staffForm.phone}
-                  onChange={(event) => setStaffForm((prev) => ({ ...prev, phone: event.target.value }))}
-                  className="input-field"
+                  onChange={(event) => {
+                    const sanitized = event.target.value.replace(/\D/g, '').slice(0, 10);
+                    setStaffForm((prev) => ({ ...prev, phone: sanitized }));
+                  }}
+                  className={`input-field ${staffErrors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
                   placeholder="9876543210"
                 />
+                {staffErrors.phone ? (
+                  <p className="mt-1 text-sm text-red-600">{staffErrors.phone}</p>
+                ) : null}
               </div>
 
               <div>
@@ -668,7 +791,12 @@ export default function ManagerDashboard() {
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => !staffSubmitting && setShowAddStaffModal(false)}
+                  onClick={() => {
+                    if (!staffSubmitting) {
+                      setShowAddStaffModal(false);
+                      setStaffErrors({});
+                    }
+                  }}
                   className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100"
                 >
                   Cancel
@@ -703,39 +831,25 @@ export default function ManagerDashboard() {
 
             <form className="space-y-4" onSubmit={handleAddInventory}>
               <div>
-                <label className="label" htmlFor="manager_inventory_item_name">
-                  Item Name*
-                </label>
-                <input
-                  id="manager_inventory_item_name"
-                  type="text"
-                  required
-                  value={inventoryForm.item_name}
-                  onChange={(event) =>
-                    setInventoryForm((prev) => ({ ...prev, item_name: event.target.value }))
-                  }
-                  className="input-field"
-                  placeholder="Espresso Beans"
-                />
-              </div>
-
-              <div>
-                <label className="label" htmlFor="manager_inventory_category">
-                  Category
+                <label className="label" htmlFor="manager_inventory_stock_item">
+                  Stock Item*
                 </label>
                 <select
-                  id="manager_inventory_category"
-                  value={inventoryForm.category}
+                  id="manager_inventory_stock_item"
+                  required
+                  value={inventoryForm.stock_item_id}
                   onChange={(event) =>
-                    setInventoryForm((prev) => ({ ...prev, category: event.target.value }))
+                    setInventoryForm((prev) => ({ ...prev, stock_item_id: event.target.value }))
                   }
                   className="input-field"
+                  disabled={inventorySubmitting}
                 >
-                  <option value="General">General</option>
-                  <option value="Dairy">Dairy</option>
-                  <option value="Edibles">Edibles</option>
-                  <option value="Beverages">Beverages</option>
-                  <option value="Cleaning Supplies">Cleaning Supplies</option>
+                  <option value="">Select item</option>
+                  {stockItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
                 </select>
               </div>
 
@@ -796,14 +910,14 @@ export default function ManagerDashboard() {
         </div>
       ) : null}
 
-      {showSaleModal ? (
+      {showSalesModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-6">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-800">Log Sale</h3>
+              <h3 className="text-xl font-semibold text-gray-800">Log New Sale</h3>
               <button
                 type="button"
-                onClick={() => !salesSubmitting && setShowSaleModal(false)}
+                onClick={closeSaleModal}
                 className="text-gray-400 hover:text-gray-600"
                 aria-label="Close sale modal"
               >
@@ -811,65 +925,126 @@ export default function ManagerDashboard() {
               </button>
             </div>
 
-            <form className="space-y-4" onSubmit={handleLogSale}>
-              <div>
-                <label className="label" htmlFor="manager_sale_date">
-                  Sale Date*
-                </label>
-                <input
-                  id="manager_sale_date"
-                  type="date"
-                  required
-                  value={saleForm.sale_date}
-                  onChange={(event) =>
-                    setSaleForm((prev) => ({ ...prev, sale_date: event.target.value }))
-                  }
-                  className="input-field"
-                />
+            <form className="space-y-4" onSubmit={submitSale}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="manager_sale_date">
+                    Sale Date*
+                  </label>
+                  <input
+                    id="manager_sale_date"
+                    type="date"
+                    required
+                    value={saleForm.sale_date}
+                    onChange={(event) =>
+                      setSaleForm((prev) => ({ ...prev, sale_date: event.target.value }))
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="manager_sale_payment_mode">
+                    Payment Mode*
+                  </label>
+                  <select
+                    id="manager_sale_payment_mode"
+                    required
+                    value={saleForm.payment_mode}
+                    onChange={(event) =>
+                      setSaleForm((prev) => ({ ...prev, payment_mode: event.target.value }))
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    {PAYMENT_MODES.map((mode) => (
+                      <option key={mode} value={mode}>
+                        {mode}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="label" htmlFor="manager_sale_amount">
-                  Amount*
-                </label>
-                <input
-                  id="manager_sale_amount"
-                  type="number"
-                  required
-                  min={0}
-                  value={saleForm.total_amount}
-                  onChange={(event) =>
-                    setSaleForm((prev) => ({ ...prev, total_amount: event.target.value }))
-                  }
-                  className="input-field"
-                  placeholder="250.00"
-                />
-              </div>
+              <div className="space-y-4">
+                {saleForm.items.map((item, index) => (
+                  <div
+                    key={`manager-sale-item-${index}`}
+                    className="grid grid-cols-1 md:grid-cols-[2fr_1fr_auto] gap-4 items-end"
+                  >
+                    <div>
+                      <label
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                        htmlFor={`manager_sale_product_${index}`}
+                      >
+                        Product*
+                      </label>
+                      <select
+                        id={`manager_sale_product_${index}`}
+                        required
+                        value={item.product_id}
+                        onChange={(event) =>
+                          handleSaleItemChange(index, 'product_id', event.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select product</option>
+                        {products.map((product) => (
+                          <option
+                            key={product.product_id || product.id}
+                            value={product.product_id || product.id}
+                          >
+                            {product.product_name || product.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
 
-              <div>
-                <label className="label" htmlFor="manager_sale_payment">
-                  Payment Mode*
-                </label>
-                <select
-                  id="manager_sale_payment"
-                  required
-                  value={saleForm.payment_mode}
-                  onChange={(event) =>
-                    setSaleForm((prev) => ({ ...prev, payment_mode: event.target.value }))
-                  }
-                  className="input-field"
+                    <div>
+                      <label
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                        htmlFor={`manager_sale_quantity_${index}`}
+                      >
+                        Quantity*
+                      </label>
+                      <input
+                        id={`manager_sale_quantity_${index}`}
+                        type="number"
+                        min={1}
+                        required
+                        value={item.quantity}
+                        onChange={(event) =>
+                          handleSaleItemChange(index, 'quantity', event.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="0"
+                      />
+                    </div>
+
+                    <div className="flex md:block justify-end">
+                      <button
+                        type="button"
+                        onClick={() => handleRemoveSaleRow(index)}
+                        disabled={saleForm.items.length === 1}
+                        className="w-full md:w-auto md:px-4 py-3 text-sm font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-60"
+                      >
+                        Remove
+                      </button>
+                    </div>
+                  </div>
+                ))}
+
+                <button
+                  type="button"
+                  onClick={handleAddSaleRow}
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
                 >
-                  <option value="Cash">Cash</option>
-                  <option value="Card">Card</option>
-                  <option value="UPI">UPI</option>
-                  <option value="Other">Other</option>
-                </select>
+                  + Add Product
+                </button>
               </div>
 
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => !salesSubmitting && setShowSaleModal(false)}
+                  onClick={closeSaleModal}
                   className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100"
                 >
                   Cancel

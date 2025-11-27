@@ -9,75 +9,72 @@ const TABS = [
   { id: 'sales', label: 'Sales' },
 ];
 
+const PAYMENT_MODES = ['Cash', 'Card', 'UPI', 'Other'];
+
+const initialDeliveryForm = {
+  stock_item_id: '',
+  quantity: '',
+  note: '',
+};
+
+const createInitialSaleForm = () => ({
+  sale_date: new Date().toISOString().slice(0, 10),
+  payment_mode: PAYMENT_MODES[0],
+  items: [{ product_id: '', quantity: '' }],
+});
+
 export default function StaffDashboard() {
-  const { user, getBranchId, logout } = useAuth();
-  const [inventoryItems, setInventoryItems] = useState([]);
-  const [sales, setSales] = useState([]);
-  const [stockItems, setStockItems] = useState([]);
-  const [products, setProducts] = useState([]);
+  const { getBranchId, logout } = useAuth();
+  const branchId = getBranchId();
+
   const [activeTab, setActiveTab] = useState('inventory');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
-  const [showSalesModal, setShowSalesModal] = useState(false);
-  const [deliverySubmitting, setDeliverySubmitting] = useState(false);
-  const [salesSubmitting, setSalesSubmitting] = useState(false);
-  const [deliveryForm, setDeliveryForm] = useState({
-    stock_item_id: '',
-    quantity: '',
-    note: '',
-  });
-  const [saleForm, setSaleForm] = useState({
-    sale_date: new Date().toISOString().slice(0, 10),
-    payment_mode: 'Cash',
-    items: [{ product_id: '', quantity: '' }],
-  });
   const [toast, setToast] = useState(null);
 
-  const branchId = getBranchId();
+  const [inventoryItems, setInventoryItems] = useState([]);
+  const [sales, setSales] = useState([]);
+  const [products, setProducts] = useState([]);
+  const [stockItems, setStockItems] = useState([]);
+
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+  const [showSaleModal, setShowSaleModal] = useState(false);
+
+  const [deliverySubmitting, setDeliverySubmitting] = useState(false);
+  const [saleSubmitting, setSaleSubmitting] = useState(false);
+
+  const [deliveryForm, setDeliveryForm] = useState(initialDeliveryForm);
+  const [saleForm, setSaleForm] = useState(() => createInitialSaleForm());
 
   const loadData = useCallback(async () => {
     if (!branchId) {
       setInventoryItems([]);
       setSales([]);
+      setProducts([]);
+      setError('No branch assigned. Please contact your manager.');
       setLoading(false);
-      setError('No branch is currently assigned to your account. Please contact your manager.');
       return;
     }
 
     setLoading(true);
     setError('');
 
-    try {
-      const inventoryUrl = `/inventory${branchId ? `?branch_id=${branchId}` : ''}`;
-      const salesUrl = `/sales${branchId ? `?branch_id=${branchId}` : ''}`;
-      const stockItemsUrl = '/inventory/stock-items';
-      const productsUrl = `/sales/products${branchId ? `?branch_id=${branchId}` : ''}`;
+    const inventoryUrl = `/inventory?branch_id=${branchId}`;
+    const salesUrl = `/sales?branch_id=${branchId}`;
+    const productsUrl = `/sales/products?branch_id=${branchId}`;
 
-      const [inventoryRes, salesRes, stockItemsRes, productsRes] = await Promise.allSettled([
+    try {
+      const [inventoryRes, salesRes, stockItemsRes, productsRes] = await Promise.all([
         api.get(inventoryUrl),
         api.get(salesUrl),
-        api.get(stockItemsUrl),
+        api.get('/inventory/stock-items'),
         api.get(productsUrl),
       ]);
 
-      if (inventoryRes.status === 'fulfilled') {
-        setInventoryItems(Array.isArray(inventoryRes.value) ? inventoryRes.value : []);
-      } else {
-        throw inventoryRes.reason;
-      }
-
-      if (salesRes.status === 'fulfilled') {
-        setSales(Array.isArray(salesRes.value) ? salesRes.value : []);
-      }
-
-      if (stockItemsRes.status === 'fulfilled') {
-        setStockItems(Array.isArray(stockItemsRes.value) ? stockItemsRes.value : []);
-      }
-
-      if (productsRes.status === 'fulfilled') {
-        setProducts(Array.isArray(productsRes.value) ? productsRes.value : []);
-      }
+      setInventoryItems(Array.isArray(inventoryRes) ? inventoryRes : []);
+      setSales(Array.isArray(salesRes) ? salesRes : []);
+      setStockItems(Array.isArray(stockItemsRes) ? stockItemsRes : []);
+      setProducts(Array.isArray(productsRes) ? productsRes : []);
     } catch (err) {
       const message = err.message || 'Failed to load staff dashboard data.';
       setError(message);
@@ -89,8 +86,7 @@ export default function StaffDashboard() {
 
   useEffect(() => {
     loadData();
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [branchId]);
+  }, [loadData]);
 
   const lowStockItems = useMemo(
     () =>
@@ -102,10 +98,135 @@ export default function StaffDashboard() {
     [inventoryItems],
   );
 
-  const renderInventory = () => (
+  const closeSaleModal = () => {
+    if (saleSubmitting) return;
+    setShowSaleModal(false);
+    setSaleForm(createInitialSaleForm());
+  };
+
+  const closeDeliveryModal = () => {
+    if (deliverySubmitting) return;
+    setShowDeliveryModal(false);
+    setDeliveryForm(initialDeliveryForm);
+  };
+
+  const handleAddSaleRow = () => {
+    setSaleForm((prev) => ({
+      ...prev,
+      items: [...prev.items, { product_id: '', quantity: '' }],
+    }));
+  };
+
+  const handleRemoveSaleRow = (index) => {
+    setSaleForm((prev) => ({
+      ...prev,
+      items: prev.items.filter((_, rowIndex) => rowIndex !== index),
+    }));
+  };
+
+  const handleSaleItemChange = (index, key, value) => {
+    setSaleForm((prev) => ({
+      ...prev,
+      items: prev.items.map((item, rowIndex) =>
+        rowIndex === index ? { ...item, [key]: value } : item,
+      ),
+    }));
+  };
+
+  const submitDelivery = async (event) => {
+    event.preventDefault();
+
+    if (!branchId) {
+      setToast({ message: 'No branch scope detected.', variant: 'error' });
+      return;
+    }
+
+    const payload = {
+      stock_item_id: Number(deliveryForm.stock_item_id),
+      quantity: Number(deliveryForm.quantity),
+      note: deliveryForm.note || undefined,
+    };
+
+    if (!payload.stock_item_id) {
+      setToast({ message: 'Select a stock item before submitting.', variant: 'error' });
+      return;
+    }
+
+    if (!payload.quantity || Number.isNaN(payload.quantity) || payload.quantity <= 0) {
+      setToast({ message: 'Quantity must be greater than zero.', variant: 'error' });
+      return;
+    }
+
+    setDeliverySubmitting(true);
+
+    try {
+      await api.post(`/inventory/stock-in?branch_id=${branchId}`, payload);
+      setToast({ message: 'Delivery recorded successfully!', variant: 'success' });
+      closeDeliveryModal();
+      await loadData();
+    } catch (err) {
+      setToast({ message: err.message || 'Failed to record delivery.', variant: 'error' });
+    } finally {
+      setDeliverySubmitting(false);
+    }
+  };
+
+  const submitSale = async (event) => {
+    event.preventDefault();
+
+    if (!branchId) {
+      setToast({ message: 'No branch scope detected.', variant: 'error' });
+      return;
+    }
+
+    const sanitizedItems = saleForm.items
+      .filter((item) => item.product_id && item.quantity)
+      .map((item) => ({
+        product_id: Number(item.product_id),
+        quantity: Number(item.quantity),
+      }));
+
+    if (sanitizedItems.length === 0) {
+      setToast({ message: 'Add at least one product to the sale.', variant: 'error' });
+      return;
+    }
+
+    if (sanitizedItems.some((item) => item.quantity <= 0 || Number.isNaN(item.quantity))) {
+      setToast({ message: 'Sale quantities must be positive numbers.', variant: 'error' });
+      return;
+    }
+
+    const payload = {
+      sale_date: saleForm.sale_date,
+      payment_mode: saleForm.payment_mode,
+      items: sanitizedItems,
+    };
+
+    setSaleSubmitting(true);
+
+    try {
+      await api.post(`/sales?branch_id=${branchId}`, payload);
+      setToast({ message: 'Sale logged successfully!', variant: 'success' });
+      closeSaleModal();
+      await loadData();
+    } catch (err) {
+      setToast({ message: err.message || 'Failed to log sale.', variant: 'error' });
+    } finally {
+      setSaleSubmitting(false);
+    }
+  };
+
+  const renderInventoryTable = () => (
     <div className="bg-white border border-gray-200 rounded-xl">
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-800">Inventory Items</h3>
+        <div>
+          <h3 className="text-lg font-semibold text-gray-800">Inventory</h3>
+          {lowStockItems.length > 0 ? (
+            <p className="text-sm text-amber-600 font-medium mt-1">
+              {lowStockItems.length} item{lowStockItems.length === 1 ? '' : 's'} at or below reorder level.
+            </p>
+          ) : null}
+        </div>
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -117,7 +238,7 @@ export default function StaffDashboard() {
           <button
             type="button"
             onClick={() => {
-              setDeliveryForm({ stock_item_id: '', quantity: '', note: '' });
+              setDeliveryForm(initialDeliveryForm);
               setShowDeliveryModal(true);
             }}
             className="text-sm px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700"
@@ -130,36 +251,53 @@ export default function StaffDashboard() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Item
               </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Unit
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Quantity
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Reorder Level
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-100">
             {inventoryItems.length === 0 ? (
               <tr>
                 <td colSpan={4} className="px-4 py-8 text-center text-gray-500 text-sm">
-                  No inventory items recorded yet.
+                  Inventory records will appear here once stocked.
                 </td>
               </tr>
             ) : (
-              inventoryItems.map((item) => (
-                <tr key={item.branch_inventory_id || item.stock_item_id}>
-                  <td className="px-4 py-3 text-sm text-gray-700">{item.stock_item_name || item.item_name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{item.unit_name || item.unit || '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900 text-right">{Number(item.quantity || 0).toLocaleString('en-IN')}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500 text-right">{item.reorder_level != null ? Number(item.reorder_level).toLocaleString('en-IN') : '—'}</td>
-                </tr>
-              ))
+              inventoryItems.map((item) => {
+                const quantity = Number(item.quantity || 0);
+                const reorder = item.reorder_level != null ? Number(item.reorder_level) : null;
+                const isLow = reorder != null && reorder > 0 && quantity <= reorder;
+
+                return (
+                  <tr
+                    key={item.branch_inventory_id || `${item.branch_id}-${item.stock_item_id}`}
+                    className={isLow ? 'bg-amber-50' : ''}
+                  >
+                    <td className="px-4 py-3 text-sm font-medium text-gray-800">
+                      {item.stock_item_name || item.item_name || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500">
+                      {item.unit_name || item.unit || '—'}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                      {quantity.toLocaleString('en-IN')}
+                    </td>
+                    <td className="px-4 py-3 text-sm text-gray-500 text-right">
+                      {reorder != null ? reorder.toLocaleString('en-IN') : '—'}
+                    </td>
+                  </tr>
+                );
+              })
             )}
           </tbody>
         </table>
@@ -167,10 +305,10 @@ export default function StaffDashboard() {
     </div>
   );
 
-  const renderSales = () => (
+  const renderSalesTable = () => (
     <div className="bg-white border border-gray-200 rounded-xl">
       <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-800">Sales History</h3>
+        <h3 className="text-lg font-semibold text-gray-800">Sales</h3>
         <div className="flex items-center gap-3">
           <button
             type="button"
@@ -182,12 +320,8 @@ export default function StaffDashboard() {
           <button
             type="button"
             onClick={() => {
-              setSalesForm({
-                sale_date: new Date().toISOString().slice(0, 10),
-                total_amount: '',
-                payment_mode: 'Cash',
-              });
-              setShowSalesModal(true);
+              setSaleForm(createInitialSaleForm());
+              setShowSaleModal(true);
             }}
             className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
           >
@@ -199,36 +333,36 @@ export default function StaffDashboard() {
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Date
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Date & Time
               </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Amount
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+              <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                 Payment Mode
+              </th>
+              <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
+                Total Amount
               </th>
             </tr>
           </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
+          <tbody className="bg-white divide-y divide-gray-100">
             {sales.length === 0 ? (
               <tr>
                 <td colSpan={3} className="px-4 py-8 text-center text-gray-500 text-sm">
-                  No sales recorded yet.
+                  Logged sales will appear here.
                 </td>
               </tr>
             ) : (
               sales.map((sale) => (
-                <tr key={sale.id}>
-                  <td className="px-4 py-3 text-sm text-gray-700">
+                <tr key={sale.sale_id || sale.id}>
+                  <td className="px-4 py-3 text-sm text-gray-800">
                     {sale.sale_datetime || sale.sale_date
                       ? new Date(sale.sale_datetime || sale.sale_date).toLocaleString()
                       : '—'}
                   </td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{sale.payment_mode || '—'}</td>
                   <td className="px-4 py-3 text-sm text-gray-900 text-right">
                     ₹{Number(sale.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{sale.payment_mode || '—'}</td>
                 </tr>
               ))
             )}
@@ -238,24 +372,15 @@ export default function StaffDashboard() {
     </div>
   );
 
-  const renderContent = () => {
-    if (activeTab === 'sales') {
-      return renderSales();
-    }
-    return renderInventory();
-  };
-
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Staff Dashboard</h1>
-            <p className="text-gray-500 text-sm">
-              Keep your branch stocked and sales updated in real time.
-            </p>
+            <p className="text-sm text-gray-500">Manage branch inventory and log sales with live stock deductions.</p>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-3">
             <button
               type="button"
               onClick={loadData}
@@ -302,7 +427,7 @@ export default function StaffDashboard() {
               ))}
             </nav>
 
-            {renderContent()}
+            {activeTab === 'inventory' ? renderInventoryTable() : renderSalesTable()}
           </div>
         )}
       </main>
@@ -314,7 +439,7 @@ export default function StaffDashboard() {
               <h3 className="text-xl font-semibold text-gray-800">Record Stock Delivery</h3>
               <button
                 type="button"
-                onClick={() => !deliverySubmitting && setShowDeliveryModal(false)}
+                onClick={closeDeliveryModal}
                 className="text-gray-400 hover:text-gray-600"
                 aria-label="Close delivery modal"
               >
@@ -322,46 +447,13 @@ export default function StaffDashboard() {
               </button>
             </div>
 
-            <form
-              className="space-y-4"
-              onSubmit={async (event) => {
-                event.preventDefault();
-                setDeliverySubmitting(true);
-                try {
-                  const payload = {
-                    stock_item_id: Number(deliveryForm.stock_item_id),
-                    quantity: Number(deliveryForm.quantity),
-                    note: deliveryForm.note || undefined,
-                  };
-
-                  if (!payload.stock_item_id) {
-                    throw new Error('Please select a stock item.');
-                  }
-
-                  if (!payload.quantity || Number.isNaN(payload.quantity) || payload.quantity <= 0) {
-                    throw new Error('Quantity must be greater than zero.');
-                  }
-
-                  await api.post(
-                    `/inventory/stock-in${branchId ? `?branch_id=${branchId}` : ''}`,
-                    payload,
-                  );
-                  setShowDeliveryModal(false);
-                  setToast({ message: 'Delivery recorded successfully!', variant: 'success' });
-                  await loadData();
-                } catch (err) {
-                  setToast({ message: err.message || 'Failed to record delivery.', variant: 'error' });
-                } finally {
-                  setDeliverySubmitting(false);
-                }
-              }}
-            >
+            <form className="space-y-4" onSubmit={submitDelivery}>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_delivery_item">
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="delivery_stock_item">
                   Stock Item*
                 </label>
                 <select
-                  id="staff_delivery_item"
+                  id="delivery_stock_item"
                   required
                   value={deliveryForm.stock_item_id}
                   onChange={(event) =>
@@ -371,22 +463,22 @@ export default function StaffDashboard() {
                 >
                   <option value="">Select item</option>
                   {stockItems.map((item) => (
-                    <option key={item.id} value={item.id}>
-                      {item.name}
+                    <option key={item.stock_item_id || item.id} value={item.stock_item_id || item.id}>
+                      {item.name || item.stock_item_name}
                     </option>
                   ))}
                 </select>
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_delivery_quantity">
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="delivery_quantity">
                   Quantity Received*
                 </label>
                 <input
-                  id="staff_delivery_quantity"
+                  id="delivery_quantity"
                   type="number"
-                  required
                   min={1}
+                  required
                   value={deliveryForm.quantity}
                   onChange={(event) =>
                     setDeliveryForm((prev) => ({ ...prev, quantity: event.target.value }))
@@ -397,25 +489,25 @@ export default function StaffDashboard() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_delivery_note">
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="delivery_note">
                   Note
                 </label>
                 <textarea
-                  id="staff_delivery_note"
+                  id="delivery_note"
                   rows={3}
                   value={deliveryForm.note}
                   onChange={(event) =>
                     setDeliveryForm((prev) => ({ ...prev, note: event.target.value }))
                   }
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
-                  placeholder="Delivery reference or remarks"
+                  placeholder="Reference or remarks"
                 />
               </div>
 
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => !deliverySubmitting && setShowDeliveryModal(false)}
+                  onClick={closeDeliveryModal}
                   className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100"
                 >
                   Cancel
@@ -433,170 +525,130 @@ export default function StaffDashboard() {
         </div>
       ) : null}
 
-      {showSalesModal ? (
+      {showSaleModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-6">
+          <div className="bg-white rounded-2xl shadow-2xl max-w-2xl w-full p-6 space-y-6">
             <div className="flex items-center justify-between">
               <h3 className="text-xl font-semibold text-gray-800">Log New Sale</h3>
               <button
                 type="button"
-                onClick={() => !salesSubmitting && setShowSalesModal(false)}
+                onClick={closeSaleModal}
                 className="text-gray-400 hover:text-gray-600"
-                aria-label="Close sales modal"
+                aria-label="Close sale modal"
               >
                 ✕
               </button>
             </div>
 
-            <form
-              className="space-y-4"
-              onSubmit={async (event) => {
-                event.preventDefault();
-                setSalesSubmitting(true);
-                try {
-                  const salesEndpoint = branchId ? `/sales?branch_id=${branchId}` : '/sales';
-
-                  const sanitizedItems = saleForm.items
-                    .filter((item) => item.product_id && item.quantity)
-                    .map((item) => ({
-                      product_id: Number(item.product_id),
-                      quantity: Number(item.quantity),
-                    }));
-
-                  if (sanitizedItems.length === 0) {
-                    throw new Error('Add at least one product to the sale.');
-                  }
-
-                  await api.post(salesEndpoint, {
-                    sale_date: saleForm.sale_date,
-                    payment_mode: saleForm.payment_mode,
-                    items: sanitizedItems,
-                  });
-                  setShowSalesModal(false);
-                  setToast({ message: 'Sale logged successfully!', variant: 'success' });
-                  await loadData();
-                } catch (err) {
-                  setToast({ message: err.message || 'Failed to log sale.', variant: 'error' });
-                } finally {
-                  setSalesSubmitting(false);
-                }
-              }}
-            >
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_sale_date">
-                  Sale Date*
-                </label>
-                <input
-                  id="staff_sale_date"
-                  type="date"
-                  required
-                  value={salesForm.sale_date}
-                  onChange={(event) => setSalesForm((prev) => ({ ...prev, sale_date: event.target.value }))}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                />
+            <form className="space-y-4" onSubmit={submitSale}>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="sale_date">
+                    Sale Date*
+                  </label>
+                  <input
+                    id="sale_date"
+                    type="date"
+                    required
+                    value={saleForm.sale_date}
+                    onChange={(event) => setSaleForm((prev) => ({ ...prev, sale_date: event.target.value }))}
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  />
+                </div>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="sale_payment_mode">
+                    Payment Mode*
+                  </label>
+                  <select
+                    id="sale_payment_mode"
+                    required
+                    value={saleForm.payment_mode}
+                    onChange={(event) =>
+                      setSaleForm((prev) => ({ ...prev, payment_mode: event.target.value }))
+                    }
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  >
+                    {PAYMENT_MODES.map((mode) => (
+                      <option key={mode} value={mode}>
+                        {mode}
+                      </option>
+                    ))}
+                  </select>
+                </div>
               </div>
 
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_payment_mode">
-                  Payment Mode*
-                </label>
-                <select
-                  id="staff_payment_mode"
-                  required
-                  value={salesForm.payment_mode}
-                  onChange={(event) =>
-                    setSalesForm((prev) => ({ ...prev, payment_mode: event.target.value }))
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="Cash">Cash</option>
-                  <option value="Card">Card</option>
-                  <option value="UPI">UPI</option>
-                  <option value="Other">Other</option>
-                </select>
-              </div>
-
-              <div className="space-y-3">
-                <p className="text-sm font-medium text-gray-700">Products Sold*</p>
+              <div className="space-y-4">
                 {saleForm.items.map((item, index) => (
-                  <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
-                    <div className="md:col-span-2">
-                      <label className="block text-xs font-semibold text-gray-600 mb-1" htmlFor={`sale_product_${index}`}>
-                        Product
+                  <div
+                    key={`sale-item-${index}`}
+                    className="grid grid-cols-1 md:grid-cols-[2fr_1fr_auto] gap-4 items-end"
+                  >
+                    <div>
+                      <label
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                        htmlFor={`sale_product_${index}`}
+                      >
+                        Product*
                       </label>
                       <select
                         id={`sale_product_${index}`}
                         required
                         value={item.product_id}
-                        onChange={(event) => {
-                          const value = event.target.value;
-                          setSaleForm((prev) => ({
-                            ...prev,
-                            items: prev.items.map((row, rowIndex) =>
-                              rowIndex === index ? { ...row, product_id: value } : row,
-                            ),
-                          }));
-                        }}
-                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        onChange={(event) =>
+                          handleSaleItemChange(index, 'product_id', event.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                       >
                         <option value="">Select product</option>
                         {products.map((product) => (
-                          <option key={product.id} value={product.id}>
-                            {product.name}
+                          <option
+                            key={product.product_id || product.id}
+                            value={product.product_id || product.id}
+                          >
+                            {product.product_name || product.name}
                           </option>
                         ))}
                       </select>
                     </div>
-                    <div className="flex items-center gap-2">
-                      <div className="flex-1">
-                        <label className="block text-xs font-semibold text-gray-600 mb-1" htmlFor={`sale_quantity_${index}`}>
-                          Qty
-                        </label>
-                        <input
-                          id={`sale_quantity_${index}`}
-                          type="number"
-                          required
-                          min={1}
-                          value={item.quantity}
-                          onChange={(event) => {
-                            const value = event.target.value;
-                            setSaleForm((prev) => ({
-                              ...prev,
-                              items: prev.items.map((row, rowIndex) =>
-                                rowIndex === index ? { ...row, quantity: value } : row,
-                              ),
-                            }));
-                          }}
-                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                          placeholder="1"
-                        />
-                      </div>
+
+                    <div>
+                      <label
+                        className="block text-sm font-medium text-gray-700 mb-1"
+                        htmlFor={`sale_quantity_${index}`}
+                      >
+                        Quantity*
+                      </label>
+                      <input
+                        id={`sale_quantity_${index}`}
+                        type="number"
+                        min={1}
+                        required
+                        value={item.quantity}
+                        onChange={(event) =>
+                          handleSaleItemChange(index, 'quantity', event.target.value)
+                        }
+                        className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                        placeholder="0"
+                      />
+                    </div>
+
+                    <div className="flex md:block justify-end">
                       <button
                         type="button"
-                        onClick={() =>
-                          setSaleForm((prev) => ({
-                            ...prev,
-                            items: prev.items.filter((_, rowIndex) => rowIndex !== index),
-                          }))
-                        }
-                        className="mt-5 inline-flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100 h-9 w-9"
-                        aria-label="Remove product"
+                        onClick={() => handleRemoveSaleRow(index)}
                         disabled={saleForm.items.length === 1}
+                        className="w-full md:w-auto md:px-4 py-3 text-sm font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50 disabled:opacity-60"
                       >
-                        ✕
+                        Remove
                       </button>
                     </div>
                   </div>
                 ))}
+
                 <button
                   type="button"
-                  onClick={() =>
-                    setSaleForm((prev) => ({
-                      ...prev,
-                      items: [...prev.items, { product_id: '', quantity: '' }],
-                    }))
-                  }
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                  onClick={handleAddSaleRow}
+                  className="inline-flex items-center gap-2 text-sm font-semibold text-blue-600 hover:text-blue-700"
                 >
                   + Add Product
                 </button>
@@ -605,25 +657,30 @@ export default function StaffDashboard() {
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => !salesSubmitting && setShowSalesModal(false)}
+                  onClick={closeSaleModal}
                   className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={salesSubmitting}
+                  disabled={saleSubmitting}
                   className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg shadow hover:bg-blue-700 disabled:opacity-60"
                 >
-                  {salesSubmitting ? 'Logging…' : 'Log Sale'}
+                  {saleSubmitting ? 'Logging…' : 'Log Sale'}
                 </button>
               </div>
             </form>
           </div>
         </div>
       ) : null}
+
       {toast ? (
-        <Toast message={toast.message} variant={toast.variant} onDismiss={() => setToast(null)} />
+        <Toast
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={() => setToast(null)}
+        />
       ) : null}
     </div>
   );

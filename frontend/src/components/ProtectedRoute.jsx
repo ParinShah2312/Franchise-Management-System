@@ -4,7 +4,14 @@ import { useMemo } from 'react';
 
 import { useAuth } from '../context/AuthContext';
 
-export default function ProtectedRoute({ allowedRoles = [], children }) {
+const ROLE_REDIRECTS = {
+  FRANCHISOR: '/admin',
+  BRANCH_OWNER: '/dashboard',
+  MANAGER: '/manager',
+  STAFF: '/staff',
+};
+
+export default function ProtectedRoute({ allowedRoles = [], allowReset = false, children }) {
   const { isAuthenticated, user, loading } = useAuth();
   const normalizedRole = (user?.role || '').toUpperCase();
   const allowedSet = useMemo(
@@ -24,6 +31,15 @@ export default function ProtectedRoute({ allowedRoles = [], children }) {
     return <Navigate to="/" replace />;
   }
 
+  if (user?.mustResetPassword && !allowReset) {
+    return <Navigate to="/reset-password" replace />;
+  }
+
+  if (!user?.mustResetPassword && allowReset) {
+    const fallback = ROLE_REDIRECTS[normalizedRole] || '/';
+    return <Navigate to={fallback} replace />;
+  }
+
   if (allowedSet.length > 0 && !allowedSet.includes(normalizedRole)) {
     return <Navigate to="/" replace />;
   }
@@ -33,5 +49,6 @@ export default function ProtectedRoute({ allowedRoles = [], children }) {
 
 ProtectedRoute.propTypes = {
   allowedRoles: PropTypes.arrayOf(PropTypes.string),
+  allowReset: PropTypes.bool,
   children: PropTypes.node.isRequired,
 };

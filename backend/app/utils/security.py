@@ -176,6 +176,9 @@ def token_required(allowed_roles: Iterable[str] | None = None):
     def decorator(func):
         @wraps(func)
         def wrapper(*args, **kwargs):
+            if request.method == "OPTIONS":
+                return current_app.make_default_options_response()
+
             token = _extract_token()
             principal, primary_role, role_name, user_type = _load_principal_from_token(token)
             

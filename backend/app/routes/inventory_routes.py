@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 from http import HTTPStatus
 
 from flask import Blueprint, jsonify, request, g
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from ..extensions import db
@@ -62,6 +63,13 @@ def _serialize_inventory(record: BranchInventory) -> dict[str, object]:
     }
 
 
+def _next_id(model, pk_column):
+    next_value = db.session.query(func.coalesce(func.max(pk_column), 0)).scalar() + 1
+    while db.session.query(model).get(next_value) is not None:
+        next_value += 1
+    return next_value
+
+
 @inventory_bp.route("", methods=["GET"])
 @token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
 def list_inventory() -> tuple[list[dict[str, object]], int]:
@@ -86,7 +94,12 @@ def _get_or_create_inventory(branch_id: int, stock_item_id: int) -> BranchInvent
     record = BranchInventory.query.filter_by(branch_id=branch_id, stock_item_id=stock_item_id).first()
     if record:
         return record
-    record = BranchInventory(branch_id=branch_id, stock_item_id=stock_item_id, quantity=Decimal("0"))
+    record = BranchInventory(
+        branch_inventory_id=_next_id(BranchInventory, BranchInventory.branch_inventory_id),
+        branch_id=branch_id,
+        stock_item_id=stock_item_id,
+        quantity=Decimal("0"),
+    )
     db.session.add(record)
     db.session.flush()
     return record
@@ -104,7 +117,9 @@ def _apply_transaction(
     record.quantity = record.quantity + quantity_delta
 
     current_user = getattr(g, "current_user", None)
+
     transaction = InventoryTransaction(
+        transaction_id=_next_id(InventoryTransaction, InventoryTransaction.transaction_id),
         branch_id=branch.branch_id,
         stock_item_id=stock_item.stock_item_id,
         transaction_type_id=transaction_type_id,
@@ -297,3 +312,91 @@ def list_stock_items() -> tuple[list[dict[str, object]], int]:
         for item in items
     ]
     return jsonify(payload), HTTPStatus.OK
+
+
+@inventory_bp.route("", methods=["POST"])
+@token_required({"BRANCH_OWNER", "MANAGER"})
+def create_branch_inventory() -> tuple[dict[str, object], int]:
+    payload = request.get_json(silent=True) or {}
+
+    branch_id_param = request.args.get("branch_id", type=int) or payload.get("branch_id")
+    result = _allowed_branch_id(branch_id_param)
+    if isinstance(result, tuple):
+        return result
+
+    stock_item_id = payload.get("stock_item_id")
+    if stock_item_id is None:
+        return jsonify({"error": "stock_item_id is required."}), HTTPStatus.BAD_REQUEST
+
+    try:
+        stock_item_id = int(stock_item_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "stock_item_id must be numeric."}), HTTPStatus.BAD_REQUEST
+
+    quantity_raw = payload.get("quantity", 0)
+    reorder_level_raw = payload.get("reorder_level", 0)
+
+    try:
+        quantity = Decimal(str(quantity_raw))
+        reorder_level = Decimal(str(reorder_level_raw))
+    except (InvalidOperation, TypeError, ValueError):
+        return jsonify({"error": "quantity and reorder_level must be numeric."}), HTTPStatus.BAD_REQUEST
+
+    if quantity < 0:
+        return jsonify({"error": "quantity cannot be negative."}), HTTPStatus.BAD_REQUEST
+
+    branch = Branch.query.get(result)
+    if not branch:
+        return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
+
+    stock_item = StockItem.query.get(stock_item_id)
+    if not stock_item or stock_item.franchise_id != branch.franchise_id:
+        return jsonify({"error": "Stock item is not available for this branch."}), HTTPStatus.BAD_REQUEST
+
+    existing = BranchInventory.query.filter_by(branch_id=result, stock_item_id=stock_item_id).first()
+    if existing:
+        return (
+            jsonify({"error": "Item already exists in inventory. Use Stock In to add quantity."}),
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    inventory = BranchInventory(
+        branch_inventory_id=_next_id(BranchInventory, BranchInventory.branch_inventory_id),
+        branch_id=result,
+        stock_item_id=stock_item_id,
+        quantity=quantity,
+        reorder_level=reorder_level,
+    )
+    db.session.add(inventory)
+    db.session.flush()
+
+    transaction_type = TransactionType.query.filter_by(type_name="ADJUSTMENT").first()
+    if not transaction_type:
+        transaction_type = TransactionType.query.filter_by(type_name="IN").first()
+        if not transaction_type:
+            db.session.rollback()
+            return jsonify({"error": "Transaction type 'ADJUSTMENT' or 'IN' is not configured."}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+    transaction = InventoryTransaction(
+        transaction_id=_next_id(InventoryTransaction, InventoryTransaction.transaction_id),
+        branch_id=result,
+        stock_item_id=stock_item_id,
+        transaction_type_id=transaction_type.transaction_type_id,
+        quantity_change=quantity,
+        note="Initial inventory load",
+        created_by_user_id=getattr(getattr(g, "current_user", None), "user_id", None),
+        created_at=datetime.utcnow(),
+    )
+    db.session.add(transaction)
+
+    db.session.commit()
+
+    return (
+        jsonify(
+            {
+                "message": "Item added to inventory",
+                "id": inventory.branch_inventory_id,
+            }
+        ),
+        HTTPStatus.CREATED,
+    )

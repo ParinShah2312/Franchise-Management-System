@@ -8,37 +8,28 @@ const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'requests', label: 'Stock Requests' },
   { id: 'staff', label: 'My Staff' },
-  { id: 'inventory', label: 'Inventory' },
 ];
 
 export default function FranchiseeDashboard() {
-  const { user, scope, getBranchId, logout } = useAuth();
+  const { user, getBranchId, logout } = useAuth();
+
   const [branchSummary, setBranchSummary] = useState(null);
-  const [inventoryItems, setInventoryItems] = useState([]);
   const [sales, setSales] = useState([]);
-  const [activeTab, setActiveTab] = useState('overview');
-  const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
-  const [showInventoryModal, setShowInventoryModal] = useState(false);
+  const [requests, setRequests] = useState([]);
+  const [staff, setStaff] = useState({ manager: null, team: [] });
+  const [requestAction, setRequestAction] = useState({ id: null, type: null });
   const [showManagerModal, setShowManagerModal] = useState(false);
   const [managerSubmitting, setManagerSubmitting] = useState(false);
-
   const [managerForm, setManagerForm] = useState({
     name: '',
     email: '',
-    phone: '',
     password: '',
+    phone: '',
   });
-  const [inventoryForm, setInventoryForm] = useState({
-    item_name: '',
-    category: 'General',
-    quantity: '',
-    reorder_level: '',
-  });
-  const [inventorySubmitting, setInventorySubmitting] = useState(false);
-  const [requests, setRequests] = useState([]);
-  const [staff, setStaff] = useState({ manager: null, team: [] });
 
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState('');
+  const [activeTab, setActiveTab] = useState('overview');
   const [toast, setToast] = useState(null);
 
   const branchId = getBranchId();
@@ -46,7 +37,6 @@ export default function FranchiseeDashboard() {
   const loadData = useCallback(async () => {
     if (!branchId) {
       setBranchSummary(null);
-      setInventoryItems([]);
       setSales([]);
       setRequests([]);
       setStaff({ manager: null, team: [] });
@@ -59,27 +49,22 @@ export default function FranchiseeDashboard() {
     setError('');
 
     try {
-      const inventoryUrl = `/inventory${branchId ? `?branch_id=${branchId}` : ''}`;
+      const metricsUrl = `/dashboard/branch/metrics${branchId ? `?branch_id=${branchId}` : ''}`;
       const salesUrl = `/sales${branchId ? `?branch_id=${branchId}` : ''}`;
       const requestsUrl = `/requests${branchId ? `?branch_id=${branchId}` : ''}`;
+      const staffUrl = `/auth/profile`;
 
-      const metricsUrl = `/dashboard/branch/metrics${branchId ? `?branch_id=${branchId}` : ''}`;
-      const [metricsRes, inventoryRes, salesRes, requestsRes, staffRes] = await Promise.allSettled([
+      const [metricsRes, salesRes, requestsRes, staffRes] = await Promise.allSettled([
         api.get(metricsUrl),
-        api.get(inventoryUrl),
         api.get(salesUrl),
         api.get(requestsUrl),
-        api.get('/auth/profile'),
+        api.get(staffUrl),
       ]);
 
       if (metricsRes.status === 'fulfilled') {
         setBranchSummary(metricsRes.value);
       } else {
         throw metricsRes.reason;
-      }
-
-      if (inventoryRes.status === 'fulfilled') {
-        setInventoryItems(Array.isArray(inventoryRes.value) ? inventoryRes.value : []);
       }
 
       if (salesRes.status === 'fulfilled') {
@@ -118,24 +103,20 @@ export default function FranchiseeDashboard() {
 
   const metrics = branchSummary || {};
 
-  const totalInventoryValue = useMemo(() => metrics.inventory_value ?? 0, [metrics]);
-
-  const totalSalesAmount = useMemo(() => metrics.revenue ?? 0, [metrics]);
-
   const renderOverview = () => (
     <div className="space-y-6">
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <p className="text-sm text-gray-500">Revenue (MTD)</p>
           <h3 className="text-xl font-semibold text-gray-800 mt-2">
-            ₹{Number(totalSalesAmount || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+            ₹{Number(metrics.revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })}
           </h3>
           <p className="text-xs text-gray-500 mt-1">Total sales recorded this month.</p>
         </div>
         <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
           <p className="text-sm text-gray-500">Inventory Value</p>
           <h3 className="text-xl font-semibold text-gray-800 mt-2">
-            ₹{Number(totalInventoryValue || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+            ₹{Number(metrics.inventory_value || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })}
           </h3>
           <p className="text-xs text-gray-500 mt-1">Based on approved stock-in transactions.</p>
         </div>
@@ -187,10 +168,12 @@ export default function FranchiseeDashboard() {
                   </td>
                 </tr>
               ) : (
-                sales.map((sale) => (
-                  <tr key={sale.id}>
+                sales.slice(0, 10).map((sale) => (
+                  <tr key={sale.sale_id || sale.id}>
                     <td className="px-4 py-3 text-sm text-gray-700">
-                      {sale.sale_date ? new Date(sale.sale_date).toLocaleDateString() : '—'}
+                      {sale.sale_datetime || sale.sale_date
+                        ? new Date(sale.sale_datetime || sale.sale_date).toLocaleString()
+                        : '—'}
                     </td>
                     <td className="px-4 py-3 text-sm text-gray-900 text-right">
                       ₹{Number(sale.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
@@ -231,12 +214,15 @@ export default function FranchiseeDashboard() {
               <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                 Status
               </th>
+              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                Actions
+              </th>
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
             {requests.length === 0 ? (
               <tr>
-                <td colSpan={3} className="px-4 py-8 text-center text-gray-500 text-sm">
+                <td colSpan={4} className="px-4 py-8 text-center text-gray-500 text-sm">
                   No stock requests yet.
                 </td>
               </tr>
@@ -256,6 +242,34 @@ export default function FranchiseeDashboard() {
                   <td className="px-4 py-3 text-sm font-medium">
                     {request.status}
                   </td>
+                  <td className="px-4 py-3 text-right text-sm">
+                    {request.status === 'PENDING' ? (
+                      <div className="flex justify-end gap-2">
+                        <button
+                          type="button"
+                          onClick={() => handleRequestAction(request.request_id, 'approve')}
+                          disabled={
+                            requestAction.id === request.request_id && requestAction.type === 'approve'
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg border border-green-200 px-3 py-1 text-xs font-semibold text-green-600 hover:bg-green-50 disabled:opacity-60"
+                        >
+                          ✓ Approve
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => handleRequestAction(request.request_id, 'reject')}
+                          disabled={
+                            requestAction.id === request.request_id && requestAction.type === 'reject'
+                          }
+                          className="inline-flex items-center gap-1 rounded-lg border border-red-200 px-3 py-1 text-xs font-semibold text-red-600 hover:bg-red-50 disabled:opacity-60"
+                        >
+                          ✕ Reject
+                        </button>
+                      </div>
+                    ) : (
+                      <span className="text-gray-400">—</span>
+                    )}
+                  </td>
                 </tr>
               ))
             )}
@@ -272,16 +286,19 @@ export default function FranchiseeDashboard() {
           <h3 className="text-lg font-semibold text-gray-800">My Staff</h3>
           <p className="text-sm text-gray-500">Manage your branch manager and support staff.</p>
         </div>
-        <button
-          type="button"
-          onClick={() => {
-            setManagerForm({ name: '', email: '', phone: '', password: '' });
-            setShowManagerModal(true);
-          }}
-          className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
-        >
-          Appoint Manager
-        </button>
+        {!staff.manager ? (
+          <button
+            type="button"
+            onClick={() => {
+              setManagerForm({ name: '', email: '', password: '', phone: '' });
+
+              setShowManagerModal(true);
+            }}
+            className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
+          >
+            Appoint Manager
+          </button>
+        ) : null}
       </div>
 
       <div className="border border-gray-200 rounded-lg">
@@ -293,7 +310,6 @@ export default function FranchiseeDashboard() {
             <div>
               <p className="text-sm font-semibold text-gray-800">{staff.manager.name}</p>
               <p className="text-sm text-gray-600">{staff.manager.email}</p>
-              <p className="text-sm text-gray-500">{staff.manager.phone}</p>
             </div>
           ) : (
             <p className="text-sm text-gray-500">No manager assigned yet. Appoint one to oversee operations.</p>
@@ -314,79 +330,10 @@ export default function FranchiseeDashboard() {
               <div key={member.user_id} className="px-4 py-3">
                 <p className="text-sm font-medium text-gray-800">{member.name}</p>
                 <p className="text-sm text-gray-600">{member.email}</p>
-                <p className="text-sm text-gray-500">{member.phone}</p>
               </div>
             ))
           )}
         </div>
-      </div>
-    </div>
-  );
-
-  const renderInventory = () => (
-    <div className="bg-white border border-gray-200 rounded-xl">
-      <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
-        <h3 className="text-lg font-semibold text-gray-800">Inventory Items</h3>
-        <div className="flex items-center gap-3">
-          <button
-            type="button"
-            onClick={loadData}
-            className="text-sm px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50"
-          >
-            Refresh
-          </button>
-          <button
-            type="button"
-            onClick={() => {
-              setInventoryForm({ item_name: '', category: 'General', quantity: '', reorder_level: '' });
-              setShowInventoryModal(true);
-            }}
-            className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
-          >
-            Add Item
-          </button>
-        </div>
-      </div>
-
-      <div className="overflow-x-auto">
-        <table className="min-w-full divide-y divide-gray-200">
-          <thead className="bg-gray-50">
-            <tr>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Item
-              </th>
-              <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Category
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Quantity
-              </th>
-              <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
-                Reorder Level
-              </th>
-            </tr>
-          </thead>
-          <tbody className="bg-white divide-y divide-gray-200">
-            {inventoryItems.length === 0 ? (
-              <tr>
-                <td colSpan={4} className="px-4 py-8 text-center text-gray-500 text-sm">
-                  No inventory items recorded yet.
-                </td>
-              </tr>
-            ) : (
-              inventoryItems.map((item) => (
-                <tr key={item.id}>
-                  <td className="px-4 py-3 text-sm text-gray-700">{item.item_name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{item.category || '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900 text-right">{item.quantity}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500 text-right">
-                    {item.reorder_level ?? '—'}
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
       </div>
     </div>
   );
@@ -397,11 +344,25 @@ export default function FranchiseeDashboard() {
         return renderRequests();
       case 'staff':
         return renderStaff();
-      case 'inventory':
-        return renderInventory();
       case 'overview':
       default:
         return renderOverview();
+    }
+  };
+
+  const handleRequestAction = async (requestId, action) => {
+    setRequestAction({ id: requestId, type: action });
+    try {
+      await api.put(`/requests/${requestId}/${action}`);
+      setToast({
+        message: `Request ${action === 'approve' ? 'approved' : 'rejected'} successfully.`,
+        variant: 'success',
+      });
+      await loadData();
+    } catch (err) {
+      setToast({ message: err.message || 'Failed to update request.', variant: 'error' });
+    } finally {
+      setRequestAction({ id: null, type: null });
     }
   };
 
@@ -488,142 +449,6 @@ export default function FranchiseeDashboard() {
         )}
       </main>
 
-      {showInventoryModal ? (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-          <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-6">
-            <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-800">Add Inventory Item</h3>
-              <button
-                type="button"
-                onClick={() => !inventorySubmitting && setShowInventoryModal(false)}
-                className="text-gray-400 hover:text-gray-600"
-                aria-label="Close inventory modal"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form
-              className="space-y-4"
-              onSubmit={async (event) => {
-                event.preventDefault();
-                setInventorySubmitting(true);
-                try {
-                  const payload = {
-                    item_name: inventoryForm.item_name.trim(),
-                    category: inventoryForm.category,
-                    quantity: Number(inventoryForm.quantity),
-                    reorder_level: Number(inventoryForm.reorder_level),
-                  };
-
-                  const inventoryEndpoint = branchId ? `/inventory?branch_id=${branchId}` : '/inventory';
-                  await api.post(inventoryEndpoint, payload);
-
-                  setShowInventoryModal(false);
-                  setToast({ message: 'Inventory item added successfully!', variant: 'success' });
-                  await loadData();
-                } catch (err) {
-                  setToast({ message: err.message || 'Failed to add inventory item.', variant: 'error' });
-                } finally {
-                  setInventorySubmitting(false);
-                }
-              }}
-            >
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="inventory_item_name">
-                  Item Name*
-                </label>
-                <input
-                  id="inventory_item_name"
-                  type="text"
-                  required
-                  value={inventoryForm.item_name}
-                  onChange={(event) =>
-                    setInventoryForm((prev) => ({ ...prev, item_name: event.target.value }))
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Espresso Beans"
-                />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="inventory_category">
-                  Category
-                </label>
-                <select
-                  id="inventory_category"
-                  value={inventoryForm.category}
-                  onChange={(event) =>
-                    setInventoryForm((prev) => ({ ...prev, category: event.target.value }))
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="General">General</option>
-                  <option value="Dairy">Dairy</option>
-                  <option value="Edibles">Edibles</option>
-                  <option value="Beverages">Beverages</option>
-                  <option value="Cleaning Supplies">Cleaning Supplies</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="inventory_quantity">
-                    Quantity*
-                  </label>
-                  <input
-                    id="inventory_quantity"
-                    type="number"
-                    required
-                    min={0}
-                    value={inventoryForm.quantity}
-                    onChange={(event) =>
-                      setInventoryForm((prev) => ({ ...prev, quantity: event.target.value }))
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="inventory_reorder_level">
-                    Reorder Level*
-                  </label>
-                  <input
-                    id="inventory_reorder_level"
-                    type="number"
-                    required
-                    min={0}
-                    value={inventoryForm.reorder_level}
-                    onChange={(event) =>
-                      setInventoryForm((prev) => ({ ...prev, reorder_level: event.target.value }))
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="0"
-                  />
-                </div>
-              </div>
-
-              <div className="flex justify-end gap-3">
-                <button
-                  type="button"
-                  onClick={() => !inventorySubmitting && setShowInventoryModal(false)}
-                  className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={inventorySubmitting}
-                  className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg shadow hover:bg-blue-700 disabled:opacity-60"
-                >
-                  {inventorySubmitting ? 'Adding…' : 'Add Item'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      ) : null}
-
       {showManagerModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-6">
@@ -648,11 +473,12 @@ export default function FranchiseeDashboard() {
                   await api.post('/auth/register-manager', {
                     name: managerForm.name.trim(),
                     email: managerForm.email.trim(),
-                    phone: managerForm.phone.trim(),
                     password: managerForm.password,
+                    phone: managerForm.phone.trim(),
                     branch_id: branchId,
                   });
                   setShowManagerModal(false);
+
                   setToast({ message: 'Manager appointed successfully!', variant: 'success' });
                   await loadData();
                 } catch (err) {
@@ -662,36 +488,19 @@ export default function FranchiseeDashboard() {
                 }
               }}
             >
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700" htmlFor="manager_name">
-                    Full Name*
-                  </label>
-                  <input
-                    id="manager_name"
-                    type="text"
-                    required
-                    value={managerForm.name}
-                    onChange={(event) => setManagerForm((prev) => ({ ...prev, name: event.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="Riya Sharma"
-                  />
-                </div>
-                <div className="space-y-1">
-                  <label className="block text-sm font-medium text-gray-700" htmlFor="manager_phone">
-                    Phone*
-                  </label>
-                  <input
-                    id="manager_phone"
-                    type="tel"
-                    required
-                    pattern="[0-9]{10}"
-                    value={managerForm.phone}
-                    onChange={(event) => setManagerForm((prev) => ({ ...prev, phone: event.target.value }))}
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="9876543210"
-                  />
-                </div>
+              <div className="space-y-1">
+                <label className="block text-sm font-medium text-gray-700" htmlFor="manager_name">
+                  Full Name*
+                </label>
+                <input
+                  id="manager_name"
+                  type="text"
+                  required
+                  value={managerForm.name}
+                  onChange={(event) => setManagerForm((prev) => ({ ...prev, name: event.target.value }))}
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="Riya Sharma"
+                />
               </div>
 
               <div className="space-y-1">

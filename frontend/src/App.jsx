@@ -10,6 +10,7 @@ import FranchiseeDashboard from './pages/FranchiseeDashboard';
 import ManagerDashboard from './pages/ManagerDashboard';
 import Home from './pages/Home';
 import Login from './pages/Login';
+import ResetPassword from './pages/ResetPassword';
 import RegisterFranchise from './pages/RegisterFranchise';
 import RegisterFranchisor from './pages/RegisterFranchisor';
 import SignupSelection from './pages/SignupSelection';
@@ -25,6 +26,14 @@ export default function App() {
             <Route path="features" element={<Features />} />
             <Route path="contact" element={<Contact />} />
             <Route path="login" element={<Login />} />
+            <Route
+              path="reset-password"
+              element={
+                <ProtectedRoute allowReset>
+                  <ResetPassword />
+                </ProtectedRoute>
+              }
+            />
             <Route path="register" element={<SignupSelection />} />
             <Route path="register/franchise" element={<RegisterFranchise />} />
             <Route path="register/franchisor" element={<RegisterFranchisor />} />

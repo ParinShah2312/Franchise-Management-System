@@ -18,6 +18,7 @@ from app.models import (
     Franchisor,
     Product,
     ProductCategory,
+    ProductIngredient,
     RequestStatus,
     Role,
     Sale,
@@ -345,6 +346,36 @@ def seed_database() -> None:
         sale.total_amount = burger_line_total + shake_line_total
         db.session.commit()
         print("[step6] Inventory stocked and sample sale captured.\n")
+
+        # ------------------------------------------------------------------
+        # Step 7: Product recipes (ingredients per product)
+        # ------------------------------------------------------------------
+        print("[step7] Linking products to ingredient recipes...")
+
+        product_ingredients = [
+            ProductIngredient(
+                ingredient_id=1,
+                product_id=relay_burger.product_id,
+                stock_item_id=bun_item.stock_item_id,
+                quantity_required=Decimal("1"),
+            ),
+            ProductIngredient(
+                ingredient_id=2,
+                product_id=relay_burger.product_id,
+                stock_item_id=patty_item.stock_item_id,
+                quantity_required=Decimal("1"),
+            ),
+            ProductIngredient(
+                ingredient_id=3,
+                product_id=relay_shake.product_id,
+                stock_item_id=milk_item.stock_item_id,
+                quantity_required=Decimal("0.3"),
+            ),
+        ]
+
+        db.session.add_all(product_ingredients)
+        db.session.commit()
+        print("[step7] Product recipes seeded.\n")
 
         print("[done] Relay franchise seed data ready!")
 

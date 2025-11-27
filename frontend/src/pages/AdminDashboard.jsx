@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
 import { api, API_ORIGIN } from '../api';
 import { useAuth } from '../context/AuthContext';
+import Toast from '../components/Toast';
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
@@ -171,13 +172,16 @@ export default function AdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [toast, setToast] = useState(null);
 
   const [metrics, setMetrics] = useState(null);
   const [network, setNetwork] = useState([]);
   const [applications, setApplications] = useState([]);
+  const [menuUploading, setMenuUploading] = useState(false);
 
   const [modalApplication, setModalApplication] = useState(null);
   const [actionState, setActionState] = useState({ id: null, type: null });
+  const fileInputRef = useRef(null);
 
   const formatCurrency = (value) => {
     const numericValue = Number(value) || 0;
@@ -210,7 +214,9 @@ export default function AdminDashboard() {
       setNetwork(Array.isArray(networkResponse) ? networkResponse : []);
       setApplications(Array.isArray(applicationsResponse) ? applicationsResponse : []);
     } catch (err) {
-      setError(err.message || 'Unable to load dashboard data.');
+      const message = err.message || 'Unable to load dashboard data.';
+      setError(message);
+      setToast({ message, variant: 'error' });
     } finally {
       setLoading(false);
     }
@@ -281,6 +287,46 @@ export default function AdminDashboard() {
     );
   }, [network]);
 
+  const primaryFranchise = useMemo(() => {
+    if (!Array.isArray(network) || network.length === 0) return null;
+    return network[0];
+  }, [network]);
+
+  const handleMenuButtonClick = () => {
+    if (!primaryFranchise) {
+      setToast({ message: 'No franchise found to upload a menu for.', variant: 'error' });
+      return;
+    }
+    fileInputRef.current?.click();
+  };
+
+  const uploadMenuFile = async (file) => {
+    if (!file || !primaryFranchise) return;
+
+    const formData = new FormData();
+    formData.append('menu_file', file);
+
+    setMenuUploading(true);
+
+    try {
+      await api.post(`/franchises/${primaryFranchise.franchise_id}/menu`, formData);
+      setToast({ message: 'Menu uploaded successfully!', variant: 'success' });
+      await fetchDashboard();
+    } catch (err) {
+      setToast({ message: err.message || 'Failed to upload menu.', variant: 'error' });
+    } finally {
+      setMenuUploading(false);
+    }
+  };
+
+  const handleMenuFileChange = (event) => {
+    const file = event.target.files?.[0];
+    if (file) {
+      uploadMenuFile(file);
+    }
+    event.target.value = '';
+  };
+
   const openApplication = (application) => {
     setModalApplication(application);
   };
@@ -288,25 +334,62 @@ export default function AdminDashboard() {
   const closeModal = () => setModalApplication(null);
 
   const overviewContent = (
-    <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
-      <StatCard
-        title="Total revenue"
-        helper="Lifetime branch sales"
-        value={formatCurrency(metrics?.revenue ?? 0)}
-        accent="success"
-      />
-      <StatCard
-        title="Active branches"
-        helper="Currently open locations"
-        value={metrics?.branches ?? 0}
-        accent="primary"
-      />
-      <StatCard
-        title="Pending applications"
-        helper="Awaiting approval"
-        value={metrics?.pending_apps ?? 0}
-        accent="neutral"
-      />
+    <div className="space-y-6">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
+        <StatCard
+          title="Total revenue"
+          helper="Lifetime branch sales"
+          value={formatCurrency(metrics?.revenue ?? 0)}
+          accent="success"
+        />
+        <StatCard
+          title="Active branches"
+          helper="Currently open locations"
+          value={metrics?.branches ?? 0}
+          accent="primary"
+        />
+        <StatCard
+          title="Pending applications"
+          helper="Awaiting approval"
+          value={metrics?.pending_apps ?? 0}
+          accent="neutral"
+        />
+      </div>
+
+      <section className="card">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Menu management</h2>
+            <p className="text-sm text-gray-500">
+              Upload a PDF or image of the latest franchise menu for all branches to access.
+            </p>
+          </div>
+          <button
+            type="button"
+            onClick={handleMenuButtonClick}
+            disabled={menuUploading || !primaryFranchise}
+            className={`btn-primary ${menuUploading || !primaryFranchise ? 'opacity-70 cursor-not-allowed' : ''}`}
+          >
+            {menuUploading ? 'Uploading…' : 'Upload menu'}
+          </button>
+        </div>
+
+        <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-600">
+          <span className="font-medium text-gray-700">Current menu:</span>
+          {primaryFranchise?.menu_file_url ? (
+            <a
+              href={`${API_ORIGIN}${primaryFranchise.menu_file_url}`}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 font-semibold text-blue-700 transition hover:bg-blue-100"
+            >
+              📄 View menu
+            </a>
+          ) : (
+            <span className="text-gray-500">No menu uploaded yet.</span>
+          )}
+        </div>
+      </section>
     </div>
   );
 
@@ -491,6 +574,14 @@ export default function AdminDashboard() {
         <div className="space-y-8">{renderTabContent()}</div>
       </main>
 
+      <input
+        ref={fileInputRef}
+        type="file"
+        accept=".pdf,.png,.jpg,.jpeg"
+        className="hidden"
+        onChange={handleMenuFileChange}
+      />
+
       <ApplicationModal
         application={modalApplication}
         onClose={closeModal}
@@ -498,6 +589,14 @@ export default function AdminDashboard() {
         onReject={handleReject}
         actionState={actionState}
       />
+
+      {toast ? (
+        <Toast
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={() => setToast(null)}
+        />
+      ) : null}
     </div>
   );
 }

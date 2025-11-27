@@ -78,7 +78,19 @@ def _get_or_create_inventory(branch_id: int, stock_item_id: int) -> BranchInvent
     if record:
         return record
 
-    record = BranchInventory(branch_id=branch_id, stock_item_id=stock_item_id, quantity=Decimal("0"))
+    next_inventory_id = (
+        db.session.query(func.coalesce(func.max(BranchInventory.branch_inventory_id), 0)).scalar() + 1
+    )
+
+    while BranchInventory.query.get(next_inventory_id) is not None:
+        next_inventory_id += 1
+
+    record = BranchInventory(
+        branch_inventory_id=next_inventory_id,
+        branch_id=branch_id,
+        stock_item_id=stock_item_id,
+        quantity=Decimal("0"),
+    )
     db.session.add(record)
     db.session.flush()
     return record
@@ -293,12 +305,20 @@ def approve_request(request_id: int) -> tuple[dict[str, object], int]:
 
     current_user = getattr(g, "current_user", None)
 
+    next_transaction_id = (
+        db.session.query(func.coalesce(func.max(InventoryTransaction.transaction_id), 0)).scalar() + 1
+    )
+
     for item in record.items:
         inventory_record = _get_or_create_inventory(branch.branch_id, item.stock_item_id)
         inventory_record.quantity = inventory_record.quantity + item.requested_quantity
 
+        while InventoryTransaction.query.get(next_transaction_id) is not None:
+            next_transaction_id += 1
+
         db.session.add(
             InventoryTransaction(
+                transaction_id=next_transaction_id,
                 branch_id=branch.branch_id,
                 stock_item_id=item.stock_item_id,
                 transaction_type_id=transaction_type_id,
@@ -310,6 +330,8 @@ def approve_request(request_id: int) -> tuple[dict[str, object], int]:
                 created_at=datetime.utcnow(),
             )
         )
+
+        next_transaction_id += 1
 
     record.status_id = approved_status_id
     record.approved_by_user_id = current_user.user_id if current_user else None

@@ -199,6 +199,7 @@ def login() -> tuple[dict[str, object], int]:
                         "id": franchisor.franchisor_id,
                         "name": franchisor.organization_name,
                         "email": franchisor.email,
+                        "must_reset_password": False,
                     },
                     "role": "FRANCHISOR",
                     "scope": {"type": "GLOBAL", "id": None},
@@ -228,6 +229,7 @@ def login() -> tuple[dict[str, object], int]:
                     "id": user.user_id,
                     "name": user.name,
                     "email": user.email,
+                    "must_reset_password": user.must_reset_password,
                 },
                 "role": user_role.role.name,
                 "scope": {
@@ -380,100 +382,6 @@ def register_franchisee() -> tuple[dict[str, object], int]:
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
-    saved_file_path: str | None = stored_path
-
-    next_user_id = (
-        db.session.query(db.func.coalesce(db.func.max(User.user_id), 0)).scalar() + 1
-    )
-
-    next_application_id = (
-        db.session.query(db.func.coalesce(db.func.max(FranchiseApplication.application_id), 0)).scalar()
-        + 1
-    )
-
-    next_branch_id = (
-        db.session.query(db.func.coalesce(db.func.max(Branch.branch_id), 0)).scalar() + 1
-    )
-
-    try:
-        user = User(
-            user_id=next_user_id,
-            name=name,
-            email=email,
-            phone=sanitized_phone,
-            password_hash=hash_password(password),
-            is_active=True,
-        )
-        db.session.add(user)
-        db.session.flush()
-
-        location_prefix = (proposed_location.split(",")[0].strip() if proposed_location else "").title()
-        branch_name_suffix = location_prefix or proposed_location or "New Branch"
-        branch_name = f"{franchise.name} - {branch_name_suffix}" if franchise.name else branch_name_suffix
-        branch_code = f"BR-{next_branch_id}-{datetime.utcnow().strftime('%y%m%d%H%M%S')}"
-
-        branch = Branch(
-            branch_id=next_branch_id,
-            franchise_id=franchise.franchise_id,
-            name=branch_name,
-            code=branch_code,
-            branch_owner_user_id=user.user_id,
-            status_id=branch_status.status_id,
-        )
-        db.session.add(branch)
-        db.session.flush()
-
-        application = FranchiseApplication(
-            application_id=next_application_id,
-            franchise_id=franchise.franchise_id,
-            branch_owner_user_id=user.user_id,
-            proposed_location=proposed_location,
-            business_experience=experience_text,
-            reason=reason_text,
-            investment_capacity=investment_capacity,
-            status_id=status.status_id,
-            document_path=relative_path,
-        )
-        db.session.add(application)
-
-        db.session.add(
-            UserRole(
-                user_id=user.user_id,
-                role_id=owner_role.role_id,
-                scope_type="BRANCH",
-                scope_id=branch.branch_id,
-            )
-        )
-
-        db.session.commit()
-    except IntegrityError as exc:
-        db.session.rollback()
-        if saved_file_path and os.path.exists(saved_file_path):
-            os.remove(saved_file_path)
-        if User.query.filter_by(email=email).first() or Franchisor.query.filter_by(email=email).first():
-            return jsonify({"error": "Email is already registered."}), HTTPStatus.CONFLICT
-        if User.query.filter_by(phone=sanitized_phone).first() or Franchisor.query.filter_by(phone=sanitized_phone).first():
-            return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
-        current_app.logger.warning(
-            "register_franchisee integrity error: %s",
-            getattr(exc, "orig", exc),
-        )
-        return (
-            jsonify({"error": "Unable to submit application due to a data conflict."}),
-            HTTPStatus.CONFLICT,
-        )
-    except Exception as exc:  # pragma: no cover
-        db.session.rollback()
-        if saved_file_path and os.path.exists(saved_file_path):
-            os.remove(saved_file_path)
-        current_app.logger.exception("Failed to submit franchise application: %s", exc)
-        return (
-            jsonify({"error": "Unable to submit application at this time."}),
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-
-    return jsonify({"message": "Application Submitted successfully."}), HTTPStatus.CREATED
-
 
 @auth_bp.route("/register-manager", methods=["POST"])
 @token_required({"BRANCH_OWNER"})
@@ -484,21 +392,13 @@ def register_manager() -> tuple[dict[str, object], int]:
     name = (payload.get("name") or "").strip()
     email = (payload.get("email") or "").strip().lower()
     password = payload.get("password") or ""
-    phone_raw = (payload.get("phone") or "").strip()
     branch_id_raw = payload.get("branch_id")
 
-    if not all([name, email, password, phone_raw]):
+    if not all([name, email, password]):
         return jsonify({"error": "Missing required fields."}), HTTPStatus.BAD_REQUEST
 
-    sanitized_phone = "".join(filter(str.isdigit, phone_raw))
-    if len(sanitized_phone) != 10:
-        return jsonify({"error": "Phone must be a 10 digit number."}), HTTPStatus.BAD_REQUEST
-
-    if User.query.filter_by(email=email).first():
-        return jsonify({"error": "Email is already registered."}), HTTPStatus.CONFLICT
-
-    if User.query.filter_by(phone=sanitized_phone).first():
-        return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
+    if len(password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters long."}), HTTPStatus.BAD_REQUEST
 
     branch_id_param: int | None = None
     if branch_id_raw is not None:
@@ -514,19 +414,41 @@ def register_manager() -> tuple[dict[str, object], int]:
     if branch.status_id != 1:
         return jsonify({"error": "Branch is not active."}), HTTPStatus.BAD_REQUEST
 
+    if branch.manager_user_id:
+        return jsonify({"error": "Manager already appointed."}), HTTPStatus.BAD_REQUEST
+
     next_user_id = (
         db.session.query(db.func.coalesce(db.func.max(User.user_id), 0)).scalar() + 1
     )
 
     try:
+        phone_raw = (payload.get("phone") or "").strip()
+        sanitized_phone = "".join(filter(str.isdigit, phone_raw)) if phone_raw else None
+
+        if sanitized_phone and len(sanitized_phone) != 10:
+            return jsonify({"error": "Phone must be a 10 digit number."}), HTTPStatus.BAD_REQUEST
+
+        if sanitized_phone and User.query.filter_by(phone=sanitized_phone).first():
+            return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
+
+        if sanitized_phone:
+            assigned_phone = sanitized_phone
+        else:
+            assigned_phone = f"{next_user_id:010d}"
+            while User.query.filter_by(phone=assigned_phone).first():
+                next_user_id += 1
+                assigned_phone = f"{next_user_id:010d}"
+
         user = User(
             user_id=next_user_id,
             name=name,
             email=email,
-            phone=sanitized_phone,
+            phone=assigned_phone,
             password_hash=hash_password(password),
             is_active=True,
+            must_reset_password=True,
         )
+
         db.session.add(user)
         db.session.flush()
 
@@ -555,7 +477,39 @@ def register_manager() -> tuple[dict[str, object], int]:
         current_app.logger.exception("Failed to register manager: %s", exc)
         return jsonify({"error": "Unable to register manager."}), HTTPStatus.INTERNAL_SERVER_ERROR
 
-    return jsonify({"message": "Manager registered successfully."}), HTTPStatus.CREATED
+    return jsonify({"message": "Manager registered successfully. Temporary password issued."}), HTTPStatus.CREATED
+
+
+@auth_bp.route("/reset-password", methods=["POST"])
+@token_required()
+def reset_password() -> tuple[dict[str, object], int]:
+    payload = request.get_json(silent=True) or {}
+    new_password = (payload.get("new_password") or "").strip()
+    confirm_password = (payload.get("confirm_password") or "").strip()
+
+    if not new_password or not confirm_password:
+        return jsonify({"error": "Both password fields are required."}), HTTPStatus.BAD_REQUEST
+
+    if new_password != confirm_password:
+        return jsonify({"error": "Passwords do not match."}), HTTPStatus.BAD_REQUEST
+
+    if len(new_password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters long."}), HTTPStatus.BAD_REQUEST
+
+    current_user = getattr(g, "current_user", None)
+    if not current_user:
+        return jsonify({"error": "User context missing."}), HTTPStatus.UNAUTHORIZED
+
+    try:
+        current_user.password_hash = hash_password(new_password)
+        current_user.must_reset_password = False
+        db.session.commit()
+    except Exception as exc:  # pragma: no cover
+        db.session.rollback()
+        current_app.logger.exception("Failed to reset password: %s", exc)
+        return jsonify({"error": "Unable to reset password."}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+    return jsonify({"message": "Password updated successfully."}), HTTPStatus.OK
 
 
 @auth_bp.route("/register-staff", methods=["POST"])
@@ -600,6 +554,7 @@ def register_staff() -> tuple[dict[str, object], int]:
             phone=sanitized_phone,
             password_hash=hash_password(password),
             is_active=True,
+            must_reset_password=True,
         )
         db.session.add(user)
         db.session.flush()

@@ -113,7 +113,7 @@ class Franchise(TimestampMixin, db.Model):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
-    # ❌ REMOVED STATUS (Not in PDF Schema)
+    menu_file_path: Mapped[str | None] = mapped_column(String(255))
 
     franchisor: Mapped["Franchisor"] = relationship("Franchisor", back_populates="franchises")
     branches: Mapped[list["Branch"]] = relationship(
@@ -355,6 +355,9 @@ class Product(TimestampMixin, db.Model):
     franchise: Mapped["Franchise"] = relationship("Franchise", back_populates="products")
     category: Mapped["ProductCategory"] = relationship("ProductCategory", back_populates="products")
     sale_items: Mapped[list["SaleItem"]] = relationship("SaleItem", back_populates="product")
+    ingredients: Mapped[list["ProductIngredient"]] = relationship(
+        "ProductIngredient", back_populates="product", cascade="all, delete-orphan"
+    )
 
 
 class StockItem(TimestampMixin, db.Model):
@@ -379,6 +382,9 @@ class StockItem(TimestampMixin, db.Model):
     )
     purchase_request_items: Mapped[list["StockPurchaseRequestItem"]] = relationship(
         "StockPurchaseRequestItem", back_populates="stock_item", cascade="all, delete-orphan"
+    )
+    product_ingredients: Mapped[list["ProductIngredient"]] = relationship(
+        "ProductIngredient", back_populates="stock_item", cascade="all, delete-orphan"
     )
 
 
@@ -449,6 +455,22 @@ class SaleItem(db.Model):
     inventory_transactions: Mapped[list["InventoryTransaction"]] = relationship(
         "InventoryTransaction", back_populates="related_sale_item"
     )
+
+
+class ProductIngredient(TimestampMixin, db.Model):
+    __tablename__ = "product_ingredients"
+
+    ingredient_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.product_id", ondelete="CASCADE"), nullable=False
+    )
+    stock_item_id: Mapped[int] = mapped_column(
+        ForeignKey("stock_items.stock_item_id", ondelete="CASCADE"), nullable=False
+    )
+    quantity_required: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False)
+
+    product: Mapped["Product"] = relationship("Product", back_populates="ingredients")
+    stock_item: Mapped["StockItem"] = relationship("StockItem", back_populates="product_ingredients")
 
 
 class InventoryTransaction(db.Model):
@@ -642,6 +664,7 @@ __all__ = [
     "ProductCategory",
     "Product",
     "StockItem",
+    "ProductIngredient",
     "BranchInventory",
     "Sale",
     "SaleItem",
