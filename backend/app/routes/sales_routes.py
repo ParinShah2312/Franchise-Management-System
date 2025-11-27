@@ -10,17 +10,7 @@ from flask import Blueprint, jsonify, request, g
 from sqlalchemy.orm import joinedload
 
 from ..extensions import db
-from ..models import (
-    Branch,
-    BranchInventory,
-    InventoryTransaction,
-    Product,
-    Sale,
-    SaleItem,
-    SaleStatus,
-    StockItem,
-    TransactionType,
-)
+from ..models import Branch, Product, Sale, SaleItem, SaleStatus
 from ..utils.security import token_required
 
 
@@ -106,63 +96,6 @@ def _sale_status_paid_id() -> int | tuple[dict[str, object], int]:
     return status.sale_status_id
 
 
-def _get_transaction_type_id(code: str) -> int | tuple[dict[str, object], int]:
-    transaction_type = TransactionType.query.filter_by(code=code).first()
-    if not transaction_type:
-        return (
-            jsonify({"error": f"Transaction type '{code}' is not configured."}),
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-    return transaction_type.transaction_type_id
-
-
-def _maybe_deduct_inventory(
-    *,
-    branch: Branch,
-    sale_item: SaleItem,
-    quantity: int,
-    transaction_type_id: int,
-) -> None:
-    product = sale_item.product
-    if not product:
-        return
-
-    stock_item = (
-        StockItem.query.filter_by(franchise_id=branch.franchise_id, name=product.name).first()
-    )
-    if not stock_item:
-        return
-
-    inventory_record = BranchInventory.query.filter_by(
-        branch_id=branch.branch_id, stock_item_id=stock_item.stock_item_id
-    ).first()
-    if not inventory_record:
-        inventory_record = BranchInventory(
-            branch_id=branch.branch_id,
-            stock_item_id=stock_item.stock_item_id,
-            quantity=Decimal("0"),
-        )
-        db.session.add(inventory_record)
-        db.session.flush()
-
-    quantity_decimal = Decimal(quantity)
-    inventory_record.quantity = inventory_record.quantity - quantity_decimal
-
-    current_user = getattr(g, "current_user", None)
-    db.session.add(
-        InventoryTransaction(
-            branch_id=branch.branch_id,
-            stock_item_id=stock_item.stock_item_id,
-            transaction_type_id=transaction_type_id,
-            quantity_change=quantity_decimal * Decimal("-1"),
-            related_sale_item_id=sale_item.sale_item_id,
-            created_by_user_id=current_user.user_id if current_user else None,
-            created_at=datetime.utcnow(),
-            note=f"Auto deduction for sale {sale_item.sale_id}",
-        )
-    )
-
-
 @sales_bp.route("", methods=["POST"])
 @token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
 def create_sale() -> tuple[dict[str, object], int]:
@@ -208,10 +141,6 @@ def create_sale() -> tuple[dict[str, object], int]:
     db.session.add(sale)
     db.session.flush()
 
-    out_transaction_type_id = _get_transaction_type_id("OUT")
-    if isinstance(out_transaction_type_id, tuple):
-        return out_transaction_type_id
-
     running_total = Decimal("0")
     sale_item_records: list[tuple[SaleItem, Product, int]] = []
 
@@ -248,14 +177,6 @@ def create_sale() -> tuple[dict[str, object], int]:
 
     sale.total_amount = running_total
 
-    for sale_item, _, quantity in sale_item_records:
-        _maybe_deduct_inventory(
-            branch=branch,
-            sale_item=sale_item,
-            quantity=quantity,
-            transaction_type_id=out_transaction_type_id,
-        )
-
     db.session.commit()
 
     sale = Sale.query.options(joinedload(Sale.items).joinedload(SaleItem.product)).get(sale.sale_id)
@@ -289,3 +210,33 @@ def list_sales() -> tuple[list[dict[str, object]], int]:
 
     records = query.all()
     return jsonify([_serialize_sale(record) for record in records]), HTTPStatus.OK
+
+
+@sales_bp.route("/products", methods=["GET"])
+@token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
+def list_products() -> tuple[list[dict[str, object]], int]:
+    branch_id_param = request.args.get("branch_id", type=int)
+    branch_result = _ensure_branch_scope(branch_id_param)
+    if isinstance(branch_result, tuple):
+        return branch_result
+
+    branch = Branch.query.get(branch_result)
+    if not branch:
+        return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
+
+    products = (
+        Product.query.filter_by(franchise_id=branch.franchise_id, is_active=True)
+        .order_by(Product.name.asc())
+        .all()
+    )
+
+    payload = [
+        {
+            "id": product.product_id,
+            "name": product.name,
+            "base_price": float(product.base_price),
+        }
+        for product in products
+    ]
+
+    return jsonify(payload), HTTPStatus.OK

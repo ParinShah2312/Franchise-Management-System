@@ -11,11 +11,15 @@ from sqlalchemy import func
 from ..extensions import db
 from ..models import (
     ApplicationStatus,
-    Branch,
     BranchStatus,
+    Branch,
     Franchise,
     FranchiseApplication,
+    InventoryTransaction,
     Sale,
+    StockPurchaseRequest,
+    StockPurchaseRequestItem,
+    TransactionType,
 )
 from ..utils.security import token_required
 
@@ -43,6 +47,112 @@ def _month_bounds(today: date) -> tuple[date, date]:
 
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
+
+
+@dashboard_bp.route("/franchisor/metrics", methods=["GET"])
+@token_required({"FRANCHISOR"})
+def get_franchisor_metrics() -> tuple[dict[str, object], int]:
+    """Return high-level metrics required for the franchisor dashboard."""
+
+    total_revenue = (
+        db.session.query(func.coalesce(func.sum(Sale.total_amount), 0))
+        .filter(Sale.status_id == 1)
+        .scalar()
+        or 0
+    )
+
+    active_branches = Branch.query.filter(Branch.status_id == 1).count()
+    pending_applications = FranchiseApplication.query.filter(FranchiseApplication.status_id == 1).count()
+
+    payload = {
+        "revenue": _floatify(total_revenue),
+        "branches": active_branches,
+        "pending_apps": pending_applications,
+    }
+
+    return jsonify(payload), HTTPStatus.OK
+
+
+@dashboard_bp.route("/branch/metrics", methods=["GET"])
+@token_required({"BRANCH_OWNER", "MANAGER"})
+def get_branch_metrics() -> tuple[dict[str, object], int]:
+    """Aggregate metrics for a branch owner scoped to their branch."""
+
+    from flask import g, request
+
+    branch_id_param = request.args.get("branch_id", type=int)
+    role = getattr(g, "current_role", None)
+
+    if not role or role.scope_type != "BRANCH":
+        return jsonify({"error": "Branch-scoped role required."}), HTTPStatus.FORBIDDEN
+
+    branch_id = role.scope_id
+    if branch_id_param is not None and branch_id_param != branch_id:
+        return jsonify({"error": "Unauthorized branch access."}), HTTPStatus.FORBIDDEN
+
+    total_revenue = (
+        db.session.query(func.coalesce(func.sum(Sale.total_amount), 0))
+        .filter(Sale.branch_id == branch_id)
+        .scalar()
+        or 0
+    )
+
+    inventory_value = (
+        db.session.query(
+            func.coalesce(
+                func.sum(
+                    InventoryTransaction.quantity_change
+                    * func.coalesce(InventoryTransaction.unit_cost, 0)
+                ),
+                0,
+            )
+        )
+        .join(TransactionType, InventoryTransaction.transaction_type_id == TransactionType.transaction_type_id)
+        .filter(
+            InventoryTransaction.branch_id == branch_id,
+            TransactionType.type_name == "IN",
+        )
+        .scalar()
+        or 0
+    )
+
+    pending_requests = (
+        db.session.query(func.count(StockPurchaseRequest.request_id))
+        .filter(
+            StockPurchaseRequest.branch_id == branch_id,
+            StockPurchaseRequest.status.has(status_name="PENDING"),
+        )
+        .scalar()
+        or 0
+    )
+
+    pending_items = (
+        db.session.query(
+            func.coalesce(
+                func.sum(StockPurchaseRequestItem.requested_quantity),
+                0,
+            )
+        )
+        .join(
+            StockPurchaseRequest,
+            StockPurchaseRequest.request_id == StockPurchaseRequestItem.request_id,
+        )
+        .filter(
+            StockPurchaseRequest.branch_id == branch_id,
+            StockPurchaseRequest.status.has(status_name="PENDING"),
+        )
+        .scalar()
+        or 0
+    )
+
+    payload = {
+        "revenue": _floatify(total_revenue),
+        "inventory_value": _floatify(inventory_value),
+        "pending_requests": int(pending_requests),
+        "pending_items": _floatify(pending_items),
+    }
+
+    return jsonify(payload), HTTPStatus.OK
 
 
 @dashboard_bp.route("/metrics", methods=["GET"])

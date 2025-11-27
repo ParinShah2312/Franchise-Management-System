@@ -9,12 +9,10 @@ const initialState = {
   name: '',
   phone: '',
   franchise_id: '',
-  location: '',
-  property_size: '',
+  proposed_location: '',
   investment_capacity: '',
   business_experience: '',
-  reason_for_franchise: '',
-  expected_opening_date: '',
+  reason: '',
 };
 
 export default function RegisterFranchise() {
@@ -112,32 +110,27 @@ export default function RegisterFranchise() {
       errors.franchise_id = 'Please choose a valid brand option.';
     }
 
-    if (!formState.location.trim()) {
-      errors.location = 'Location is required.';
+    if (!formState.proposed_location.trim()) {
+      errors.proposed_location = 'Proposed location is required.';
     }
 
     if (!applicationFile) {
       errors.application_file = 'Upload your supporting document (PDF, JPG, or PNG).';
     }
 
-    if (!formState.expected_opening_date) {
-      errors.expected_opening_date = 'Expected opening date is required.';
-    }
-
-    if (!formState.property_size) {
-      errors.property_size = 'Select a property size.';
-    }
-
-    if (!formState.investment_capacity) {
-      errors.investment_capacity = 'Select an investment capacity.';
+    const investmentValue = formState.investment_capacity.trim();
+    if (!investmentValue) {
+      errors.investment_capacity = 'Provide your estimated investment capacity.';
+    } else if (Number.isNaN(Number(investmentValue)) || Number(investmentValue) <= 0) {
+      errors.investment_capacity = 'Investment capacity must be a positive number.';
     }
 
     if (!formState.business_experience.trim()) {
       errors.business_experience = 'Please describe your business experience.';
     }
 
-    if (!formState.reason_for_franchise.trim()) {
-      errors.reason_for_franchise = 'Please share your reason for opening a franchise.';
+    if (!formState.reason.trim()) {
+      errors.reason = 'Please share your reason for opening a franchise.';
     }
 
     return errors;
@@ -164,12 +157,10 @@ export default function RegisterFranchise() {
       submission.append('name', formState.name.trim());
       submission.append('phone', formState.phone.trim());
       submission.append('franchise_id', String(formState.franchise_id));
-      submission.append('proposed_location', formState.location.trim());
-      submission.append('property_size', formState.property_size);
-      submission.append('investment_capacity', formState.investment_capacity);
+      submission.append('proposed_location', formState.proposed_location.trim());
+      submission.append('investment_capacity', formState.investment_capacity.trim());
       submission.append('business_experience', formState.business_experience.trim());
-      submission.append('reason_for_franchise', formState.reason_for_franchise.trim());
-      submission.append('expected_opening_date', formState.expected_opening_date);
+      submission.append('reason', formState.reason.trim());
 
       if (applicationFile) {
         submission.append('application_file', applicationFile);
@@ -334,38 +325,21 @@ export default function RegisterFranchise() {
                 ) : null}
               </div>
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="location">
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="proposed_location">
                   Proposed Location (City, State)*
                 </label>
                 <input
-                  id="location"
-                  name="location"
+                  id="proposed_location"
+                  name="proposed_location"
                   type="text"
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Austin, TX"
-                  value={formState.location}
+                  value={formState.proposed_location}
                   onChange={handleChange}
                 />
-                {formErrors.location ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.location}</p>
-                ) : null}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="expected_opening_date">
-                  Expected Opening Date*
-                </label>
-                <input
-                  id="expected_opening_date"
-                  name="expected_opening_date"
-                  type="date"
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  value={formState.expected_opening_date}
-                  onChange={handleChange}
-                />
-                {formErrors.expected_opening_date ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.expected_opening_date}</p>
+                {formErrors.proposed_location ? (
+                  <p className="mt-1 text-xs text-red-600">{formErrors.proposed_location}</p>
                 ) : null}
               </div>
               <div className="md:col-span-2">
@@ -394,47 +368,22 @@ export default function RegisterFranchise() {
             <h2 className="text-lg font-semibold text-gray-700 mb-4">Business Information</h2>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="property_size">
-                  Property Size*
-                </label>
-                <select
-                  id="property_size"
-                  name="property_size"
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  value={formState.property_size}
-                  onChange={handleChange}
-                >
-                  <option value="">Select property size</option>
-                  <option value="Less than 1000 sq ft">Less than 1000 sq ft</option>
-                  <option value="1000 - 2000 sq ft">1000 - 2000 sq ft</option>
-                  <option value="2000 - 3000 sq ft">2000 - 3000 sq ft</option>
-                  <option value="3000 - 5000 sq ft">3000 - 5000 sq ft</option>
-                  <option value="More than 5000 sq ft">More than 5000 sq ft</option>
-                </select>
-                {formErrors.property_size ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.property_size}</p>
-                ) : null}
-              </div>
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="investment_capacity">
-                  Investment Capacity*
+                  Investment Capacity (USD)*
                 </label>
-                <select
+                <input
                   id="investment_capacity"
                   name="investment_capacity"
+                  type="number"
+                  min="0"
+                  step="1000"
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                  placeholder="150000"
                   value={formState.investment_capacity}
                   onChange={handleChange}
-                >
-                  <option value="">Select investment capacity</option>
-                  <option value="$50,000 - $100,000">$50,000 - $100,000</option>
-                  <option value="$100,000 - $200,000">$100,000 - $200,000</option>
-                  <option value="$200,000 - $500,000">$200,000 - $500,000</option>
-                  <option value="$500,000 - $1,000,000">$500,000 - $1,000,000</option>
-                  <option value="More than $1,000,000">More than $1,000,000</option>
-                </select>
+                />
+                <p className="mt-1 text-xs text-gray-500">Enter a whole number (e.g. 150000 for $150k).</p>
                 {formErrors.investment_capacity ? (
                   <p className="mt-1 text-xs text-red-600">{formErrors.investment_capacity}</p>
                 ) : null}
@@ -462,17 +411,17 @@ export default function RegisterFranchise() {
                   Why do you want to open a Relay franchise?*
                 </label>
                 <textarea
-                  id="reason_for_franchise"
-                  name="reason_for_franchise"
+                  id="reason"
+                  name="reason"
                   required
                   rows="4"
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="Tell us about your motivation and goals"
-                  value={formState.reason_for_franchise}
+                  value={formState.reason}
                   onChange={handleChange}
                 />
-                {formErrors.reason_for_franchise ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.reason_for_franchise}</p>
+                {formErrors.reason ? (
+                  <p className="mt-1 text-xs text-red-600">{formErrors.reason}</p>
                 ) : null}
               </div>
             </div>

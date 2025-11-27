@@ -9,6 +9,12 @@ export default {
       fontFamily: {
         sans: ['Inter', 'sans-serif'],
       },
+      colors: {
+        primary: '#2563EB',
+        'primary-hover': '#1D4ED8',
+        background: '#F3F4F6',
+        border: '#E5E7EB',
+      },
     },
   },
   plugins: [],

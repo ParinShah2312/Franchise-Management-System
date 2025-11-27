@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 
 import { api } from '../api';
 import Toast from '../components/Toast';
@@ -13,24 +13,25 @@ export default function StaffDashboard() {
   const { user, getBranchId, logout } = useAuth();
   const [inventoryItems, setInventoryItems] = useState([]);
   const [sales, setSales] = useState([]);
+  const [stockItems, setStockItems] = useState([]);
+  const [products, setProducts] = useState([]);
   const [activeTab, setActiveTab] = useState('inventory');
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
-  const [showInventoryModal, setShowInventoryModal] = useState(false);
+  const [showDeliveryModal, setShowDeliveryModal] = useState(false);
   const [showSalesModal, setShowSalesModal] = useState(false);
-  const [inventoryForm, setInventoryForm] = useState({
-    item_name: '',
-    category: 'General',
-    quantity: '',
-    reorder_level: '',
-  });
-  const [inventorySubmitting, setInventorySubmitting] = useState(false);
-  const [salesForm, setSalesForm] = useState({
-    sale_date: new Date().toISOString().slice(0, 10),
-    total_amount: '',
-    payment_mode: 'Cash',
-  });
+  const [deliverySubmitting, setDeliverySubmitting] = useState(false);
   const [salesSubmitting, setSalesSubmitting] = useState(false);
+  const [deliveryForm, setDeliveryForm] = useState({
+    stock_item_id: '',
+    quantity: '',
+    note: '',
+  });
+  const [saleForm, setSaleForm] = useState({
+    sale_date: new Date().toISOString().slice(0, 10),
+    payment_mode: 'Cash',
+    items: [{ product_id: '', quantity: '' }],
+  });
   const [toast, setToast] = useState(null);
 
   const branchId = getBranchId();
@@ -50,19 +51,32 @@ export default function StaffDashboard() {
     try {
       const inventoryUrl = `/inventory${branchId ? `?branch_id=${branchId}` : ''}`;
       const salesUrl = `/sales${branchId ? `?branch_id=${branchId}` : ''}`;
-      const [inventoryResponse, salesResponse] = await Promise.allSettled([
+      const stockItemsUrl = '/inventory/stock-items';
+      const productsUrl = `/sales/products${branchId ? `?branch_id=${branchId}` : ''}`;
+
+      const [inventoryRes, salesRes, stockItemsRes, productsRes] = await Promise.allSettled([
         api.get(inventoryUrl),
         api.get(salesUrl),
+        api.get(stockItemsUrl),
+        api.get(productsUrl),
       ]);
 
-      if (inventoryResponse.status === 'fulfilled') {
-        setInventoryItems(Array.isArray(inventoryResponse.value) ? inventoryResponse.value : []);
+      if (inventoryRes.status === 'fulfilled') {
+        setInventoryItems(Array.isArray(inventoryRes.value) ? inventoryRes.value : []);
       } else {
-        throw inventoryResponse.reason;
+        throw inventoryRes.reason;
       }
 
-      if (salesResponse.status === 'fulfilled') {
-        setSales(Array.isArray(salesResponse.value) ? salesResponse.value : []);
+      if (salesRes.status === 'fulfilled') {
+        setSales(Array.isArray(salesRes.value) ? salesRes.value : []);
+      }
+
+      if (stockItemsRes.status === 'fulfilled') {
+        setStockItems(Array.isArray(stockItemsRes.value) ? stockItemsRes.value : []);
+      }
+
+      if (productsRes.status === 'fulfilled') {
+        setProducts(Array.isArray(productsRes.value) ? productsRes.value : []);
       }
     } catch (err) {
       const message = err.message || 'Failed to load staff dashboard data.';
@@ -77,6 +91,16 @@ export default function StaffDashboard() {
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [branchId]);
+
+  const lowStockItems = useMemo(
+    () =>
+      inventoryItems.filter((item) => {
+        const quantity = Number(item.quantity || 0);
+        const reorder = Number(item.reorder_level || 0);
+        return reorder > 0 && quantity <= reorder;
+      }),
+    [inventoryItems],
+  );
 
   const renderInventory = () => (
     <div className="bg-white border border-gray-200 rounded-xl">
@@ -93,12 +117,12 @@ export default function StaffDashboard() {
           <button
             type="button"
             onClick={() => {
-              setInventoryForm({ item_name: '', category: 'General', quantity: '', reorder_level: '' });
-              setShowInventoryModal(true);
+              setDeliveryForm({ stock_item_id: '', quantity: '', note: '' });
+              setShowDeliveryModal(true);
             }}
-            className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
+            className="text-sm px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700"
           >
-            Add Item
+            Record Delivery
           </button>
         </div>
       </div>
@@ -129,11 +153,11 @@ export default function StaffDashboard() {
               </tr>
             ) : (
               inventoryItems.map((item) => (
-                <tr key={item.id}>
-                  <td className="px-4 py-3 text-sm text-gray-700">{item.item_name}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500">{item.category || '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-900 text-right">{item.quantity}</td>
-                  <td className="px-4 py-3 text-sm text-gray-500 text-right">{item.reorder_level ?? '—'}</td>
+                <tr key={item.branch_inventory_id || item.stock_item_id}>
+                  <td className="px-4 py-3 text-sm text-gray-700">{item.stock_item_name || item.item_name}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500">{item.unit_name || item.unit || '—'}</td>
+                  <td className="px-4 py-3 text-sm text-gray-900 text-right">{Number(item.quantity || 0).toLocaleString('en-IN')}</td>
+                  <td className="px-4 py-3 text-sm text-gray-500 text-right">{item.reorder_level != null ? Number(item.reorder_level).toLocaleString('en-IN') : '—'}</td>
                 </tr>
               ))
             )}
@@ -197,10 +221,12 @@ export default function StaffDashboard() {
               sales.map((sale) => (
                 <tr key={sale.id}>
                   <td className="px-4 py-3 text-sm text-gray-700">
-                    {sale.sale_date ? new Date(sale.sale_date).toLocaleDateString() : '—'}
+                    {sale.sale_datetime || sale.sale_date
+                      ? new Date(sale.sale_datetime || sale.sale_date).toLocaleString()
+                      : '—'}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                    ${Number(sale.total_amount || 0).toFixed(2)}
+                    ₹{Number(sale.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
                   </td>
                   <td className="px-4 py-3 text-sm text-gray-500">{sale.payment_mode || '—'}</td>
                 </tr>
@@ -225,7 +251,9 @@ export default function StaffDashboard() {
         <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Staff Dashboard</h1>
-            <p className="text-gray-500 text-sm">Access the tools you need to keep operations running.</p>
+            <p className="text-gray-500 text-sm">
+              Keep your branch stocked and sales updated in real time.
+            </p>
           </div>
           <div className="flex items-center space-x-3">
             <button
@@ -279,16 +307,16 @@ export default function StaffDashboard() {
         )}
       </main>
 
-      {showInventoryModal ? (
+      {showDeliveryModal ? (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
           <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-6">
             <div className="flex items-center justify-between">
-              <h3 className="text-xl font-semibold text-gray-800">Add Inventory Item</h3>
+              <h3 className="text-xl font-semibold text-gray-800">Record Stock Delivery</h3>
               <button
                 type="button"
-                onClick={() => !inventorySubmitting && setShowInventoryModal(false)}
+                onClick={() => !deliverySubmitting && setShowDeliveryModal(false)}
                 className="text-gray-400 hover:text-gray-600"
-                aria-label="Close inventory modal"
+                aria-label="Close delivery modal"
               >
                 ✕
               </button>
@@ -298,115 +326,106 @@ export default function StaffDashboard() {
               className="space-y-4"
               onSubmit={async (event) => {
                 event.preventDefault();
-                setInventorySubmitting(true);
+                setDeliverySubmitting(true);
                 try {
                   const payload = {
-                    item_name: inventoryForm.item_name.trim(),
-                    category: inventoryForm.category,
-                    quantity: Number(inventoryForm.quantity),
-                    reorder_level: Number(inventoryForm.reorder_level),
+                    stock_item_id: Number(deliveryForm.stock_item_id),
+                    quantity: Number(deliveryForm.quantity),
+                    note: deliveryForm.note || undefined,
                   };
 
-                  const inventoryEndpoint = branchId ? `/inventory?branch_id=${branchId}` : '/inventory';
-                  await api.post(inventoryEndpoint, payload);
-                  setShowInventoryModal(false);
-                  setToast({ message: 'Inventory item added successfully!', variant: 'success' });
+                  if (!payload.stock_item_id) {
+                    throw new Error('Please select a stock item.');
+                  }
+
+                  if (!payload.quantity || Number.isNaN(payload.quantity) || payload.quantity <= 0) {
+                    throw new Error('Quantity must be greater than zero.');
+                  }
+
+                  await api.post(
+                    `/inventory/stock-in${branchId ? `?branch_id=${branchId}` : ''}`,
+                    payload,
+                  );
+                  setShowDeliveryModal(false);
+                  setToast({ message: 'Delivery recorded successfully!', variant: 'success' });
                   await loadData();
                 } catch (err) {
-                  setToast({ message: err.message || 'Failed to add inventory item.', variant: 'error' });
+                  setToast({ message: err.message || 'Failed to record delivery.', variant: 'error' });
                 } finally {
-                  setInventorySubmitting(false);
+                  setDeliverySubmitting(false);
                 }
               }}
             >
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_inventory_item_name">
-                  Item Name*
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_delivery_item">
+                  Stock Item*
+                </label>
+                <select
+                  id="staff_delivery_item"
+                  required
+                  value={deliveryForm.stock_item_id}
+                  onChange={(event) =>
+                    setDeliveryForm((prev) => ({ ...prev, stock_item_id: event.target.value }))
+                  }
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                >
+                  <option value="">Select item</option>
+                  {stockItems.map((item) => (
+                    <option key={item.id} value={item.id}>
+                      {item.name}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_delivery_quantity">
+                  Quantity Received*
                 </label>
                 <input
-                  id="staff_inventory_item_name"
-                  type="text"
+                  id="staff_delivery_quantity"
+                  type="number"
                   required
-                  value={inventoryForm.item_name}
+                  min={1}
+                  value={deliveryForm.quantity}
                   onChange={(event) =>
-                    setInventoryForm((prev) => ({ ...prev, item_name: event.target.value }))
+                    setDeliveryForm((prev) => ({ ...prev, quantity: event.target.value }))
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Espresso Beans"
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  placeholder="0"
                 />
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_inventory_category">
-                  Category
+                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_delivery_note">
+                  Note
                 </label>
-                <select
-                  id="staff_inventory_category"
-                  value={inventoryForm.category}
+                <textarea
+                  id="staff_delivery_note"
+                  rows={3}
+                  value={deliveryForm.note}
                   onChange={(event) =>
-                    setInventoryForm((prev) => ({ ...prev, category: event.target.value }))
+                    setDeliveryForm((prev) => ({ ...prev, note: event.target.value }))
                   }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                >
-                  <option value="General">General</option>
-                  <option value="Dairy">Dairy</option>
-                  <option value="Edibles">Edibles</option>
-                  <option value="Beverages">Beverages</option>
-                  <option value="Cleaning Supplies">Cleaning Supplies</option>
-                </select>
-              </div>
-
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_inventory_quantity">
-                    Quantity*
-                  </label>
-                  <input
-                    id="staff_inventory_quantity"
-                    type="number"
-                    required
-                    min={0}
-                    value={inventoryForm.quantity}
-                    onChange={(event) =>
-                      setInventoryForm((prev) => ({ ...prev, quantity: event.target.value }))
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="0"
-                  />
-                </div>
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_inventory_reorder">
-                    Reorder Level*
-                  </label>
-                  <input
-                    id="staff_inventory_reorder"
-                    type="number"
-                    required
-                    min={0}
-                    value={inventoryForm.reorder_level}
-                    onChange={(event) =>
-                      setInventoryForm((prev) => ({ ...prev, reorder_level: event.target.value }))
-                    }
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                    placeholder="0"
-                  />
-                </div>
+                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-green-500"
+                  placeholder="Delivery reference or remarks"
+                />
               </div>
 
               <div className="flex justify-end gap-3">
                 <button
                   type="button"
-                  onClick={() => !inventorySubmitting && setShowInventoryModal(false)}
+                  onClick={() => !deliverySubmitting && setShowDeliveryModal(false)}
                   className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
-                  disabled={inventorySubmitting}
-                  className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg shadow hover:bg-blue-700 disabled:opacity-60"
+                  disabled={deliverySubmitting}
+                  className="px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg shadow hover:bg-green-700 disabled:opacity-60"
                 >
-                  {inventorySubmitting ? 'Adding…' : 'Add Item'}
+                  {deliverySubmitting ? 'Recording…' : 'Record Delivery'}
                 </button>
               </div>
             </form>
@@ -436,10 +455,22 @@ export default function StaffDashboard() {
                 setSalesSubmitting(true);
                 try {
                   const salesEndpoint = branchId ? `/sales?branch_id=${branchId}` : '/sales';
+
+                  const sanitizedItems = saleForm.items
+                    .filter((item) => item.product_id && item.quantity)
+                    .map((item) => ({
+                      product_id: Number(item.product_id),
+                      quantity: Number(item.quantity),
+                    }));
+
+                  if (sanitizedItems.length === 0) {
+                    throw new Error('Add at least one product to the sale.');
+                  }
+
                   await api.post(salesEndpoint, {
-                    sale_date: salesForm.sale_date,
-                    total_amount: Number(salesForm.total_amount),
-                    payment_mode: salesForm.payment_mode,
+                    sale_date: saleForm.sale_date,
+                    payment_mode: saleForm.payment_mode,
+                    items: sanitizedItems,
                   });
                   setShowSalesModal(false);
                   setToast({ message: 'Sale logged successfully!', variant: 'success' });
@@ -466,25 +497,6 @@ export default function StaffDashboard() {
               </div>
 
               <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_sale_amount">
-                  Amount*
-                </label>
-                <input
-                  id="staff_sale_amount"
-                  type="number"
-                  required
-                  min={0}
-                  step="0.01"
-                  value={salesForm.total_amount}
-                  onChange={(event) =>
-                    setSalesForm((prev) => ({ ...prev, total_amount: event.target.value }))
-                  }
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="250.00"
-                />
-              </div>
-
-              <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="staff_payment_mode">
                   Payment Mode*
                 </label>
@@ -502,6 +514,92 @@ export default function StaffDashboard() {
                   <option value="UPI">UPI</option>
                   <option value="Other">Other</option>
                 </select>
+              </div>
+
+              <div className="space-y-3">
+                <p className="text-sm font-medium text-gray-700">Products Sold*</p>
+                {saleForm.items.map((item, index) => (
+                  <div key={index} className="grid grid-cols-1 md:grid-cols-3 gap-3 items-end">
+                    <div className="md:col-span-2">
+                      <label className="block text-xs font-semibold text-gray-600 mb-1" htmlFor={`sale_product_${index}`}>
+                        Product
+                      </label>
+                      <select
+                        id={`sale_product_${index}`}
+                        required
+                        value={item.product_id}
+                        onChange={(event) => {
+                          const value = event.target.value;
+                          setSaleForm((prev) => ({
+                            ...prev,
+                            items: prev.items.map((row, rowIndex) =>
+                              rowIndex === index ? { ...row, product_id: value } : row,
+                            ),
+                          }));
+                        }}
+                        className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                      >
+                        <option value="">Select product</option>
+                        {products.map((product) => (
+                          <option key={product.id} value={product.id}>
+                            {product.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <div className="flex-1">
+                        <label className="block text-xs font-semibold text-gray-600 mb-1" htmlFor={`sale_quantity_${index}`}>
+                          Qty
+                        </label>
+                        <input
+                          id={`sale_quantity_${index}`}
+                          type="number"
+                          required
+                          min={1}
+                          value={item.quantity}
+                          onChange={(event) => {
+                            const value = event.target.value;
+                            setSaleForm((prev) => ({
+                              ...prev,
+                              items: prev.items.map((row, rowIndex) =>
+                                rowIndex === index ? { ...row, quantity: value } : row,
+                              ),
+                            }));
+                          }}
+                          className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                          placeholder="1"
+                        />
+                      </div>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          setSaleForm((prev) => ({
+                            ...prev,
+                            items: prev.items.filter((_, rowIndex) => rowIndex !== index),
+                          }))
+                        }
+                        className="mt-5 inline-flex items-center justify-center rounded-full bg-red-50 text-red-500 hover:bg-red-100 h-9 w-9"
+                        aria-label="Remove product"
+                        disabled={saleForm.items.length === 1}
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  </div>
+                ))}
+                <button
+                  type="button"
+                  onClick={() =>
+                    setSaleForm((prev) => ({
+                      ...prev,
+                      items: [...prev.items, { product_id: '', quantity: '' }],
+                    }))
+                  }
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                >
+                  + Add Product
+                </button>
               </div>
 
               <div className="flex justify-end gap-3">

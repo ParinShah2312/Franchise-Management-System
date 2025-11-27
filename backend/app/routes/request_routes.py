@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 from http import HTTPStatus
 
 from flask import Blueprint, g, jsonify, request
+from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from ..extensions import db
@@ -132,7 +133,13 @@ def create_request() -> tuple[dict[str, object], int]:
         return jsonify({"error": str(exc)}), HTTPStatus.INTERNAL_SERVER_ERROR
 
     current_user = getattr(g, "current_user", None)
+
+    next_request_id = (
+        db.session.query(func.coalesce(func.max(StockPurchaseRequest.request_id), 0)).scalar() + 1
+    )
+
     request_record = StockPurchaseRequest(
+        request_id=next_request_id,
         branch_id=branch.branch_id,
         requested_by_user_id=current_user.user_id if current_user else None,
         status_id=pending_status_id,
@@ -140,6 +147,10 @@ def create_request() -> tuple[dict[str, object], int]:
     )
     db.session.add(request_record)
     db.session.flush()
+
+    next_request_item_id = (
+        db.session.query(func.coalesce(func.max(StockPurchaseRequestItem.request_item_id), 0)).scalar()
+    )
 
     for entry in items_payload:
         stock_item_id = entry.get("stock_item_id")
@@ -152,17 +163,22 @@ def create_request() -> tuple[dict[str, object], int]:
             db.session.rollback()
             return jsonify({"error": f"Stock item {stock_item_id} is not valid for this branch."}), HTTPStatus.BAD_REQUEST
 
+        if "requested_quantity" not in entry:
+            db.session.rollback()
+            return jsonify({"error": "Each item requires requested_quantity."}), HTTPStatus.BAD_REQUEST
+
+        quantity_raw = entry.get("requested_quantity")
         try:
-            quantity = Decimal(str(entry.get("quantity")))
+            quantity = Decimal(str(quantity_raw))
         except (InvalidOperation, TypeError, ValueError):
             db.session.rollback()
-            return jsonify({"error": "quantity must be numeric."}), HTTPStatus.BAD_REQUEST
+            return jsonify({"error": "requested_quantity must be numeric."}), HTTPStatus.BAD_REQUEST
 
         if quantity <= 0:
             db.session.rollback()
-            return jsonify({"error": "quantity must be greater than zero."}), HTTPStatus.BAD_REQUEST
+            return jsonify({"error": "requested_quantity must be greater than zero."}), HTTPStatus.BAD_REQUEST
 
-        estimated_cost_raw = entry.get("estimated_cost")
+        estimated_cost_raw = entry.get("estimated_unit_cost")
         estimated_cost: Decimal | None
         if estimated_cost_raw is None or estimated_cost_raw == "":
             estimated_cost = None
@@ -171,10 +187,13 @@ def create_request() -> tuple[dict[str, object], int]:
                 estimated_cost = Decimal(str(estimated_cost_raw))
             except (InvalidOperation, TypeError, ValueError):
                 db.session.rollback()
-                return jsonify({"error": "estimated_cost must be numeric."}), HTTPStatus.BAD_REQUEST
+                return jsonify({"error": "estimated_unit_cost must be numeric."}), HTTPStatus.BAD_REQUEST
+
+        next_request_item_id += 1
 
         db.session.add(
             StockPurchaseRequestItem(
+                request_item_id=next_request_item_id,
                 request_id=request_record.request_id,
                 stock_item_id=stock_item.stock_item_id,
                 requested_quantity=quantity,
@@ -293,6 +312,43 @@ def approve_request(request_id: int) -> tuple[dict[str, object], int]:
         )
 
     record.status_id = approved_status_id
+    record.approved_by_user_id = current_user.user_id if current_user else None
+    record.approved_at = datetime.utcnow()
+
+    db.session.commit()
+
+    record = StockPurchaseRequest.query.options(
+        joinedload(StockPurchaseRequest.items).joinedload(StockPurchaseRequestItem.stock_item),
+        joinedload(StockPurchaseRequest.status),
+    ).get(record.request_id)
+
+    return jsonify(_serialize_request(record)), HTTPStatus.OK
+
+
+@request_bp.route("/<int:request_id>/reject", methods=["PUT"])
+@token_required({"BRANCH_OWNER"})
+def reject_request(request_id: int) -> tuple[dict[str, object], int]:
+    record = StockPurchaseRequest.query.options(joinedload(StockPurchaseRequest.branch)).get(request_id)
+
+    if not record:
+        return jsonify({"error": "Request not found."}), HTTPStatus.NOT_FOUND
+
+    access_error = _ensure_request_access(record)
+    if access_error:
+        return access_error
+
+    try:
+        pending_status_id = _get_status_id("PENDING")
+        rejected_status_id = _get_status_id("REJECTED")
+    except LookupError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+    if record.status_id != pending_status_id:
+        return jsonify({"error": "Only pending requests can be rejected."}), HTTPStatus.BAD_REQUEST
+
+    current_user = getattr(g, "current_user", None)
+
+    record.status_id = rejected_status_id
     record.approved_by_user_id = current_user.user_id if current_user else None
     record.approved_at = datetime.utcnow()
 

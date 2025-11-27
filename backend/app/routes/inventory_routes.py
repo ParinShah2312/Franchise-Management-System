@@ -57,6 +57,7 @@ def _serialize_inventory(record: BranchInventory) -> dict[str, object]:
         "stock_item_name": record.stock_item.name if record.stock_item else None,
         "unit_name": record.stock_item.unit.unit_name if record.stock_item and record.stock_item.unit else None,
         "quantity": float(record.quantity),
+        "reorder_level": float(record.reorder_level) if record.reorder_level is not None else None,
         "updated_at": record.updated_at.isoformat() if record.updated_at else None,
     }
 
@@ -203,8 +204,75 @@ def create_transaction() -> tuple[dict[str, object], int]:
     )
 
 
+@inventory_bp.route("/stock-in", methods=["POST"])
+@token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
+def record_stock_delivery() -> tuple[dict[str, object], int]:
+    branch_id_param = request.args.get("branch_id", type=int)
+    result = _allowed_branch_id(branch_id_param)
+    if isinstance(result, tuple):
+        return result
+
+    payload = request.get_json(silent=True) or {}
+    stock_item_id = payload.get("stock_item_id")
+    if stock_item_id is None:
+        return jsonify({"error": "stock_item_id is required."}), HTTPStatus.BAD_REQUEST
+
+    quantity_raw = payload.get("quantity")
+    if quantity_raw is None:
+        return jsonify({"error": "quantity is required."}), HTTPStatus.BAD_REQUEST
+
+    try:
+        quantity = Decimal(str(quantity_raw))
+    except (InvalidOperation, TypeError, ValueError):
+        return jsonify({"error": "quantity must be numeric."}), HTTPStatus.BAD_REQUEST
+
+    if quantity <= 0:
+        return jsonify({"error": "quantity must be greater than zero."}), HTTPStatus.BAD_REQUEST
+
+    branch = Branch.query.get(result)
+    if not branch:
+        return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
+
+    stock_item = StockItem.query.get(stock_item_id)
+    if not stock_item or stock_item.franchise_id != branch.franchise_id:
+        return jsonify({"error": "Stock item is not available for this branch."}), HTTPStatus.BAD_REQUEST
+
+    transaction_type = TransactionType.query.filter_by(type_name="IN").first()
+    if not transaction_type:
+        return jsonify({"error": "Transaction type 'IN' is not configured."}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+    transaction, inventory_record = _apply_transaction(
+        branch=branch,
+        stock_item=stock_item,
+        quantity_delta=quantity,
+        transaction_type_id=transaction_type.transaction_type_id,
+        note=(payload.get("note") or "Recorded via staff delivery"),
+    )
+
+    db.session.commit()
+
+    refreshed_record = BranchInventory.query.options(
+        joinedload(BranchInventory.stock_item).joinedload(StockItem.unit)
+    ).get(inventory_record.branch_inventory_id)
+
+    if not refreshed_record:
+        refreshed_record = inventory_record
+
+    return (
+        jsonify(
+            {
+                "transaction_id": transaction.transaction_id,
+                "transaction_type": transaction_type.type_name,
+                "quantity_change": float(transaction.quantity_change),
+                "branch_inventory": _serialize_inventory(refreshed_record),
+            }
+        ),
+        HTTPStatus.CREATED,
+    )
+
+
 @inventory_bp.route("/stock-items", methods=["GET"])
-@token_required({"BRANCH_OWNER"})
+@token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
 def list_stock_items() -> tuple[list[dict[str, object]], int]:
     role = getattr(g, "current_role", None)
     if not role or role.scope_type != "BRANCH":

@@ -3,7 +3,9 @@
 from __future__ import annotations
 
 import os
+from datetime import datetime
 from decimal import Decimal, InvalidOperation
+
 from http import HTTPStatus
 
 from uuid import uuid4
@@ -17,6 +19,8 @@ from ..extensions import db
 from ..models import (
     ApplicationStatus,
     Branch,
+    BranchStaff,
+    BranchStatus,
     Franchisor,
     Franchise,
     FranchiseApplication,
@@ -71,6 +75,51 @@ def _require_owner_branch(branch_id_param: int | None) -> Branch | tuple[dict[st
     return branch
 
 
+def _resolve_branch_for_staff(branch_id_raw: object | None) -> Branch | tuple[dict[str, object], int]:
+    role = getattr(g, "current_role", None)
+    current_user = getattr(g, "current_user", None)
+    if not role or role.scope_type != "BRANCH" or not current_user:
+        return jsonify({"error": "Branch scope required."}), HTTPStatus.FORBIDDEN
+
+    branch_id = role.scope_id
+    role_name = getattr(role.role, "name", "") if getattr(role, "role", None) else ""
+
+    if role_name == "BRANCH_OWNER":
+        branch_id_param: int | None = None
+        if branch_id_raw is not None:
+            try:
+                branch_id_param = int(branch_id_raw)
+            except (TypeError, ValueError):
+                return jsonify({"error": "branch_id must be numeric."}), HTTPStatus.BAD_REQUEST
+
+        branch = _require_owner_branch(branch_id_param)
+        if isinstance(branch, tuple):
+            return branch
+        if branch.status_id != 1:
+            return jsonify({"error": "Branch is not active."}), HTTPStatus.BAD_REQUEST
+        return branch
+
+    if role_name == "MANAGER":
+        if branch_id_raw is not None:
+            try:
+                explicit_branch_id = int(branch_id_raw)
+            except (TypeError, ValueError):
+                return jsonify({"error": "branch_id must be numeric."}), HTTPStatus.BAD_REQUEST
+            if explicit_branch_id != branch_id:
+                return jsonify({"error": "You are not authorized to manage this branch."}), HTTPStatus.FORBIDDEN
+
+        branch = Branch.query.get(branch_id)
+        if not branch:
+            return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
+        if branch.manager_user_id != getattr(current_user, "user_id", None):
+            return jsonify({"error": "You are not assigned as manager for this branch."}), HTTPStatus.FORBIDDEN
+        if branch.status_id != 1:
+            return jsonify({"error": "Branch is not active."}), HTTPStatus.BAD_REQUEST
+        return branch
+
+    return jsonify({"error": "Only branch owners or managers can manage staff."}), HTTPStatus.FORBIDDEN
+
+
 def _save_application_file(upload) -> tuple[str, str]:
     """Persist uploaded application file and return stored and relative paths."""
 
@@ -91,6 +140,42 @@ def _save_application_file(upload) -> tuple[str, str]:
     return stored_path, relative_path
 
 
+def _ensure_franchise_for_franchisor(franchisor: Franchisor) -> Franchise | None:
+    """Guarantee the franchisor has a primary franchise record."""
+
+    existing = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
+    if existing:
+        return existing
+
+    next_franchise_id = (
+        db.session.query(db.func.coalesce(db.func.max(Franchise.franchise_id), 0)).scalar()
+        + 1
+    )
+
+    franchise_name = franchisor.organization_name or f"Franchise {franchisor.franchisor_id}"
+    description = f"Primary franchise for {franchise_name}."
+
+    franchise = Franchise(
+        franchise_id=next_franchise_id,
+        franchisor_id=franchisor.franchisor_id,
+        name=franchise_name,
+        description=description,
+    )
+
+    db.session.add(franchise)
+    try:
+        db.session.commit()
+        return franchise
+    except IntegrityError as exc:
+        db.session.rollback()
+        current_app.logger.warning(
+            "Failed to auto-create franchise for franchisor %s: %s",
+            franchisor.franchisor_id,
+            getattr(exc, "orig", exc),
+        )
+        return Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
+
+
 @auth_bp.route("/login", methods=["POST"])
 def login() -> tuple[dict[str, object], int]:
     """Authenticate a user and return their role and scope."""
@@ -104,6 +189,7 @@ def login() -> tuple[dict[str, object], int]:
 
     franchisor = Franchisor.query.filter_by(email=email).first()
     if franchisor and verify_password(password, franchisor.password_hash):
+        _ensure_franchise_for_franchisor(franchisor)
         token = generate_token(franchisor.franchisor_id, user_type="franchisor")
         return (
             jsonify(
@@ -154,63 +240,52 @@ def login() -> tuple[dict[str, object], int]:
     )
 
 
-@auth_bp.route("/register-franchisor", methods=["POST"])
-def register_franchisor() -> tuple[dict[str, object], int]:
-    """Public endpoint to onboard a new franchisor (brand owner)."""
+@auth_bp.route("/profile", methods=["GET"])
+@token_required({"BRANCH_OWNER", "MANAGER"})
+def get_branch_profile() -> tuple[dict[str, object], int]:
+    branch_id_raw = request.args.get("branch_id")
+    branch = _resolve_branch_for_staff(branch_id_raw)
+    if isinstance(branch, tuple):
+        return branch
 
-    payload = request.get_json(silent=True) or {}
-    organization_name = (payload.get("organization_name") or "").strip()
-    contact_person = (payload.get("contact_person") or "").strip()
-    email = (payload.get("email") or "").strip().lower()
-    raw_phone = (payload.get("phone") or "").strip()
-    password = payload.get("password") or ""
+    staff_assignments = (
+        BranchStaff.query.options(joinedload(BranchStaff.user))
+        .filter(BranchStaff.branch_id == branch.branch_id)
+        .order_by(BranchStaff.created_at.asc())
+        .all()
+    )
 
-    if not all([organization_name, contact_person, email, raw_phone, password]):
-        return jsonify({"error": "All fields are required."}), HTTPStatus.BAD_REQUEST
+    def _serialize_user(user: User | None) -> dict[str, object] | None:
+        if not user:
+            return None
+        return {
+            "user_id": user.user_id,
+            "name": user.name,
+            "email": user.email,
+            "phone": user.phone,
+        }
 
-    sanitized_phone = "".join(filter(str.isdigit, raw_phone))
-    if len(sanitized_phone) != 10:
-        return jsonify({"error": "Phone must be a 10 digit number."}), HTTPStatus.BAD_REQUEST
+    payload = {
+        "branch": {
+            "id": branch.branch_id,
+            "name": branch.name,
+        },
+        "owner": _serialize_user(branch.branch_owner),
+        "manager": _serialize_user(branch.manager),
+        "staff": [
+            {
+                "user_id": assignment.user.user_id if assignment.user else None,
+                "name": assignment.user.name if assignment.user else None,
+                "email": assignment.user.email if assignment.user else None,
+                "phone": assignment.user.phone if assignment.user else None,
+                "joined_at": assignment.created_at.isoformat() if assignment.created_at else None,
+            }
+            for assignment in staff_assignments
+            if assignment.user is not None
+        ],
+    }
 
-    if len(password) < 8:
-        return jsonify({"error": "Password must be at least 8 characters long."}), HTTPStatus.BAD_REQUEST
-
-    if Franchisor.query.filter_by(email=email).first():
-        return jsonify({"error": "Email is already registered as a franchisor."}), HTTPStatus.CONFLICT
-
-    if User.query.filter_by(email=email).first():
-        return jsonify({"error": "Email is already associated with an existing user."}), HTTPStatus.CONFLICT
-
-    if Franchisor.query.filter_by(phone=sanitized_phone).first():
-        return jsonify({"error": "Phone number is already registered to another franchisor."}), HTTPStatus.CONFLICT
-
-    if User.query.filter_by(phone=sanitized_phone).first():
-        return jsonify({"error": "Phone number is already associated with an existing user."}), HTTPStatus.CONFLICT
-
-    try:
-        franchisor = Franchisor(
-            organization_name=organization_name,
-            contact_person=contact_person,
-            email=email,
-            phone=sanitized_phone,
-            password_hash=hash_password(password),
-        )
-        db.session.add(franchisor)
-        db.session.commit()
-    except IntegrityError:
-        db.session.rollback()
-        # Double-check for conflicting fields to provide a useful response.
-        if Franchisor.query.filter_by(email=email).first() or User.query.filter_by(email=email).first():
-            return jsonify({"error": "Email is already registered."}), HTTPStatus.CONFLICT
-        if Franchisor.query.filter_by(phone=sanitized_phone).first() or User.query.filter_by(phone=sanitized_phone).first():
-            return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
-        return jsonify({"error": "Unable to register franchisor due to a data conflict."}), HTTPStatus.CONFLICT
-    except Exception as exc:  # pragma: no cover
-        db.session.rollback()
-        current_app.logger.exception("Failed to register franchisor: %s", exc)
-        return jsonify({"error": "Unable to register franchisor."}), HTTPStatus.INTERNAL_SERVER_ERROR
-
-    return jsonify({"message": "Franchisor registered successfully. Please login."}), HTTPStatus.CREATED
+    return jsonify(payload), HTTPStatus.OK
 
 
 @auth_bp.route("/register-franchisee", methods=["POST"])
@@ -223,6 +298,7 @@ def register_franchisee() -> tuple[dict[str, object], int]:
     email = (form_data.get("email") or "").strip().lower()
     password = form_data.get("password") or ""
     name = (form_data.get("name") or "").strip()
+    phone_raw = (form_data.get("phone") or "").strip()
     franchise_id_raw = form_data.get("franchise_id")
     proposed_location = (form_data.get("proposed_location") or "").strip()
     investment_capacity_raw = form_data.get("investment_capacity")
@@ -230,11 +306,27 @@ def register_franchisee() -> tuple[dict[str, object], int]:
     reason_text = (form_data.get("reason") or form_data.get("reason_for_franchise") or "").strip() or None
     application_file = files.get("application_file")
 
-    if not all([email, password, name, franchise_id_raw, proposed_location, application_file]):
+    if not all([email, password, name, phone_raw, franchise_id_raw, proposed_location, application_file]):
         return (
             jsonify({"error": "Missing required fields."}),
             HTTPStatus.BAD_REQUEST,
         )
+
+    sanitized_phone = "".join(filter(str.isdigit, phone_raw))
+    if len(sanitized_phone) != 10:
+        return jsonify({"error": "Phone must be a 10 digit number."}), HTTPStatus.BAD_REQUEST
+
+    if User.query.filter_by(email=email).first():
+        return jsonify({"error": "Email is already registered."}), HTTPStatus.CONFLICT
+
+    if Franchisor.query.filter_by(email=email).first():
+        return jsonify({"error": "Email is already registered as a franchisor."}), HTTPStatus.CONFLICT
+
+    if User.query.filter_by(phone=sanitized_phone).first():
+        return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
+
+    if Franchisor.query.filter_by(phone=sanitized_phone).first():
+        return jsonify({"error": "Phone number is already registered to another franchisor."}), HTTPStatus.CONFLICT
 
     try:
         franchise_id = int(franchise_id_raw)
@@ -270,20 +362,69 @@ def register_franchisee() -> tuple[dict[str, object], int]:
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
+    branch_status = BranchStatus.query.filter_by(status_name="ACTIVE").first()
+    if not branch_status:
+        if os.path.exists(stored_path):
+            os.remove(stored_path)
+        return (
+            jsonify({"error": "ACTIVE branch status not configured."}),
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+    owner_role = Role.query.filter_by(name="BRANCH_OWNER").first()
+    if not owner_role:
+        if os.path.exists(stored_path):
+            os.remove(stored_path)
+        return (
+            jsonify({"error": "BRANCH_OWNER role not configured."}),
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
     saved_file_path: str | None = stored_path
+
+    next_user_id = (
+        db.session.query(db.func.coalesce(db.func.max(User.user_id), 0)).scalar() + 1
+    )
+
+    next_application_id = (
+        db.session.query(db.func.coalesce(db.func.max(FranchiseApplication.application_id), 0)).scalar()
+        + 1
+    )
+
+    next_branch_id = (
+        db.session.query(db.func.coalesce(db.func.max(Branch.branch_id), 0)).scalar() + 1
+    )
 
     try:
         user = User(
+            user_id=next_user_id,
             name=name,
             email=email,
-            phone=(form_data.get("phone") or "").strip(),
+            phone=sanitized_phone,
             password_hash=hash_password(password),
             is_active=True,
         )
         db.session.add(user)
         db.session.flush()
 
+        location_prefix = (proposed_location.split(",")[0].strip() if proposed_location else "").title()
+        branch_name_suffix = location_prefix or proposed_location or "New Branch"
+        branch_name = f"{franchise.name} - {branch_name_suffix}" if franchise.name else branch_name_suffix
+        branch_code = f"BR-{next_branch_id}-{datetime.utcnow().strftime('%y%m%d%H%M%S')}"
+
+        branch = Branch(
+            branch_id=next_branch_id,
+            franchise_id=franchise.franchise_id,
+            name=branch_name,
+            code=branch_code,
+            branch_owner_user_id=user.user_id,
+            status_id=branch_status.status_id,
+        )
+        db.session.add(branch)
+        db.session.flush()
+
         application = FranchiseApplication(
+            application_id=next_application_id,
             franchise_id=franchise.franchise_id,
             branch_owner_user_id=user.user_id,
             proposed_location=proposed_location,
@@ -295,12 +436,32 @@ def register_franchisee() -> tuple[dict[str, object], int]:
         )
         db.session.add(application)
 
+        db.session.add(
+            UserRole(
+                user_id=user.user_id,
+                role_id=owner_role.role_id,
+                scope_type="BRANCH",
+                scope_id=branch.branch_id,
+            )
+        )
+
         db.session.commit()
-    except IntegrityError:
+    except IntegrityError as exc:
         db.session.rollback()
         if saved_file_path and os.path.exists(saved_file_path):
             os.remove(saved_file_path)
-        return jsonify({"error": "Email is already registered."}), HTTPStatus.CONFLICT
+        if User.query.filter_by(email=email).first() or Franchisor.query.filter_by(email=email).first():
+            return jsonify({"error": "Email is already registered."}), HTTPStatus.CONFLICT
+        if User.query.filter_by(phone=sanitized_phone).first() or Franchisor.query.filter_by(phone=sanitized_phone).first():
+            return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
+        current_app.logger.warning(
+            "register_franchisee integrity error: %s",
+            getattr(exc, "orig", exc),
+        )
+        return (
+            jsonify({"error": "Unable to submit application due to a data conflict."}),
+            HTTPStatus.CONFLICT,
+        )
     except Exception as exc:  # pragma: no cover
         db.session.rollback()
         if saved_file_path and os.path.exists(saved_file_path):
@@ -323,10 +484,21 @@ def register_manager() -> tuple[dict[str, object], int]:
     name = (payload.get("name") or "").strip()
     email = (payload.get("email") or "").strip().lower()
     password = payload.get("password") or ""
+    phone_raw = (payload.get("phone") or "").strip()
     branch_id_raw = payload.get("branch_id")
 
-    if not all([name, email, password]):
+    if not all([name, email, password, phone_raw]):
         return jsonify({"error": "Missing required fields."}), HTTPStatus.BAD_REQUEST
+
+    sanitized_phone = "".join(filter(str.isdigit, phone_raw))
+    if len(sanitized_phone) != 10:
+        return jsonify({"error": "Phone must be a 10 digit number."}), HTTPStatus.BAD_REQUEST
+
+    if User.query.filter_by(email=email).first():
+        return jsonify({"error": "Email is already registered."}), HTTPStatus.CONFLICT
+
+    if User.query.filter_by(phone=sanitized_phone).first():
+        return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
 
     branch_id_param: int | None = None
     if branch_id_raw is not None:
@@ -342,11 +514,16 @@ def register_manager() -> tuple[dict[str, object], int]:
     if branch.status_id != 1:
         return jsonify({"error": "Branch is not active."}), HTTPStatus.BAD_REQUEST
 
+    next_user_id = (
+        db.session.query(db.func.coalesce(db.func.max(User.user_id), 0)).scalar() + 1
+    )
+
     try:
         user = User(
+            user_id=next_user_id,
             name=name,
             email=email,
-            phone=(payload.get("phone") or "").strip(),
+            phone=sanitized_phone,
             password_hash=hash_password(password),
             is_active=True,
         )
@@ -379,3 +556,82 @@ def register_manager() -> tuple[dict[str, object], int]:
         return jsonify({"error": "Unable to register manager."}), HTTPStatus.INTERNAL_SERVER_ERROR
 
     return jsonify({"message": "Manager registered successfully."}), HTTPStatus.CREATED
+
+
+@auth_bp.route("/register-staff", methods=["POST"])
+@token_required({"BRANCH_OWNER", "MANAGER"})
+def register_staff() -> tuple[dict[str, object], int]:
+    payload = request.get_json(silent=True) or {}
+    name = (payload.get("name") or "").strip()
+    email = (payload.get("email") or "").strip().lower()
+    password = payload.get("password") or ""
+    phone_raw = (payload.get("phone") or "").strip()
+    branch_id_raw = payload.get("branch_id")
+
+    if not all([name, email, password, phone_raw]):
+        return jsonify({"error": "Missing required fields."}), HTTPStatus.BAD_REQUEST
+
+    sanitized_phone = "".join(filter(str.isdigit, phone_raw))
+    if len(sanitized_phone) != 10:
+        return jsonify({"error": "Phone must be a 10 digit number."}), HTTPStatus.BAD_REQUEST
+
+    if len(password) < 8:
+        return jsonify({"error": "Password must be at least 8 characters long."}), HTTPStatus.BAD_REQUEST
+
+    if User.query.filter_by(email=email).first():
+        return jsonify({"error": "Email is already registered."}), HTTPStatus.CONFLICT
+
+    if User.query.filter_by(phone=sanitized_phone).first():
+        return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
+
+    branch = _resolve_branch_for_staff(branch_id_raw)
+    if isinstance(branch, tuple):
+        return branch
+
+    next_user_id = (
+        db.session.query(db.func.coalesce(db.func.max(User.user_id), 0)).scalar() + 1
+    )
+
+    try:
+        user = User(
+            user_id=next_user_id,
+            name=name,
+            email=email,
+            phone=sanitized_phone,
+            password_hash=hash_password(password),
+            is_active=True,
+        )
+        db.session.add(user)
+        db.session.flush()
+
+        staff_role = _get_role_by_name("STAFF")
+
+        db.session.add(
+            UserRole(
+                user_id=user.user_id,
+                role_id=staff_role.role_id,
+                scope_type="BRANCH",
+                scope_id=branch.branch_id,
+            )
+        )
+
+        db.session.add(
+            BranchStaff(
+                branch_id=branch.branch_id,
+                user_id=user.user_id,
+            )
+        )
+
+        db.session.commit()
+    except LookupError as exc:
+        db.session.rollback()
+        return jsonify({"error": str(exc)}), HTTPStatus.INTERNAL_SERVER_ERROR
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Email or phone already registered."}), HTTPStatus.CONFLICT
+    except Exception as exc:  # pragma: no cover
+        db.session.rollback()
+        current_app.logger.exception("Failed to register staff: %s", exc)
+        return jsonify({"error": "Unable to register staff."}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+    return jsonify({"message": "Staff member registered successfully."}), HTTPStatus.CREATED

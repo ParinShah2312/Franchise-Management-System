@@ -58,6 +58,7 @@ def register_blueprints(app: Flask) -> None:
     """Attach route blueprints to the app."""
 
     from .routes.auth_routes import auth_bp
+    from .routes.branch_routes import branch_bp
     from .routes.dashboard_routes import dashboard_bp
     from .routes.franchise_routes import franchise_bp
     from .routes.inventory_routes import inventory_bp
@@ -66,6 +67,7 @@ def register_blueprints(app: Flask) -> None:
     from .routes.sales_routes import sales_bp
 
     app.register_blueprint(auth_bp)
+    app.register_blueprint(branch_bp)
     app.register_blueprint(franchise_bp)
     app.register_blueprint(sales_bp)
     app.register_blueprint(inventory_bp)

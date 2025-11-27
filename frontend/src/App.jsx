@@ -2,8 +2,13 @@ import { BrowserRouter as Router, Navigate, Route, Routes } from 'react-router-d
 
 import ProtectedRoute from './components/ProtectedRoute';
 import { AuthProvider } from './context/AuthContext';
+import PublicLayout from './layouts/PublicLayout';
 import AdminDashboard from './pages/AdminDashboard';
+import Contact from './pages/Contact';
+import Features from './pages/Features';
 import FranchiseeDashboard from './pages/FranchiseeDashboard';
+import ManagerDashboard from './pages/ManagerDashboard';
+import Home from './pages/Home';
 import Login from './pages/Login';
 import RegisterFranchise from './pages/RegisterFranchise';
 import RegisterFranchisor from './pages/RegisterFranchisor';
@@ -15,10 +20,15 @@ export default function App() {
     <AuthProvider>
       <Router>
         <Routes>
-          <Route path="/" element={<Login />} />
-          <Route path="/register" element={<SignupSelection />} />
-          <Route path="/register/franchise" element={<RegisterFranchise />} />
-          <Route path="/register/franchisor" element={<RegisterFranchisor />} />
+          <Route path="/" element={<PublicLayout />}>
+            <Route index element={<Home />} />
+            <Route path="features" element={<Features />} />
+            <Route path="contact" element={<Contact />} />
+            <Route path="login" element={<Login />} />
+            <Route path="register" element={<SignupSelection />} />
+            <Route path="register/franchise" element={<RegisterFranchise />} />
+            <Route path="register/franchisor" element={<RegisterFranchisor />} />
+          </Route>
           <Route
             path="/admin"
             element={
@@ -32,6 +42,14 @@ export default function App() {
             element={
               <ProtectedRoute allowedRoles={['BRANCH_OWNER', 'MANAGER']}>
                 <FranchiseeDashboard />
+              </ProtectedRoute>
+            }
+          />
+          <Route
+            path="/manager"
+            element={
+              <ProtectedRoute allowedRoles={['MANAGER']}>
+                <ManagerDashboard />
               </ProtectedRoute>
             }
           />
