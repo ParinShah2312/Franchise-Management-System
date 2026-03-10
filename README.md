@@ -36,11 +36,11 @@ Relay is a complete franchise management system that allows:
 - Admin sees recent sales activity
 - System-wide revenue tracking
 
-### **Professional UI**
-- Modern, responsive design
-- Toast notifications
-- Search & filter functionality
-- Real-time updates
+### **Professional UI & Architecture**
+- Modern, responsive design with Tailwind CSS
+- Modular React components (Shared UI, Dashboard Partials)
+- Custom React Hooks (`useAuth`, `useInventory`, `useSales`) for clean data fetching
+- Toast notifications & error boundaries
 
 **[See FEATURES.md](FEATURES.md)** for complete feature list
 
@@ -140,4 +140,4 @@ Having issues? Check [START_HERE.md](START_HERE.md) for common problems and fixe
 
 ---
 
-**Built with React, Flask, and MySQL | Version 2.0 | October 2025**
+**Built with React, Flask, and SQLite | Version 3.0 (Modular Refactor) | March 2026**

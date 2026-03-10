@@ -1,1 +1,1 @@
-"""Utility helpers for the Franchise Management System backend."""
+"""Utility helpers for the application."""

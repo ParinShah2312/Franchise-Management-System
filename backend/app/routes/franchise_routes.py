@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import os
-from datetime import datetime
+from datetime import datetime, timezone
 from http import HTTPStatus
 from uuid import uuid4
 
@@ -287,28 +287,18 @@ def approve_application(application_id: int) -> tuple[dict[str, object], int]:
     except LookupError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.INTERNAL_SERVER_ERROR
 
-    next_address_id = (
-        db.session.query(db.func.coalesce(db.func.max(Address.address_id), 0)).scalar() + 1
-    )
-
     address = _hydrate_address(application.proposed_location)
-    address.address_id = next_address_id
     db.session.add(address)
     db.session.flush()
-
-    next_branch_id = (
-        db.session.query(db.func.coalesce(db.func.max(Branch.branch_id), 0)).scalar() + 1
-    )
 
     city_suffix = address.city if address.city and address.city != "UNKNOWN" else application.proposed_location
     branch_name = f"{application.franchise.name if application.franchise else 'Franchise'} - {city_suffix}".strip()
 
     # Unique code generation
-    timestamp_code = datetime.utcnow().strftime('%y%m%d')
+    timestamp_code = datetime.now(timezone.utc).strftime('%y%m%d')
     branch_code = f"BR-{application.application_id}-{timestamp_code}"
 
     branch = Branch(
-        branch_id=next_branch_id,
         franchise_id=application.franchise_id,
         name=branch_name,
         code=branch_code,

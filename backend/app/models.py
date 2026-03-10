@@ -2,13 +2,13 @@
 
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Optional
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
-from sqlalchemy.types import BigInteger, Boolean, Date, DateTime, Numeric, String, Text
+from sqlalchemy.types import BigInteger, Integer, Boolean, Date, DateTime, Numeric, String, Text
 
 from .extensions import db
 
@@ -16,10 +16,10 @@ from .extensions import db
 class TimestampMixin:
     """Reusable timestamp columns."""
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, nullable=False
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
     updated_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, onupdate=datetime.utcnow, nullable=False
+        DateTime, default=lambda: datetime.now(timezone.utc), onupdate=lambda: datetime.now(timezone.utc), nullable=False
     )
 
 
@@ -29,7 +29,7 @@ class TimestampMixin:
 
 class ApplicationStatus(db.Model):
     __tablename__ = "application_statuses"
-    status_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    status_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     status_name: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
 
     franchise_applications: Mapped[list["FranchiseApplication"]] = relationship(
@@ -39,7 +39,7 @@ class ApplicationStatus(db.Model):
 
 class BranchStatus(db.Model):
     __tablename__ = "branch_statuses"
-    status_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    status_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     status_name: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
 
     branches: Mapped[list["Branch"]] = relationship("Branch", back_populates="status")
@@ -47,7 +47,7 @@ class BranchStatus(db.Model):
 
 class TransactionType(db.Model):
     __tablename__ = "transaction_types"
-    transaction_type_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    transaction_type_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     type_name: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
 
     inventory_transactions: Mapped[list["InventoryTransaction"]] = relationship(
@@ -57,7 +57,7 @@ class TransactionType(db.Model):
 
 class RequestStatus(db.Model):
     __tablename__ = "request_statuses"
-    request_status_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    request_status_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     status_name: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
 
     stock_purchase_requests: Mapped[list["StockPurchaseRequest"]] = relationship(
@@ -67,7 +67,7 @@ class RequestStatus(db.Model):
 
 class SaleStatus(db.Model):
     __tablename__ = "sale_statuses"
-    sale_status_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    sale_status_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     status_name: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
 
     sales: Mapped[list["Sale"]] = relationship("Sale", back_populates="status")
@@ -75,7 +75,7 @@ class SaleStatus(db.Model):
 
 class Unit(db.Model):
     __tablename__ = "units"
-    unit_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    unit_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     unit_name: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
 
     stock_items: Mapped[list["StockItem"]] = relationship("StockItem", back_populates="unit")
@@ -87,11 +87,11 @@ class Unit(db.Model):
 
 class Franchisor(TimestampMixin, db.Model):
     __tablename__ = "franchisors"
-    franchisor_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    franchisor_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     organization_name: Mapped[str] = mapped_column(String(255), nullable=False)
     contact_person: Mapped[str] = mapped_column(String(255), nullable=False)
-    email: Mapped[str] = mapped_column(String(255), nullable=False)
-    phone: Mapped[str] = mapped_column(String(50), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    phone: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
 
     franchises: Mapped[list["Franchise"]] = relationship(
@@ -107,7 +107,7 @@ class Franchisor(TimestampMixin, db.Model):
 
 class Franchise(TimestampMixin, db.Model):
     __tablename__ = "franchises"
-    franchise_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    franchise_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     franchisor_id: Mapped[int] = mapped_column(
         ForeignKey("franchisors.franchisor_id", ondelete="CASCADE"), nullable=False
     )
@@ -135,7 +135,7 @@ class Franchise(TimestampMixin, db.Model):
 
 class Address(db.Model):
     __tablename__ = "addresses"
-    address_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    address_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     address_line: Mapped[str] = mapped_column(String(255), nullable=False)
     city: Mapped[str] = mapped_column(String(100), nullable=False)
     state: Mapped[str] = mapped_column(String(100), nullable=False)
@@ -147,7 +147,7 @@ class Address(db.Model):
 
 class Branch(TimestampMixin, db.Model):
     __tablename__ = "branches"
-    branch_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    branch_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     franchise_id: Mapped[int] = mapped_column(
         ForeignKey("franchises.franchise_id", ondelete="CASCADE"), nullable=False
     )
@@ -203,10 +203,10 @@ class Branch(TimestampMixin, db.Model):
 
 class User(TimestampMixin, db.Model):
     __tablename__ = "users"
-    user_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    user_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(255), nullable=False)
-    email: Mapped[str] = mapped_column(String(255), nullable=False)
-    phone: Mapped[str] = mapped_column(String(50), nullable=False)
+    email: Mapped[str] = mapped_column(String(255), nullable=False, unique=True)
+    phone: Mapped[str] = mapped_column(String(50), nullable=False, unique=True)
     password_hash: Mapped[str] = mapped_column(String(255), nullable=False)
     must_reset_password: Mapped[bool] = mapped_column(
         Boolean, nullable=False, default=False
@@ -266,7 +266,7 @@ class User(TimestampMixin, db.Model):
 
 class Role(db.Model):
     __tablename__ = "roles"
-    role_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    role_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
 
@@ -311,7 +311,7 @@ class BranchStaff(db.Model):
         ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
     )
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, nullable=False
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
 
     branch: Mapped["Branch"] = relationship("Branch", back_populates="staff_assignments")
@@ -324,7 +324,7 @@ class BranchStaff(db.Model):
 
 class ProductCategory(db.Model):
     __tablename__ = "product_categories"
-    category_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    category_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     franchise_id: Mapped[int] = mapped_column(
         ForeignKey("franchises.franchise_id", ondelete="CASCADE"), nullable=False
     )
@@ -339,7 +339,7 @@ class ProductCategory(db.Model):
 
 class Product(TimestampMixin, db.Model):
     __tablename__ = "products"
-    product_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    product_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     franchise_id: Mapped[int] = mapped_column(
         ForeignKey("franchises.franchise_id", ondelete="CASCADE"), nullable=False
     )
@@ -362,7 +362,7 @@ class Product(TimestampMixin, db.Model):
 
 class StockItem(TimestampMixin, db.Model):
     __tablename__ = "stock_items"
-    stock_item_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    stock_item_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     franchise_id: Mapped[int] = mapped_column(
         ForeignKey("franchises.franchise_id", ondelete="CASCADE"), nullable=False
     )
@@ -390,7 +390,7 @@ class StockItem(TimestampMixin, db.Model):
 
 class BranchInventory(TimestampMixin, db.Model):
     __tablename__ = "branch_inventories"
-    branch_inventory_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    branch_inventory_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     branch_id: Mapped[int] = mapped_column(
         ForeignKey("branches.branch_id", ondelete="CASCADE"), nullable=False
     )
@@ -414,7 +414,7 @@ class BranchInventory(TimestampMixin, db.Model):
 
 class Sale(TimestampMixin, db.Model):
     __tablename__ = "sales"
-    sale_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    sale_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     branch_id: Mapped[int] = mapped_column(
         ForeignKey("branches.branch_id", ondelete="CASCADE"), nullable=False
     )
@@ -439,7 +439,7 @@ class Sale(TimestampMixin, db.Model):
 
 class SaleItem(db.Model):
     __tablename__ = "sale_items"
-    sale_item_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    sale_item_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     sale_id: Mapped[int] = mapped_column(
         ForeignKey("sales.sale_id", ondelete="CASCADE"), nullable=False
     )
@@ -460,7 +460,7 @@ class SaleItem(db.Model):
 class ProductIngredient(TimestampMixin, db.Model):
     __tablename__ = "product_ingredients"
 
-    ingredient_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    ingredient_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     product_id: Mapped[int] = mapped_column(
         ForeignKey("products.product_id", ondelete="CASCADE"), nullable=False
     )
@@ -475,7 +475,7 @@ class ProductIngredient(TimestampMixin, db.Model):
 
 class InventoryTransaction(db.Model):
     __tablename__ = "inventory_transactions"
-    transaction_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    transaction_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     branch_id: Mapped[int] = mapped_column(
         ForeignKey("branches.branch_id", ondelete="CASCADE"), nullable=False
     )
@@ -492,7 +492,7 @@ class InventoryTransaction(db.Model):
     approved_by_user_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("users.user_id"))
     note: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, nullable=False
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
 
     branch: Mapped["Branch"] = relationship("Branch", back_populates="inventory_transactions")
@@ -517,7 +517,7 @@ class InventoryTransaction(db.Model):
 
 class StockPurchaseRequest(db.Model):
     __tablename__ = "stock_purchase_requests"
-    request_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    request_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     branch_id: Mapped[int] = mapped_column(
         ForeignKey("branches.branch_id", ondelete="CASCADE"), nullable=False
     )
@@ -532,7 +532,7 @@ class StockPurchaseRequest(db.Model):
     )
     note: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
-        DateTime, default=datetime.utcnow, nullable=False
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )
     approved_at: Mapped[datetime | None] = mapped_column(DateTime)
     rejected_at: Mapped[datetime | None] = mapped_column(DateTime)
@@ -556,7 +556,7 @@ class StockPurchaseRequest(db.Model):
 
 class StockPurchaseRequestItem(db.Model):
     __tablename__ = "stock_purchase_request_items"
-    request_item_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    request_item_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     request_id: Mapped[int] = mapped_column(
         ForeignKey("stock_purchase_requests.request_id", ondelete="CASCADE"),
         nullable=False,
@@ -577,7 +577,7 @@ class StockPurchaseRequestItem(db.Model):
 
 class FranchiseApplication(TimestampMixin, db.Model):
     __tablename__ = "franchise_applications"
-    application_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    application_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     franchise_id: Mapped[int] = mapped_column(
         ForeignKey("franchises.franchise_id", ondelete="CASCADE"), nullable=False
     )
@@ -613,14 +613,14 @@ class FranchiseApplication(TimestampMixin, db.Model):
 
 class Report(db.Model):
     __tablename__ = "reports"
-    report_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    report_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     generated_by_user_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("users.user_id"), nullable=False)
     franchisor_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("franchisors.franchisor_id"), nullable=False)
     branch_id: Mapped[int | None] = mapped_column(BigInteger, ForeignKey("branches.branch_id"))
     report_type: Mapped[str] = mapped_column(String(20), nullable=False)  # 'MASTER', 'BRANCH'
     period_start: Mapped[Date] = mapped_column(Date, nullable=False)
     period_end: Mapped[Date] = mapped_column(Date, nullable=False)
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     generated_by_user: Mapped[Optional["User"]] = relationship(
         "User", back_populates="reports", foreign_keys=[generated_by_user_id]
@@ -636,11 +636,11 @@ class Report(db.Model):
 
 class ReportData(db.Model):
     __tablename__ = "report_data"
-    report_data_id: Mapped[int] = mapped_column(BigInteger, primary_key=True)
+    report_data_id: Mapped[int] = mapped_column(BigInteger().with_variant(Integer, "sqlite"), primary_key=True, autoincrement=True)
     report_id: Mapped[int] = mapped_column(BigInteger, ForeignKey("reports.report_id"), nullable=False)
     data_key: Mapped[str] = mapped_column(String(100), nullable=False)
     data_value: Mapped[str | None] = mapped_column(String(255))
-    created_at: Mapped[datetime] = mapped_column(DateTime, default=datetime.utcnow)
+    created_at: Mapped[datetime] = mapped_column(DateTime, default=lambda: datetime.now(timezone.utc))
 
     report: Mapped["Report"] = relationship("Report", back_populates="data_entries")
 

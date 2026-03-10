@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from http import HTTPStatus
 
@@ -63,11 +63,7 @@ def _serialize_inventory(record: BranchInventory) -> dict[str, object]:
     }
 
 
-def _next_id(model, pk_column):
-    next_value = db.session.query(func.coalesce(func.max(pk_column), 0)).scalar() + 1
-    while db.session.query(model).get(next_value) is not None:
-        next_value += 1
-    return next_value
+
 
 
 @inventory_bp.route("", methods=["GET"])
@@ -95,7 +91,6 @@ def _get_or_create_inventory(branch_id: int, stock_item_id: int) -> BranchInvent
     if record:
         return record
     record = BranchInventory(
-        branch_inventory_id=_next_id(BranchInventory, BranchInventory.branch_inventory_id),
         branch_id=branch_id,
         stock_item_id=stock_item_id,
         quantity=Decimal("0"),
@@ -119,13 +114,12 @@ def _apply_transaction(
     current_user = getattr(g, "current_user", None)
 
     transaction = InventoryTransaction(
-        transaction_id=_next_id(InventoryTransaction, InventoryTransaction.transaction_id),
         branch_id=branch.branch_id,
         stock_item_id=stock_item.stock_item_id,
         transaction_type_id=transaction_type_id,
         quantity_change=quantity_delta,
         created_by_user_id=current_user.user_id if current_user else None,
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
         note=note,
     )
     db.session.add(transaction)
@@ -361,7 +355,6 @@ def create_branch_inventory() -> tuple[dict[str, object], int]:
         )
 
     inventory = BranchInventory(
-        branch_inventory_id=_next_id(BranchInventory, BranchInventory.branch_inventory_id),
         branch_id=result,
         stock_item_id=stock_item_id,
         quantity=quantity,
@@ -378,14 +371,13 @@ def create_branch_inventory() -> tuple[dict[str, object], int]:
             return jsonify({"error": "Transaction type 'ADJUSTMENT' or 'IN' is not configured."}), HTTPStatus.INTERNAL_SERVER_ERROR
 
     transaction = InventoryTransaction(
-        transaction_id=_next_id(InventoryTransaction, InventoryTransaction.transaction_id),
         branch_id=result,
         stock_item_id=stock_item_id,
         transaction_type_id=transaction_type.transaction_type_id,
         quantity_change=quantity,
         note="Initial inventory load",
         created_by_user_id=getattr(getattr(g, "current_user", None), "user_id", None),
-        created_at=datetime.utcnow(),
+        created_at=datetime.now(timezone.utc),
     )
     db.session.add(transaction)
 

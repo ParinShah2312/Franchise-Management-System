@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 from http import HTTPStatus
 
@@ -62,7 +62,7 @@ def _ensure_branch_scope(branch_id: int | None) -> int | tuple[dict[str, object]
 
 def _parse_datetime(value: object) -> datetime:
     if value is None:
-        return datetime.utcnow()
+        return datetime.now(timezone.utc)
     try:
         return datetime.fromisoformat(str(value))
     except (TypeError, ValueError):
@@ -152,12 +152,7 @@ def create_sale() -> tuple[dict[str, object], int]:
 
     current_user = getattr(g, "current_user", None)
 
-    next_sale_id = (
-        db.session.query(func.coalesce(func.max(Sale.sale_id), 0)).scalar() + 1
-    )
-
     sale = Sale(
-        sale_id=next_sale_id,
         branch_id=branch.branch_id,
         sale_datetime=sale_datetime,
         total_amount=Decimal("0"),
@@ -169,10 +164,6 @@ def create_sale() -> tuple[dict[str, object], int]:
 
     running_total = Decimal("0")
     sale_item_records: list[tuple[SaleItem, Product, int]] = []
-
-    next_sale_item_id = (
-        db.session.query(func.coalesce(func.max(SaleItem.sale_item_id), 0)).scalar() + 1
-    )
 
     for entry in items_payload:
         product_id = entry.get("product_id")
@@ -195,7 +186,6 @@ def create_sale() -> tuple[dict[str, object], int]:
         running_total += line_total
 
         sale_item = SaleItem(
-            sale_item_id=next_sale_item_id,
             sale_id=sale.sale_id,
             product_id=product.product_id,
             quantity=quantity,
@@ -206,17 +196,10 @@ def create_sale() -> tuple[dict[str, object], int]:
         db.session.flush()
         sale_item_records.append((sale_item, product, quantity))
 
-        next_sale_item_id += 1
-
     transaction_type_out_id = _transaction_type_out_id()
     if isinstance(transaction_type_out_id, tuple):
         db.session.rollback()
         return transaction_type_out_id
-
-    next_transaction_id = (
-        db.session.query(func.coalesce(func.max(InventoryTransaction.transaction_id), 0)).scalar()
-        + 1
-    )
 
     for sale_item, product, quantity in sale_item_records:
         ingredients = ProductIngredient.query.filter_by(product_id=product.product_id).all()
@@ -242,12 +225,8 @@ def create_sale() -> tuple[dict[str, object], int]:
 
             inventory_record.quantity = inventory_record.quantity - total_required
 
-            while InventoryTransaction.query.get(next_transaction_id) is not None:
-                next_transaction_id += 1
-
             db.session.add(
                 InventoryTransaction(
-                    transaction_id=next_transaction_id,
                     branch_id=branch.branch_id,
                     stock_item_id=ingredient.stock_item_id,
                     transaction_type_id=transaction_type_out_id,
@@ -257,8 +236,6 @@ def create_sale() -> tuple[dict[str, object], int]:
                     note=f"Sale #{sale.sale_id}",
                 )
             )
-
-            next_transaction_id += 1
 
     sale.total_amount = running_total
 

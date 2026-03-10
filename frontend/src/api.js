@@ -1,5 +1,5 @@
-const BASE_URL = 'http://localhost:5000/api';
-export const API_ORIGIN = BASE_URL.replace(/\/api$/, '');
+const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const API_ORIGIN = API_URL.replace(/\/api$/, '');
 
 let authToken = null;
 
@@ -12,7 +12,7 @@ export const clearAuthToken = () => {
 };
 
 async function request(path, options = {}) {
-  const url = `${BASE_URL}${path}`;
+  const url = `${API_URL}${path}`;
   const { headers: incomingHeaders, body, ...rest } = options;
   const headers = new Headers(incomingHeaders || {});
   const isFormData = body instanceof FormData;

@@ -80,7 +80,6 @@ export default function RegisterFranchise() {
   const validateForm = () => {
     const errors = {};
 
-    const emailLower = formState.email.toLowerCase();
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(formState.email)) {
       errors.email = 'Invalid email format.';

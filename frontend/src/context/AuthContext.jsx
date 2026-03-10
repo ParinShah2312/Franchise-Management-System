@@ -23,6 +23,31 @@ export function AuthProvider({ children }) {
 
   useEffect(() => {
     if (token) {
+      // Check if the JWT is expired
+      try {
+        const payload = JSON.parse(atob(token.split('.')[1]));
+        if (payload.exp && payload.exp * 1000 < Date.now()) {
+          // Token expired — auto-logout
+          localStorage.removeItem(STORAGE_TOKEN_KEY);
+          localStorage.removeItem(STORAGE_USER_KEY);
+          localStorage.removeItem(STORAGE_SCOPE_KEY);
+          clearAuthToken();
+          setToken(null);
+          setUser(null);
+          setScope(null);
+          setLoading(false);
+          return;
+        }
+      } catch {
+        // If token can't be parsed, treat as invalid
+        localStorage.removeItem(STORAGE_TOKEN_KEY);
+        clearAuthToken();
+        setToken(null);
+        setUser(null);
+        setLoading(false);
+        return;
+      }
+
       const storedUser = localStorage.getItem(STORAGE_USER_KEY);
       const storedScope = localStorage.getItem(STORAGE_SCOPE_KEY);
       if (storedUser) {
@@ -38,7 +63,7 @@ export function AuthProvider({ children }) {
     setLoading(false);
   }, [token]);
 
-  const login = async (email, password) => {
+  const login = useCallback(async (email, password) => {
     const data = await api.post('/auth/login', { email, password });
 
     const session = {
@@ -64,9 +89,9 @@ export function AuthProvider({ children }) {
     setScope(sessionScope);
 
     return { ...session, scope: sessionScope, token: data.token };
-  };
+  }, []);
 
-  const logout = () => {
+  const logout = useCallback(() => {
     localStorage.removeItem(STORAGE_TOKEN_KEY);
     localStorage.removeItem(STORAGE_USER_KEY);
     localStorage.removeItem(STORAGE_SCOPE_KEY);
@@ -74,7 +99,7 @@ export function AuthProvider({ children }) {
     setToken(null);
     setUser(null);
     setScope(null);
-  };
+  }, []);
 
   const updateUser = useCallback((updates) => {
     setUser((previous) => {

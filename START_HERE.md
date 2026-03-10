@@ -418,5 +418,5 @@ Your Relay Franchise Management System is:
 
 ---
 
-**Last Updated:** October 19, 2025  
-**Version:** 2.0 (Enhanced with Sales Tracking)
+**Last Updated:** March 11, 2026  
+**Version:** 3.0 (Modular Frontend Refactor & Custom Hooks)

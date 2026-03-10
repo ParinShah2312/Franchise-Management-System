@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal
 
 from app import create_app
@@ -313,7 +313,7 @@ def seed_database() -> None:
             sale_id=1,
             branch_id=relay_branch.branch_id,
             sold_by_user_id=staff_user.user_id,
-            sale_datetime=datetime.utcnow(),
+            sale_datetime=datetime.now(timezone.utc),
             total_amount=Decimal("0"),
             status_id=sale_status_lookup["PAID"].sale_status_id,
         )

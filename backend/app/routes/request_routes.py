@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime
+from datetime import datetime, timezone
 from decimal import Decimal, InvalidOperation
 from http import HTTPStatus
 
@@ -78,15 +78,7 @@ def _get_or_create_inventory(branch_id: int, stock_item_id: int) -> BranchInvent
     if record:
         return record
 
-    next_inventory_id = (
-        db.session.query(func.coalesce(func.max(BranchInventory.branch_inventory_id), 0)).scalar() + 1
-    )
-
-    while BranchInventory.query.get(next_inventory_id) is not None:
-        next_inventory_id += 1
-
     record = BranchInventory(
-        branch_inventory_id=next_inventory_id,
         branch_id=branch_id,
         stock_item_id=stock_item_id,
         quantity=Decimal("0"),
@@ -146,12 +138,7 @@ def create_request() -> tuple[dict[str, object], int]:
 
     current_user = getattr(g, "current_user", None)
 
-    next_request_id = (
-        db.session.query(func.coalesce(func.max(StockPurchaseRequest.request_id), 0)).scalar() + 1
-    )
-
     request_record = StockPurchaseRequest(
-        request_id=next_request_id,
         branch_id=branch.branch_id,
         requested_by_user_id=current_user.user_id if current_user else None,
         status_id=pending_status_id,
@@ -159,10 +146,6 @@ def create_request() -> tuple[dict[str, object], int]:
     )
     db.session.add(request_record)
     db.session.flush()
-
-    next_request_item_id = (
-        db.session.query(func.coalesce(func.max(StockPurchaseRequestItem.request_item_id), 0)).scalar()
-    )
 
     for entry in items_payload:
         stock_item_id = entry.get("stock_item_id")
@@ -201,11 +184,8 @@ def create_request() -> tuple[dict[str, object], int]:
                 db.session.rollback()
                 return jsonify({"error": "estimated_unit_cost must be numeric."}), HTTPStatus.BAD_REQUEST
 
-        next_request_item_id += 1
-
         db.session.add(
             StockPurchaseRequestItem(
-                request_item_id=next_request_item_id,
                 request_id=request_record.request_id,
                 stock_item_id=stock_item.stock_item_id,
                 requested_quantity=quantity,
@@ -305,20 +285,12 @@ def approve_request(request_id: int) -> tuple[dict[str, object], int]:
 
     current_user = getattr(g, "current_user", None)
 
-    next_transaction_id = (
-        db.session.query(func.coalesce(func.max(InventoryTransaction.transaction_id), 0)).scalar() + 1
-    )
-
     for item in record.items:
         inventory_record = _get_or_create_inventory(branch.branch_id, item.stock_item_id)
         inventory_record.quantity = inventory_record.quantity + item.requested_quantity
 
-        while InventoryTransaction.query.get(next_transaction_id) is not None:
-            next_transaction_id += 1
-
         db.session.add(
             InventoryTransaction(
-                transaction_id=next_transaction_id,
                 branch_id=branch.branch_id,
                 stock_item_id=item.stock_item_id,
                 transaction_type_id=transaction_type_id,
@@ -327,15 +299,13 @@ def approve_request(request_id: int) -> tuple[dict[str, object], int]:
                 created_by_user_id=current_user.user_id if current_user else None,
                 approved_by_user_id=current_user.user_id if current_user else None,
                 note=f"Auto-approved from request {record.request_id}",
-                created_at=datetime.utcnow(),
+                created_at=datetime.now(timezone.utc),
             )
         )
 
-        next_transaction_id += 1
-
     record.status_id = approved_status_id
     record.approved_by_user_id = current_user.user_id if current_user else None
-    record.approved_at = datetime.utcnow()
+    record.approved_at = datetime.now(timezone.utc)
 
     db.session.commit()
 
@@ -372,7 +342,7 @@ def reject_request(request_id: int) -> tuple[dict[str, object], int]:
 
     record.status_id = rejected_status_id
     record.approved_by_user_id = current_user.user_id if current_user else None
-    record.approved_at = datetime.utcnow()
+    record.approved_at = datetime.now(timezone.utc)
 
     db.session.commit()
 

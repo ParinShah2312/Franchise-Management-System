@@ -23,9 +23,18 @@ def create_app(
 
     app = Flask(__name__)
 
+    flask_secret = os.environ.get("SECRET_KEY", "dev-flask-secret")
+    if flask_secret == "dev-flask-secret" and not app.debug:
+        raise RuntimeError(
+            "SECRET_KEY must be set in production. "
+            "Set the SECRET_KEY environment variable."
+        )
+
     default_config: dict[str, Any] = {
+        "SECRET_KEY": flask_secret,
         "SQLALCHEMY_DATABASE_URI": os.environ.get("DATABASE_URI", "sqlite:///relay.db"),
         "SQLALCHEMY_TRACK_MODIFICATIONS": False,
+        "MAX_CONTENT_LENGTH": 5 * 1024 * 1024,  # 5 MB upload limit
     }
 
     app.config.from_mapping(default_config)

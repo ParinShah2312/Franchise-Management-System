@@ -3,6 +3,10 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api, API_ORIGIN } from '../api';
 import { useAuth } from '../context/AuthContext';
 import Toast from '../components/Toast';
+import Modal from '../components/ui/Modal';
+import StatCard from '../components/ui/StatCard';
+import Table from '../components/ui/Table';
+import Tabs from '../components/ui/Tabs';
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
@@ -10,21 +14,6 @@ const TABS = [
   { key: 'applications', label: 'Applications' },
 ];
 
-function StatCard({ title, helper, value, accent }) {
-  const accentClasses = {
-    primary: 'bg-blue-50 border border-blue-100 text-blue-900',
-    success: 'bg-green-50 border border-green-100 text-green-900',
-    neutral: 'bg-gray-50 border border-gray-200 text-gray-900',
-  };
-
-  return (
-    <div className={`card ${accentClasses[accent] ?? accentClasses.neutral}`}>
-      <p className="text-sm font-semibold text-gray-600 uppercase tracking-wide">{title}</p>
-      <p className="mt-3 text-3xl font-bold">{value}</p>
-      {helper ? <p className="mt-1 text-xs text-gray-600/80">{helper}</p> : null}
-    </div>
-  );
-}
 
 function ApplicationModal({ application, onClose, onApprove, onReject, actionState }) {
   if (!application) return null;
@@ -62,107 +51,94 @@ function ApplicationModal({ application, onClose, onApprove, onReject, actionSta
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 px-4">
-      <div className="w-full max-w-3xl overflow-hidden rounded-2xl bg-white shadow-2xl">
-        <header className="flex items-center justify-between border-b border-border px-6 py-4">
+    <Modal
+      isOpen={!!application}
+      onClose={onClose}
+      title="Application review"
+      description="Verify the applicant's details before approving or rejecting."
+      maxWidth="max-w-3xl"
+    >
+      <div className="space-y-8">
+        <section className="grid grid-cols-1 gap-4 text-sm text-gray-700 md:grid-cols-2">
           <div>
-            <h3 className="text-xl font-semibold text-gray-900">Application review</h3>
-            <p className="text-sm text-gray-500">
-              Verify the applicant&apos;s details before approving or rejecting.
+            <p className="label mb-1">Applicant</p>
+            <p className="font-semibold text-gray-900">{application.applicant_name || '—'}</p>
+            <p className="text-gray-500">{application.applicant_email || '—'}</p>
+            <p className="text-gray-500">{application.applicant_phone || '—'}</p>
+          </div>
+          <div>
+            <p className="label mb-1">Franchise brand</p>
+            <p className="font-semibold text-gray-900">{application.franchise_name || '—'}</p>
+            <p className="text-gray-500">Submitted {formatDate(application.submitted_at)}</p>
+          </div>
+          <div>
+            <p className="label mb-1">Proposed location</p>
+            <p className="font-semibold text-gray-900">{application.proposed_location || '—'}</p>
+          </div>
+          <div>
+            <p className="label mb-1">Investment capacity</p>
+            <p className="font-semibold text-gray-900">
+              {formatCurrency(application.investment_capacity)}
             </p>
           </div>
-          <button
-            type="button"
-            onClick={onClose}
-            className="text-gray-400 transition hover:text-gray-600"
-            aria-label="Close modal"
-          >
-            ✕
-          </button>
-        </header>
+        </section>
 
-        <div className="space-y-8 px-6 py-6">
-          <section className="grid grid-cols-1 gap-4 text-sm text-gray-700 md:grid-cols-2">
-            <div>
-              <p className="label mb-1">Applicant</p>
-              <p className="font-semibold text-gray-900">{application.applicant_name || '—'}</p>
-              <p className="text-gray-500">{application.applicant_email || '—'}</p>
-              <p className="text-gray-500">{application.applicant_phone || '—'}</p>
-            </div>
-            <div>
-              <p className="label mb-1">Franchise brand</p>
-              <p className="font-semibold text-gray-900">{application.franchise_name || '—'}</p>
-              <p className="text-gray-500">Submitted {formatDate(application.submitted_at)}</p>
-            </div>
-            <div>
-              <p className="label mb-1">Proposed location</p>
-              <p className="font-semibold text-gray-900">{application.proposed_location || '—'}</p>
-            </div>
-            <div>
-              <p className="label mb-1">Investment capacity</p>
-              <p className="font-semibold text-gray-900">
-                {formatCurrency(application.investment_capacity)}
-              </p>
-            </div>
-          </section>
+        <section className="space-y-4 text-sm text-gray-700">
+          <div>
+            <p className="label mb-1">Business experience</p>
+            <p className="whitespace-pre-line rounded-lg border border-border bg-gray-50 p-4">
+              {application.business_experience || 'Not provided.'}
+            </p>
+          </div>
+          <div>
+            <p className="label mb-1">Reason for franchise</p>
+            <p className="whitespace-pre-line rounded-lg border border-border bg-gray-50 p-4">
+              {application.reason || 'Not provided.'}
+            </p>
+          </div>
+        </section>
 
-          <section className="space-y-4 text-sm text-gray-700">
-            <div>
-              <p className="label mb-1">Business experience</p>
-              <p className="whitespace-pre-line rounded-lg border border-border bg-gray-50 p-4">
-                {application.business_experience || 'Not provided.'}
-              </p>
-            </div>
-            <div>
-              <p className="label mb-1">Reason for franchise</p>
-              <p className="whitespace-pre-line rounded-lg border border-border bg-gray-50 p-4">
-                {application.reason || 'Not provided.'}
-              </p>
-            </div>
-          </section>
-
-          <section className="flex flex-wrap items-center justify-between gap-4">
-            <div>
-              <p className="label mb-2">Supporting document</p>
-              {documentHref ? (
-                <a
-                  href={documentHref}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
-                >
-                  📄 View document
-                </a>
-              ) : (
-                <p className="text-sm text-gray-500">No document uploaded.</p>
-              )}
-            </div>
-
-            <div className="flex flex-wrap gap-3">
-              <span className="self-center text-sm text-gray-500">
-                Status: {toSentenceCase(application.status)}
-              </span>
-              <button
-                type="button"
-                onClick={() => onReject(application.application_id)}
-                className="btn-outline border-red-200 text-red-600 hover:border-red-400 hover:text-red-700"
-                disabled={isProcessingApprove || isProcessingReject}
+        <section className="flex flex-wrap items-center justify-between gap-4">
+          <div>
+            <p className="label mb-2">Supporting document</p>
+            {documentHref ? (
+              <a
+                href={documentHref}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
               >
-                {isProcessingReject ? 'Rejecting…' : 'Reject'}
-              </button>
-              <button
-                type="button"
-                onClick={() => onApprove(application.application_id)}
-                className="btn-primary"
-                disabled={isProcessingApprove || isProcessingReject}
-              >
-                {isProcessingApprove ? 'Approving…' : 'Approve'}
-              </button>
-            </div>
-          </section>
-        </div>
+                📄 View document
+              </a>
+            ) : (
+              <p className="text-sm text-gray-500">No document uploaded.</p>
+            )}
+          </div>
+
+          <div className="flex flex-wrap gap-3">
+            <span className="self-center text-sm text-gray-500">
+              Status: {toSentenceCase(application.status)}
+            </span>
+            <button
+              type="button"
+              onClick={() => onReject(application.application_id)}
+              className="btn-outline border-red-200 text-red-600 hover:border-red-400 hover:text-red-700"
+              disabled={isProcessingApprove || isProcessingReject}
+            >
+              {isProcessingReject ? 'Rejecting…' : 'Reject'}
+            </button>
+            <button
+              type="button"
+              onClick={() => onApprove(application.application_id)}
+              className="btn-primary"
+              disabled={isProcessingApprove || isProcessingReject}
+            >
+              {isProcessingApprove ? 'Approving…' : 'Approve'}
+            </button>
+          </div>
+        </section>
       </div>
-    </div>
+    </Modal>
   );
 }
 
@@ -410,34 +386,21 @@ export default function AdminDashboard() {
           No branches found yet.
         </div>
       ) : (
-        <div className="mt-6 overflow-x-auto">
-          <table className="min-w-full divide-y divide-border">
-            <thead className="bg-gray-50">
-              <tr>
-                {['Branch', 'Franchise', 'Location', 'Owner', 'Manager', 'Status'].map((heading) => (
-                  <th
-                    key={heading}
-                    scope="col"
-                    className="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
-                  >
-                    {heading}
-                  </th>
-                ))}
+        <div className="mt-6">
+          <Table
+            headers={['Branch', 'Franchise', 'Location', 'Owner', 'Manager', 'Status']}
+            data={flattenedBranches}
+            renderRow={(row) => (
+              <tr key={row.branchId} className="border-b border-border/60 last:border-0">
+                <td className="px-4 py-3 text-sm font-medium text-gray-900">{row.branchName || '—'}</td>
+                <td className="px-4 py-3 text-sm text-gray-600">{row.franchiseName || '—'}</td>
+                <td className="px-4 py-3 text-sm text-gray-600">{row.location || '—'}</td>
+                <td className="px-4 py-3 text-sm text-gray-600">{row.ownerName || '—'}</td>
+                <td className="px-4 py-3 text-sm text-gray-600">{row.managerName || '—'}</td>
+                <td className="px-4 py-3 text-sm text-gray-600">{row.status || '—'}</td>
               </tr>
-            </thead>
-            <tbody className="bg-white">
-              {flattenedBranches.map((row) => (
-                <tr key={row.branchId} className="border-b border-border/60 last:border-0">
-                  <td className="px-4 py-3 text-sm font-medium text-gray-900">{row.branchName || '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{row.franchiseName || '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{row.location || '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{row.ownerName || '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{row.managerName || '—'}</td>
-                  <td className="px-4 py-3 text-sm text-gray-600">{row.status || '—'}</td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            )}
+          />
         </div>
       )}
     </section>
@@ -460,48 +423,35 @@ export default function AdminDashboard() {
           No pending applications at the moment.
         </div>
       ) : (
-        <div className="overflow-x-auto rounded-xl border border-border bg-white">
-          <table className="min-w-full divide-y divide-border">
-            <thead className="bg-gray-50">
-              <tr>
-                {['Applicant', 'Location', 'Investment', 'Submitted', 'Actions'].map((heading) => (
-                  <th
-                    key={heading}
-                    scope="col"
-                    className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+        <div className="mt-6">
+          <Table
+            headers={['Applicant', 'Location', 'Investment', 'Submitted', 'Actions']}
+            data={applications}
+            renderRow={(application) => (
+              <tr key={application.application_id}>
+                <td className="px-5 py-4 text-sm font-medium text-gray-900">
+                  <div>{application.applicant_name || '—'}</div>
+                  <div className="text-xs text-gray-500">{application.applicant_email || '—'}</div>
+                </td>
+                <td className="px-5 py-4 text-sm text-gray-600">{application.proposed_location || '—'}</td>
+                <td className="px-5 py-4 text-sm text-gray-600">
+                  {formatCurrency(application.investment_capacity)}
+                </td>
+                <td className="px-5 py-4 text-sm text-gray-600">
+                  {formatDate(application.submitted_at)}
+                </td>
+                <td className="px-5 py-4 text-sm text-gray-600">
+                  <button
+                    type="button"
+                    onClick={() => openApplication(application)}
+                    className="btn-outline px-4 py-2 text-sm"
                   >
-                    {heading}
-                  </th>
-                ))}
+                    Review
+                  </button>
+                </td>
               </tr>
-            </thead>
-            <tbody className="divide-y divide-border bg-white">
-              {applications.map((application) => (
-                <tr key={application.application_id}>
-                  <td className="px-5 py-4 text-sm font-medium text-gray-900">
-                    <div>{application.applicant_name || '—'}</div>
-                    <div className="text-xs text-gray-500">{application.applicant_email || '—'}</div>
-                  </td>
-                  <td className="px-5 py-4 text-sm text-gray-600">{application.proposed_location || '—'}</td>
-                  <td className="px-5 py-4 text-sm text-gray-600">
-                    {formatCurrency(application.investment_capacity)}
-                  </td>
-                  <td className="px-5 py-4 text-sm text-gray-600">
-                    {formatDate(application.submitted_at)}
-                  </td>
-                  <td className="px-5 py-4 text-sm text-gray-600">
-                    <button
-                      type="button"
-                      onClick={() => openApplication(application)}
-                      className="btn-outline px-4 py-2 text-sm"
-                    >
-                      Review
-                    </button>
-                  </td>
-                </tr>
-              ))}
-            </tbody>
-          </table>
+            )}
+          />
         </div>
       )}
     </section>
@@ -554,22 +504,7 @@ export default function AdminDashboard() {
           </div>
         ) : null}
 
-        <nav className="mb-8 flex flex-wrap items-center gap-2">
-          {TABS.map((tab) => (
-            <button
-              key={tab.key}
-              type="button"
-              onClick={() => setActiveTab(tab.key)}
-              className={`rounded-full px-5 py-2 text-sm font-semibold transition ${
-                activeTab === tab.key
-                  ? 'bg-primary text-white shadow'
-                  : 'bg-white text-gray-600 hover:bg-gray-100'
-              }`}
-            >
-              {tab.label}
-            </button>
-          ))}
-        </nav>
+        <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
 
         <div className="space-y-8">{renderTabContent()}</div>
       </main>

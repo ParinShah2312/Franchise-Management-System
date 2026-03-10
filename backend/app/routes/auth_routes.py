@@ -30,20 +30,11 @@ from ..models import (
     UserRole,
 )
 from ..utils.security import generate_token, hash_password, token_required, verify_password
+from ..utils.security import _select_primary_role  # canonical role selection
 
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
-
-def _select_primary_role(user: User) -> UserRole | None:
-    """Return the first role assigned to a user ordered by scope priority."""
-
-    return (
-        UserRole.query.options(joinedload(UserRole.role))
-        .filter(UserRole.user_id == user.user_id)
-        .order_by(UserRole.scope_type.desc(), UserRole.scope_id.asc())
-        .first()
-    )
 
 
 def _get_role_by_name(role_name: str) -> Role:
@@ -148,16 +139,10 @@ def _ensure_franchise_for_franchisor(franchisor: Franchisor) -> Franchise | None
     if existing:
         return existing
 
-    next_franchise_id = (
-        db.session.query(db.func.coalesce(db.func.max(Franchise.franchise_id), 0)).scalar()
-        + 1
-    )
-
     franchise_name = franchisor.organization_name or f"Franchise {franchisor.franchisor_id}"
     description = f"Primary franchise for {franchise_name}."
 
     franchise = Franchise(
-        franchise_id=next_franchise_id,
         franchisor_id=franchisor.franchisor_id,
         name=franchise_name,
         description=description,
@@ -330,12 +315,7 @@ def register_franchisor() -> tuple[dict[str, object], int]:
     if Franchisor.query.filter_by(phone=sanitized_phone).first() or User.query.filter_by(phone=sanitized_phone).first():
         return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
 
-    next_franchisor_id = (
-        db.session.query(db.func.coalesce(db.func.max(Franchisor.franchisor_id), 0)).scalar() + 1
-    )
-
     franchisor = Franchisor(
-        franchisor_id=next_franchisor_id,
         organization_name=organization_name,
         contact_person=contact_person,
         email=email,
@@ -453,14 +433,8 @@ def register_franchisee() -> tuple[dict[str, object], int]:
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
-    next_user_id = db.session.query(db.func.coalesce(db.func.max(User.user_id), 0)).scalar() + 1
-    next_application_id = (
-        db.session.query(db.func.coalesce(db.func.max(FranchiseApplication.application_id), 0)).scalar() + 1
-    )
-
     try:
         user = User(
-            user_id=next_user_id,
             name=name,
             email=email,
             phone=sanitized_phone,
@@ -473,7 +447,6 @@ def register_franchisee() -> tuple[dict[str, object], int]:
         db.session.flush()
 
         application = FranchiseApplication(
-            application_id=next_application_id,
             franchise_id=franchise.franchise_id,
             branch_owner_user_id=user.user_id,
             proposed_location=proposed_location,
@@ -545,13 +518,8 @@ def register_staff() -> tuple[dict[str, object], int]:
     if isinstance(branch, tuple):
         return branch
 
-    next_user_id = (
-        db.session.query(db.func.coalesce(db.func.max(User.user_id), 0)).scalar() + 1
-    )
-
     try:
         user = User(
-            user_id=next_user_id,
             name=name,
             email=email,
             phone=sanitized_phone,

@@ -9,6 +9,8 @@ from datetime import datetime, timedelta, timezone
 from functools import wraps
 from hashlib import sha256
 from hmac import compare_digest, new as hmac_new
+
+import bcrypt
 from http import HTTPStatus
 from typing import Iterable, Optional
 from types import SimpleNamespace
@@ -20,19 +22,29 @@ from ..models import Franchisor, User, UserRole
 
 
 def hash_password(password: str) -> str:
-    """Return the SHA-256 hash of the provided password."""
-    return sha256(password.encode("utf-8")).hexdigest()
+    """Return a bcrypt hash of the provided password."""
+    return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
 
 
 def verify_password(password: str, hashed: str) -> bool:
-    """Check if the provided password matches the stored hash."""
-    return hash_password(password) == hashed
+    """Check if the provided password matches the stored bcrypt hash."""
+    try:
+        return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
+    except (ValueError, TypeError):
+        return False
+
+
+_DEFAULT_DEV_SECRET = "dev-secret-key"
 
 
 def _get_jwt_secret() -> bytes:
     """Retrieve the JWT secret key safely."""
-    # Priority: Config -> Env Var -> Default Fallback
-    secret = current_app.config.get("JWT_SECRET") or os.environ.get("JWT_SECRET") or "dev-secret-key"
+    secret = current_app.config.get("JWT_SECRET") or os.environ.get("JWT_SECRET") or _DEFAULT_DEV_SECRET
+    if secret == _DEFAULT_DEV_SECRET and not current_app.debug:
+        raise RuntimeError(
+            "JWT_SECRET must be set in production. "
+            "Set the JWT_SECRET environment variable or app config."
+        )
     return secret.encode("utf-8")
 
 
