@@ -7,8 +7,7 @@ from http import HTTPStatus
 from flask import Blueprint, jsonify, g
 from sqlalchemy.orm import joinedload
 
-from ..extensions import db
-from ..models import Branch, BranchStaff, Role, User, UserRole
+from ..models import Branch, BranchStaff, User, UserRole
 from ..utils.security import token_required
 
 branch_bp = Blueprint("branch", __name__, url_prefix="/api/branch")
@@ -25,8 +24,13 @@ def _branch_scope() -> Branch | tuple[dict[str, object], int]:
     if not branch:
         return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
 
-    if getattr(role.role, "name", "") == "MANAGER" and branch.manager_user_id != current_user.user_id:
-        return jsonify({"error": "You are not assigned as manager for this branch."}), HTTPStatus.FORBIDDEN
+    if (
+        getattr(role.role, "name", "") == "MANAGER"
+        and branch.manager_user_id != current_user.user_id
+    ):
+        return jsonify(
+            {"error": "You are not assigned as manager for this branch."}
+        ), HTTPStatus.FORBIDDEN
 
     if branch.status_id != 1:
         return jsonify({"error": "Branch is not active."}), HTTPStatus.BAD_REQUEST
@@ -36,7 +40,11 @@ def _branch_scope() -> Branch | tuple[dict[str, object], int]:
 
 def _resolve_branch_role(user: User, branch_id: int) -> str | None:
     for assignment in user.user_roles:
-        if assignment.scope_type == "BRANCH" and assignment.scope_id == branch_id and assignment.role:
+        if (
+            assignment.scope_type == "BRANCH"
+            and assignment.scope_id == branch_id
+            and assignment.role
+        ):
             return assignment.role.name
     return None
 

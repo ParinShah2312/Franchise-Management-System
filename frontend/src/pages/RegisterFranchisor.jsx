@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { api } from '../api';
+import { useAuth } from '../context/AuthContext';
 
 const initialState = {
   organization_name: '',
@@ -13,6 +14,7 @@ const initialState = {
 
 export default function RegisterFranchisor() {
   const navigate = useNavigate();
+  const { login } = useAuth();
   const [formState, setFormState] = useState(initialState);
   const [formErrors, setFormErrors] = useState({});
   const [submitting, setSubmitting] = useState(false);
@@ -80,9 +82,16 @@ export default function RegisterFranchisor() {
         password: formState.password,
       });
 
-      setSuccess('Registration successful! You can now log in to manage your brand.');
-      setFormState(initialState);
-      setTimeout(() => navigate('/', { replace: true }), 2000);
+      try {
+        await login(formState.email.trim().toLowerCase(), formState.password);
+        setSuccess('Registration successful! Redirecting to your dashboard...');
+        setFormState(initialState);
+        setTimeout(() => navigate('/admin', { replace: true }), 1000);
+      } catch (loginErr) {
+        setSuccess('Registration successful! Please log in.');
+        setFormState(initialState);
+        setTimeout(() => navigate('/', { replace: true }), 2000);
+      }
     } catch (err) {
       setError(err?.message || 'Unable to register franchisor at this time.');
     } finally {

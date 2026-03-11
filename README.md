@@ -1,56 +1,57 @@
 # 🚀 Relay - Franchise Management System
 
-**A professional, production-ready franchise management platform with multi-role support, detailed application workflows, and comprehensive sales tracking.**
+**A professional, production-ready franchise management platform with a fully modular React architecture, 4 distinct user roles, automated daily sales tracking, and comprehensive inventory management.**
 
 ---
 
 ## ⚡ Quick Start
 
-👉 **[START_HERE.md](START_HERE.md)** - Complete startup guide from fresh laptop boot
+👉 **[START_HERE.md](START_HERE.md)** - Complete startup guide from a fresh laptop boot. No database server configuration necessary!
 
 ---
 
 ## 🌟 What This Is
 
-Relay is a complete franchise management system that allows:
-- **Franchisors (Admin)** to review applications, approve franchises, and monitor sales activity
-- **Franchisees** to apply for franchises, submit daily sales, and track their performance
+Relay is a complete end-to-end franchise management ecosystem designed to streamline operations across an entire franchise network. It empowers:
+- **Franchisors (Admin)** to review applications, approve franchises, manage global inventory, and monitor system-wide sales activity.
+- **Franchisees (Owners)** to apply for franchises, manage their specific branch, oversee local staff, and track branch performance.
+- **Managers** to oversee day-to-day operations, approve staff requests, handle inventory restocks, and submit daily sales data.
+- **Staff** to process daily transactions, check local stock levels, and submit inventory requests to their managers.
 
 ---
 
 ## ✨ Key Features
 
-### **Multi-Role System**
-- Admin dashboard with system-wide metrics
-- Franchisee dashboard with personal data
-- Pending approval workflow
+### **Dynamic Multi-Role Ecosystem**
+- **Admin Dashboard:** System-wide metrics, franchise application review, and global sales oversight.
+- **Franchisee Dashboard:** Personal branch data, manager oversight, and branch-level analytics.
+- **Manager Dashboard:** Day-to-day operations, local staff management, and inventory fulfillment.
+- **Staff Dashboard:** Point-of-sale data entry, low-stock alerts, and direct inventory requests.
 
-### **Detailed Application Process**
-- 11-field registration form
-- Property size & investment capacity
-- Business experience & motivation
-- Admin review with detailed modal
+### **Detailed Application Workflow**
+- Comprehensive 11-field registration form supporting property size, investment capacity, and business experience.
+- Automated routing for pending applications.
+- Admin review modal with full applicant background checks and one-click approvals.
 
-### **Sales Tracking**
-- Franchisees submit daily sales
-- Admin sees recent sales activity
-- System-wide revenue tracking
+### **Sales & Inventory Tracking**
+- Staff and Managers submit daily sales which instantly update global revenue tracking.
+- Local inventory tracking with configurable low-stock thresholds.
+- Hierarchical inventory requests (Staff -> Manager -> Admin).
 
-### **Professional UI & Architecture**
-- Modern, responsive design with Tailwind CSS
-- Modular React components (Shared UI, Dashboard Partials)
-- Custom React Hooks (`useAuth`, `useInventory`, `useSales`) for clean data fetching
-- Toast notifications & error boundaries
-
-**[See FEATURES.md](FEATURES.md)** for complete feature list
+### **Professional Modular UI & Architecture**
+- Designed with **Tailwind CSS** for a responsive, modern interface.
+- Built on a highly modular **React Component Architecture** featuring abstracted UI elements (Tabs, Tables, Modals, StatCards).
+- Intelligent state management via **Custom React Hooks** (`useAuth`, `useInventory`, `useSales`, `useStaff`, `useFranchiseMetrics`, `useRequests`).
+- Global toast notifications and robust error boundaries.
 
 ---
 
 ## 🛠️ Tech Stack
 
-**Frontend:** React + Vite + Tailwind CSS  
-**Backend:** Flask (Python)  
-**Database:** SQLite (auto-configured)
+**Frontend:** React + Vite + Tailwind CSS + React Router  
+**Backend:** Flask (Python) + SQLAlchemy + bcrypt  
+**Database:** SQLite (Auto-configured, zero-setup required)  
+**Code Quality:** Strictly linted (ESLint + Ruff)  
 
 ---
 
@@ -60,83 +61,58 @@ Relay is a complete franchise management system that allows:
 
 **Short version:**
 
-1. **Setup Database:**
+1. **Start Backend (Auto-creates SQLite DB!):**
    ```bash
-   mysql -u root -pYOUR_PASSWORD < database/init_db.sql
+   cd backend
+   python -m venv venv
+   source venv/bin/activate  # (On Windows use: venv\Scripts\activate)
+   pip install -r requirements.txt
+   copy .env.example .env    # (On Mac/Linux use: cp .env.example .env)
+   python run.py
    ```
 
-2. **Start Backend:**
+2. **Start Frontend:**
    ```bash
-   cd backend && source venv/bin/activate && python run.py
+   cd frontend
+   npm install
+   npm run dev
    ```
 
-3. **Start Frontend:**
-   ```bash
-   cd frontend && npm run dev
-   ```
-
-4. **Open Browser:**
+3. **Open Browser:**
    - Go to `http://localhost:3000`
-   - Login: `admin@relay.com` / `admin123`
+   - Default Admin Login: `admin@relay.com` / `admin123`
 
 ---
-
-## 🎯 Default Credentials
-
-**Admin:**
-- Email: `admin@relay.com`
-- Password: `admin123`
-
-**Franchisees:** Create via registration form!
 
 ## 📁 Project Structure
 
 ```
 Relay/
 ├── backend/
-│   ├── app/                  # Flask application package (modular blueprints)
+│   ├── app/                  # Flask application (Models, Routes, Auth)
+│   ├── tests/                # Pytest unit & integration tests
 │   ├── run.py                # Application entry point
 │   ├── requirements.txt      # Python dependencies
-│   └── .env.example          # Environment variables template
+│   └── relay.db              # SQLite Database (Auto-generated)
 ├── frontend/
 │   ├── src/
-│   │   ├── App.jsx           # Main React application (all components)
-│   │   ├── main.jsx          # React entry point
-│   │   └── index.css         # Global styles and Tailwind imports
-│   ├── index.html            # HTML template
+│   │   ├── components/       # Modular UI blocks (manager/, admin/, ui/, etc.)
+│   │   ├── hooks/            # Custom React Hooks for data fetching
+│   │   ├── pages/            # Top-level route components
+│   │   ├── context/          # Global State (AuthContext)
+│   │   └── api.js            # Axios/Fetch wrapper for backend communication
 │   ├── package.json          # Node dependencies
-│   ├── vite.config.js        # Vite configuration
-│   └── tailwind.config.js    # Tailwind CSS configuration
-├── database/
-│   └── init_db.sql           # Database schema + sample data
+│   └── vite.config.js        # Vite configuration
 ├── START_HERE.md             # Complete startup guide ⭐
-├── FEATURES.md               # Full feature list
 └── README.md                 # This file (project overview)
 ```
 
 ---
 
-## 📚 Documentation
+## 🤝 Support & Maintenance
 
-- **[START_HERE.md](START_HERE.md)** ⭐ - Complete startup guide (start here!)
-- **[FEATURES.md](FEATURES.md)** - Full feature list
-- **README.md** - This file (project overview)
-
----
-
-## 🎯 Sample Data
-
-After database setup, you'll have:
-- 3 sample franchises
-- 6 sample sales transactions  
-- Total revenue: ~$10,672
-- 1 admin account
-
----
-
-## 🤝 Support
-
-Having issues? Check [START_HERE.md](START_HERE.md) for common problems and fixes!
+Having issues? Check the common issues section in **[START_HERE.md](START_HERE.md)**.
+Whenever new features are added to this repository, this documentation will be updated to reflect the latest state.
 
 ---
 

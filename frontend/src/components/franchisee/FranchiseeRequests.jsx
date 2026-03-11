@@ -19,59 +19,59 @@ export default function FranchiseeRequests({ requests, updateRequestStatus, onRe
     };
 
     return (
-        <div className="bg-white border border-gray-200 rounded-xl">
-            <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+            <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                 <h3 className="text-lg font-semibold text-gray-800">Stock Requests</h3>
                 <button
                     type="button"
                     onClick={onRefresh}
-                    className="text-sm px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50"
+                    className="text-sm px-4 py-2 border border-blue-200 text-blue-600 rounded-lg hover:bg-blue-50 transition-colors duration-200"
                 >
                     Refresh
                 </button>
             </div>
             <div className="overflow-x-auto">
-                <table className="min-w-full divide-y divide-gray-200">
-                    <thead className="bg-gray-50">
+                <table className="min-w-full divide-y divide-gray-100">
+                    <thead className="bg-gray-50/50">
                         <tr>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                 Requested On
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                 Items
                             </th>
-                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                 Status
                             </th>
-                            <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                 Actions
                             </th>
                         </tr>
                     </thead>
-                    <tbody className="bg-white divide-y divide-gray-200">
+                    <tbody className="bg-white divide-y divide-gray-100">
                         {requests.length === 0 ? (
                             <tr>
-                                <td colSpan={4} className="px-4 py-8 text-center text-gray-500 text-sm">
+                                <td colSpan={4} className="px-6 py-8 text-center text-gray-500 text-sm">
                                     No stock requests yet.
                                 </td>
                             </tr>
                         ) : (
                             requests.map((request) => (
-                                <tr key={request.request_id}>
-                                    <td className="px-4 py-3 text-sm text-gray-700">
+                                <tr key={request.request_id} className="hover:bg-gray-50/50 transition-colors">
+                                    <td className="px-6 py-4 text-sm text-gray-700">
                                         {request.created_at ? new Date(request.created_at).toLocaleString() : '—'}
                                     </td>
-                                    <td className="px-4 py-3 text-sm text-gray-500">
+                                    <td className="px-6 py-4 text-sm text-gray-500">
                                         {request.items.map((item) => (
                                             <div key={item.request_item_id}>
                                                 {item.stock_item_name || 'Item'} – {item.requested_quantity}
                                             </div>
                                         ))}
                                     </td>
-                                    <td className="px-4 py-3 text-sm font-medium">
+                                    <td className="px-6 py-4 text-sm font-medium">
                                         {request.status}
                                     </td>
-                                    <td className="px-4 py-3 text-right text-sm">
+                                    <td className="px-6 py-4 text-right text-sm">
                                         {request.status === 'PENDING' ? (
                                             <div className="flex justify-end gap-2">
                                                 <button

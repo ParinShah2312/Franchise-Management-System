@@ -50,7 +50,9 @@ def seed_database() -> None:
         print("[step1] Seeding reference data...")
 
         roles = [
-            Role(role_id=1, name="BRANCH_OWNER", description="Owns and funds the branch"),
+            Role(
+                role_id=1, name="BRANCH_OWNER", description="Owns and funds the branch"
+            ),
             Role(role_id=2, name="MANAGER", description="Runs daily branch operations"),
             Role(role_id=3, name="STAFF", description="Frontline branch staff"),
         ]
@@ -97,8 +99,12 @@ def seed_database() -> None:
         print("[step1] Reference tables ready.\n")
 
         role_lookup = {role.name: role for role in Role.query.all()}
-        branch_status_lookup = {status.status_name: status for status in BranchStatus.query.all()}
-        sale_status_lookup = {status.status_name: status for status in SaleStatus.query.all()}
+        branch_status_lookup = {
+            status.status_name: status for status in BranchStatus.query.all()
+        }
+        sale_status_lookup = {
+            status.status_name: status for status in SaleStatus.query.all()
+        }
         unit_lookup = {unit.unit_name: unit for unit in Unit.query.all()}
 
         # ------------------------------------------------------------------

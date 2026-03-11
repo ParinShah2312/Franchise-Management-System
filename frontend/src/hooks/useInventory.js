@@ -50,5 +50,17 @@ export function useInventory(branchId) {
         await fetchInventory();
     };
 
-    return { inventoryItems, stockItems, loading, error, addInventory, refreshInventory: fetchInventory };
+    const recordDelivery = async (data) => {
+        const payload = {
+            stock_item_id: data.stock_item_id ? Number(data.stock_item_id) : null,
+            quantity: Number(data.quantity || 0),
+            note: data.note || undefined,
+        };
+        if (!payload.stock_item_id) throw new Error('Select a stock item.');
+
+        await api.post(`/inventory/stock-in${branchId ? `?branch_id=${branchId}` : ''}`, payload);
+        await fetchInventory();
+    };
+
+    return { inventoryItems, stockItems, loading, error, addInventory, recordDelivery, refreshInventory: fetchInventory };
 }

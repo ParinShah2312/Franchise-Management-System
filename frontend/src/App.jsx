@@ -16,6 +16,7 @@ import RegisterFranchise from './pages/RegisterFranchise';
 import RegisterFranchisor from './pages/RegisterFranchisor';
 import SignupSelection from './pages/SignupSelection';
 import StaffDashboard from './pages/StaffDashboard';
+import PendingDashboard from './pages/PendingDashboard';
 
 export default function App() {
   return (
@@ -69,6 +70,14 @@ export default function App() {
               element={
                 <ProtectedRoute allowedRoles={['STAFF']}>
                   <StaffDashboard />
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/pending"
+              element={
+                <ProtectedRoute allowedRoles={['PENDING_APPLICANT']}>
+                  <PendingDashboard />
                 </ProtectedRoute>
               }
             />

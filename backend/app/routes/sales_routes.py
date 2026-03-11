@@ -7,7 +7,6 @@ from decimal import Decimal
 from http import HTTPStatus
 
 from flask import Blueprint, jsonify, request, g
-from sqlalchemy import func
 from sqlalchemy.orm import joinedload
 
 from ..extensions import db
@@ -43,7 +42,9 @@ def _ensure_branch_scope(branch_id: int | None) -> int | tuple[dict[str, object]
 
     if role.role.name == "SYSTEM_ADMIN":
         if branch_id is None:
-            return jsonify({"error": "branch_id is required for this operation."}), HTTPStatus.BAD_REQUEST
+            return jsonify(
+                {"error": "branch_id is required for this operation."}
+            ), HTTPStatus.BAD_REQUEST
         return branch_id
 
     if role.scope_type == "BRANCH":
@@ -51,10 +52,14 @@ def _ensure_branch_scope(branch_id: int | None) -> int | tuple[dict[str, object]
 
     if role.scope_type == "FRANCHISE":
         if branch_id is None:
-            return jsonify({"error": "branch_id is required for this operation."}), HTTPStatus.BAD_REQUEST
+            return jsonify(
+                {"error": "branch_id is required for this operation."}
+            ), HTTPStatus.BAD_REQUEST
         branch = Branch.query.get(branch_id)
         if not branch or branch.franchise_id != role.scope_id:
-            return jsonify({"error": "Branch not accessible for this franchise scope."}), HTTPStatus.FORBIDDEN
+            return jsonify(
+                {"error": "Branch not accessible for this franchise scope."}
+            ), HTTPStatus.FORBIDDEN
         return branch.branch_id
 
     return jsonify({"error": "Role scope is not branch aware."}), HTTPStatus.FORBIDDEN
@@ -103,7 +108,9 @@ def _serialize_sale(sale: Sale) -> dict[str, object]:
 def _sale_status_paid_id() -> int | tuple[dict[str, object], int]:
     status = SaleStatus.query.filter_by(status_name="PAID").first()
     if not status:
-        return jsonify({"error": "Sale status 'PAID' is not configured."}), HTTPStatus.INTERNAL_SERVER_ERROR
+        return jsonify(
+            {"error": "Sale status 'PAID' is not configured."}
+        ), HTTPStatus.INTERNAL_SERVER_ERROR
     return status.sale_status_id
 
 
@@ -122,12 +129,16 @@ def _transaction_type_out_id() -> int | tuple[dict[str, object], int]:
 def create_sale() -> tuple[dict[str, object], int]:
     payload = request.get_json(silent=True) or {}
 
-    branch_id_param = request.args.get("branch_id", type=int) or payload.get("branch_id")
+    branch_id_param = request.args.get("branch_id", type=int) or payload.get(
+        "branch_id"
+    )
     if branch_id_param is not None:
         try:
             branch_id_param = int(branch_id_param)
         except (TypeError, ValueError):
-            return jsonify({"error": "branch_id must be numeric."}), HTTPStatus.BAD_REQUEST
+            return jsonify(
+                {"error": "branch_id must be numeric."}
+            ), HTTPStatus.BAD_REQUEST
 
     branch_id_result = _ensure_branch_scope(branch_id_param)
     if isinstance(branch_id_result, tuple):
@@ -144,7 +155,9 @@ def create_sale() -> tuple[dict[str, object], int]:
 
     items_payload = payload.get("sale_items") or payload.get("items") or []
     if not isinstance(items_payload, list) or not items_payload:
-        return jsonify({"error": "sale_items must be a non-empty list."}), HTTPStatus.BAD_REQUEST
+        return jsonify(
+            {"error": "sale_items must be a non-empty list."}
+        ), HTTPStatus.BAD_REQUEST
 
     status_id = _sale_status_paid_id()
     if isinstance(status_id, tuple):
@@ -170,11 +183,15 @@ def create_sale() -> tuple[dict[str, object], int]:
         quantity_raw = entry.get("quantity")
 
         if product_id is None:
-            return jsonify({"error": "Each item requires a product_id."}), HTTPStatus.BAD_REQUEST
+            return jsonify(
+                {"error": "Each item requires a product_id."}
+            ), HTTPStatus.BAD_REQUEST
 
         product = Product.query.get(product_id)
         if not product or product.franchise_id != branch.franchise_id:
-            return jsonify({"error": f"Product {product_id} is not available for this branch."}), HTTPStatus.BAD_REQUEST
+            return jsonify(
+                {"error": f"Product {product_id} is not available for this branch."}
+            ), HTTPStatus.BAD_REQUEST
 
         try:
             quantity = _parse_quantity(quantity_raw)
@@ -202,7 +219,9 @@ def create_sale() -> tuple[dict[str, object], int]:
         return transaction_type_out_id
 
     for sale_item, product, quantity in sale_item_records:
-        ingredients = ProductIngredient.query.filter_by(product_id=product.product_id).all()
+        ingredients = ProductIngredient.query.filter_by(
+            product_id=product.product_id
+        ).all()
         if not ingredients:
             continue
 
@@ -214,7 +233,11 @@ def create_sale() -> tuple[dict[str, object], int]:
                 stock_item_id=ingredient.stock_item_id,
             ).first()
 
-            stock_name = ingredient.stock_item.name if ingredient.stock_item else f"Stock Item {ingredient.stock_item_id}"
+            stock_name = (
+                ingredient.stock_item.name
+                if ingredient.stock_item
+                else f"Stock Item {ingredient.stock_item_id}"
+            )
 
             if not inventory_record or inventory_record.quantity < total_required:
                 db.session.rollback()
@@ -241,7 +264,9 @@ def create_sale() -> tuple[dict[str, object], int]:
 
     db.session.commit()
 
-    sale = Sale.query.options(joinedload(Sale.items).joinedload(SaleItem.product)).get(sale.sale_id)
+    sale = Sale.query.options(joinedload(Sale.items).joinedload(SaleItem.product)).get(
+        sale.sale_id
+    )
     return jsonify(_serialize_sale(sale)), HTTPStatus.CREATED
 
 
@@ -253,13 +278,19 @@ def list_sales() -> tuple[list[dict[str, object]], int]:
         try:
             branch_id_param = int(branch_id_param)
         except (TypeError, ValueError):
-            return jsonify({"error": "branch_id must be numeric."}), HTTPStatus.BAD_REQUEST
+            return jsonify(
+                {"error": "branch_id must be numeric."}
+            ), HTTPStatus.BAD_REQUEST
 
     role = getattr(g, "current_role", None)
     if not role:
-        return jsonify({"error": "No role scope attached to request."}), HTTPStatus.FORBIDDEN
+        return jsonify(
+            {"error": "No role scope attached to request."}
+        ), HTTPStatus.FORBIDDEN
 
-    query = Sale.query.options(joinedload(Sale.items).joinedload(SaleItem.product)).order_by(Sale.sale_datetime.desc())
+    query = Sale.query.options(
+        joinedload(Sale.items).joinedload(SaleItem.product)
+    ).order_by(Sale.sale_datetime.desc())
 
     if role.role.name == "SYSTEM_ADMIN":
         if branch_id_param:

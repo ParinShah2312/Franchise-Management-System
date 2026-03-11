@@ -1,42 +1,49 @@
 # 🚀 RELAY FRANCHISE MANAGEMENT SYSTEM - COMPLETE STARTUP GUIDE
 
-**Start your demo from a fresh laptop boot in 2 minutes!**
+**Start your demo from a fresh laptop boot in under 2 minutes!**
 
-> 💡 **Note:** This app uses SQLite (no MySQL server needed!) - everything auto-configures on first run.
+> 💡 **Note:** This app uses SQLite (no MySQL server needed!) - everything auto-configures on the very first run. The codebase is fully modular and built with custom React Hooks!
 
 ---
 
 ## 📋 Table of Contents
 
-1. [Quick Start (After Laptop Boot)](#quick-start-after-laptop-boot)
-2. [Prerequisites Check](#prerequisites-check)
-3. [Test the System](#test-the-system)
-4. [Common Issues & Fixes](#common-issues--fixes)
+1. [Quick Start (After Laptop Boot)](#1-quick-start-after-laptop-boot)
+2. [Prerequisites Check](#2-prerequisites-check)
+3. [Test the System](#3-test-the-system)
+4. [Complete Feature List](#4-complete-feature-list)
+5. [Common Issues & Fixes](#5-common-issues--fixes)
 
 ---
 
-## ⚡ Quick Start (After Laptop Boot)
+## 1. ⚡ Quick Start (After Laptop Boot)
 
 **Every time you start your laptop and want to run the demo:**
 
 ### **Step 1: Open Terminal 1 - Start Backend**
 
 ```bash
-cd /Users/prayag/Desktop/Relay/backend
+cd backend
 
 # Activate virtual environment
+# On Mac/Linux:
 source venv/bin/activate
+# On Windows:
+venv\Scripts\activate
+
+# Create environment variables file (first time only)
+# On Mac/Linux: cp .env.example .env
+# On Windows: copy .env.example .env
 
 # Start Flask server
 python run.py
 ```
 
 **Expected Output:**
-```
+```text
 ✅ Database initialized successfully!
  * Running on http://127.0.0.1:5000
 ```
-
 ✅ **Leave this terminal running!**
 
 ---
@@ -46,26 +53,25 @@ python run.py
 **Open a NEW terminal window:**
 
 ```bash
-cd /Users/prayag/Desktop/Relay/frontend
+cd frontend
 
 # Start React development server
 npm run dev
 ```
 
 **Expected Output:**
-```
+```text
   VITE v5.x.x  ready in XXX ms
 
   ➜  Local:   http://localhost:3000/
 ```
-
 ✅ **Browser opens automatically to http://localhost:3000**
 
 ---
 
 ### **Step 3: Login & Test**
 
-**Login with:**
+**Login with the Default Admin:**
 - Email: `admin@relay.com`
 - Password: `admin123`
 
@@ -73,350 +79,107 @@ npm run dev
 
 ---
 
-## ✅ Prerequisites Check
+## 2. ✅ Prerequisites Check
 
-**Only needed for first-time setup:**
+**Only needed for first-time setup or if you switched laptops:**
 
-### **1. Python 3 Installed**
+1. **Python 3 Installed:** `python --version` (Should be 3.8+)
+2. **Node.js and npm Installed:** `npm --version` (Should be 18+)
 
-```bash
-python3 --version
-```
-
-Should show Python 3.8 or higher.
-
----
-
-### **2. Node.js and npm Installed**
-
-```bash
-node --version
-npm --version
-```
-
-If not installed:
-```bash
-brew install node
-```
-
----
-
-## 🗄️ Database (SQLite - No Setup Needed!)
-
-**Your app now uses SQLite:**
+### 🗄️ Database (SQLite - No Setup Needed!)
 - ✅ No MySQL server needed
 - ✅ No password configuration
-- ✅ Database auto-creates on first run
 - ✅ Single file: `backend/relay.db`
-
-**To reset database:**
-```bash
-cd /Users/prayag/Desktop/Relay/backend
-rm relay.db
-python run.py
-```
-
-Database recreates automatically with sample data!
-
+- **To reset the database, simply delete `backend/relay.db` and run `python run.py` again. Sample data will automatically regenerate.**
 
 ---
 
-## 🧪 Test the System
+## 3. 🧪 Test the System
 
-Now you have both servers running! Let's test everything:
+With both servers running, you can test the 4 major user roles!
 
----
-
-### **Test 1: Admin Login & Dashboard**
-
-1. **Login:**
-   - Email: `admin@relay.com`
-   - Password: `admin123`
-
-2. **✅ You should see:**
-   - System Metrics (Total Revenue, Monthly Revenue)
-   - Franchise Statistics (Total, Active, Pending)
-   - Recent Sales Activity table
-   - 3 sample franchises
-
----
+### **Test 1: Admin Login & System Metrics**
+1. **Login:** `admin@relay.com` / `admin123`
+2. **You should see:**
+   - System Metrics (Total Revenue, Active Franchises)
+   - Recent Sales Activity mapping
+   - Pending Applicant Approvals
+   - Global Inventory Oversight
 
 ### **Test 2: Register New Franchisee**
+1. **Logout** from admin, click **"Apply here"** on the login screen.
+2. Fill the detailed 11-field application form (Property Size, Investment Capacity, Location, etc.)
+3. Submit and receive a success toast notification!
+4. **Log back in as Admin** -> Find the yellow "Pending" application -> Click "Review" -> Click **"Approve"**.
 
-1. **Logout** from admin
-2. Click **"Apply here"**
-3. **Fill the detailed application form:**
+### **Test 3: The 4-Role Dashboard Ecosystem**
+Relay supports four distinct dashboards. You can test them by creating users via the application or checking the database for auto-seeded users:
+- **Admin (Franchisor):** Global oversight, approvals.
+- **Franchisee (Owner):** Oversees a specific branch, views branch analytics, manages local managers.
+- **Manager:** Oversees staff within a branch, fulfills local inventory requests, handles daily branch operations.
+- **Staff:** Submits daily pos sales, checks local stock, requests inventory from the manager.
 
-**Account Information:**
-- Email: `test@franchise.com`
-- Password: `test123`
-
-**Personal Information:**
-- Full Name: `Test Owner`
-- Phone: `+1-555-1234`
-
-**Franchise Details:**
-- Franchise Name: `Test Burgers`
-- Location: `Austin, TX`
-- Expected Opening Date: Select any future date
-
-**Business Information:**
-- Property Size: Select `2000 - 3000 sq ft`
-- Investment Capacity: Select `$100,000 - $200,000`
-- Business Experience: 
-  ```
-  I have 5 years of restaurant management experience
-  ```
-- Why Relay:
-  ```
-  I want to build a successful franchise business
-  ```
-
-4. Click **"Submit Franchise Application"**
-5. ✅ See success message
+### **Test 4: Sales & Inventory Flow**
+1. Log in as a **Staff** or **Manager**.
+2. Navigate to the **Sales** tab to submit daily revenue numbers.
+3. Navigate to the **Inventory** tab to view your branch's current stock levels and submit a request for low-stock items.
+4. Log in as **Admin** to see those sales instantly reflected in the Global Revenue chart!
 
 ---
 
-### **Test 3: Pending Franchisee Login**
+## 4. 🎯 Complete Feature List
 
-1. **Login** with:
-   - Email: `test@franchise.com`
-   - Password: `test123`
-
-2. **✅ You should see:**
-   ```
-   ⏰ Application Pending
-   
-   Your franchise application is awaiting 
-   admin approval...
-   ```
-
-3. **Logout**
+**Version 3.0 Architecture (Current State):**
+✅ **Fully Modular React Frontend:** Large dashboards (`ManagerDashboard.jsx`, `StaffDashboard.jsx`, etc.) split into distinct, highly readable components (`ManagerOverview`, `ManagerSales`, `StaffInventory`).
+✅ **Custom React Hooks:** All data fetching decoupled from components into `useAuth`, `useInventory`, `useSales`, `useStaff`, `useFranchiseMetrics`, and `useRequests`.
+✅ **Zero-Warning Codebase:** Strictly linted using `eslint` and `ruff`.
+✅ **Multi-Role Authentication:** Admin, Franchisee, Manager, Staff.
+✅ **Detailed Franchise Registration:** Investment capacity, business experience, file uploads.
+✅ **Admin Review Process:** Modal-based approve/reject workflow.
+✅ **Hierarchical Inventory Management:** Stock limits, low-stock warnings, request tracking.
+✅ **Sales Tracking:** Daily submission, historical graphs, system-wide revenue tracking.
 
 ---
 
-### **Test 4: Admin Approves Application**
+## 5. 🐛 Common Issues & Fixes
 
-1. **Login as admin** (`admin@relay.com` / `admin123`)
-2. Find **"Test Burgers"** with yellow **Pending** badge
-3. Click **"📋 Review Application"**
-4. **✅ Modal opens showing:**
-   - All franchise details
-   - Property size
-   - Investment capacity
-   - Business experience
-   - Motivation/reason
-5. Click **"✓ Approve Application"**
-6. ✅ Badge turns **green**
-7. ✅ Success toast appears
-8. **Logout**
-
----
-
-### **Test 5: Franchisee Gets Dashboard Access**
-
-1. **Login as franchisee** (`test@franchise.com` / `test123`)
-2. **✅ You should now see:**
-   - Franchise dashboard (NOT pending screen!)
-   - Your franchise details
-   - "Enter Daily Sales" form
-   - Sales history section
-   - Total sales: $0.00
-
----
-
-### **Test 6: Submit Sales Data**
-
-1. **In "Enter Daily Sales" section:**
-   - Sale Date: Today's date (auto-filled)
-   - Total Amount: `500.00`
-
-2. Click **"Submit Sales"**
-
-3. **✅ You should see:**
-   - Green success toast
-   - Sale appears in "Recent Sales" list
-   - Total Sales updates to **$500.00**
-
-4. **Logout**
-
----
-
-### **Test 7: Admin Sees Sales Activity**
-
-1. **Login as admin** (`admin@relay.com` / `admin123`)
-2. Scroll to **"📊 Recent Sales Activity"**
-3. **✅ You should see:**
-   - Your $500 sale at the TOP
-   - Highlighted in light blue
-   - "Latest" badge
-   - Shows: Test Burgers, Test Owner, Austin TX, $500.00, date, time
-4. **✅ System Metrics updated:**
-   - Total Revenue increased by $500
-
----
-
-## 🎯 Complete Feature List
-
-Your system now has:
-
-✅ **Multi-Role Authentication**
-- Admin dashboard
-- Franchisee dashboard
-- Role-based routing
-
-✅ **Detailed Franchise Registration**
-- 11 application fields
-- Property size, investment capacity
-- Business experience, motivation
-- Contact information
-
-✅ **Admin Review Process**
-- Review application modal
-- Approve/reject workflow
-- View all applicant details
-
-✅ **Franchise Management (CRUD)**
-- Create franchises
-- Read/view details
-- Update franchise info
-- Delete franchises
-- Search & filter
-
-✅ **Sales Tracking**
-- Franchisees enter daily sales
-- View sales history
-- Calculate total revenue
-- Recent sales activity feed
-
-✅ **System Metrics Dashboard**
-- Total system revenue
-- Monthly revenue
-- Franchise statistics
-- Active vs pending counts
-
-✅ **Recent Sales Activity**
-- Last 10 sales across all franchises
-- Shows franchise name, owner, location
-- Sale amount, date, submission time
-- Latest sale highlighted
-
----
-
-## 🐛 Common Issues & Fixes
-
-### **Issue 1: "Port 5001 already in use"**
-
-**Fix:**
+### **Issue 1: "Port 5000 already in use" (Backend)**
+**Fix (Windows):**
+```powershell
+Stop-Process -Id (Get-NetTCPConnection -LocalPort 5000).OwningProcess -Force
+```
+**Fix (Mac/Linux):**
 ```bash
-# Kill process on port 5001
-lsof -ti:5001 | xargs kill -9
-
-# Restart backend
-cd /Users/prayag/Desktop/Relay/backend
-source venv/bin/activate
-python run.py
+lsof -ti:5000 | xargs kill -9
 ```
 
----
-
-### **Issue 2: "Port 3000 already in use"**
-
-**Fix:**
+### **Issue 2: "Port 3000 already in use" (Frontend)**
+**Fix (Windows):**
+```powershell
+Stop-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess -Force
+```
+**Fix (Mac/Linux):**
 ```bash
-# Kill process on port 3000
 lsof -ti:3000 | xargs kill -9
-
-# Restart frontend
-cd /Users/prayag/Desktop/Relay/frontend
-npm run dev
 ```
 
----
-
-### **Issue 3: Database seems corrupted or has wrong data**
-
-**Fix - Reset Database:**
+### **Issue 3: Database seems corrupted / Forgot Passwords**
+**Fix - Hard Reset Database:**
 ```bash
-cd /Users/prayag/Desktop/Relay/backend
-
-# Delete old database
-rm relay.db
-
-# Restart backend (auto-creates fresh database)
-python run.py
+cd backend
+rm relay.db   # On Windows: del relay.db
+python run.py # Auto-creates fresh database with admin password 'admin123'
 ```
-
----
 
 ### **Issue 4: "Module not found" errors**
-
 **Fix - Reinstall Dependencies:**
-
-**Backend:**
-```bash
-cd /Users/prayag/Desktop/Relay/backend
-source venv/bin/activate
-pip install -r requirements.txt
-```
-
-**Frontend:**
-```bash
-cd /Users/prayag/Desktop/Relay/frontend
-npm install
-```
-
----
-
-## ✅ Daily Startup Checklist
-
-**Every time you start your laptop and want to run the demo:**
-
-### **Terminal 1 (Backend):**
-```bash
-cd /Users/prayag/Desktop/Relay/backend
-source venv/bin/activate
-python run.py
-```
-Wait for: `✅ Database initialized successfully!`
-
-### **Terminal 2 (Frontend):**
-```bash
-cd /Users/prayag/Desktop/Relay/frontend
-npm run dev
-```
-Wait for: Browser opens to `http://localhost:3000`
-
-### **Login:**
-- Email: `admin@relay.com`
-- Password: `admin123`
-
-✅ **Ready to demo! 🎯**
-
----
-
-## 🔑 Default Login Credentials
-
-### **Admin:**
-- Email: `admin@relay.com`
-- Password: `admin123`
-
-### **Franchisees:**
-Create them via registration form!
+- Backend: `pip install -r requirements.txt`
+- Frontend: `npm install`
 
 ---
 
 ## 🎉 You're All Set!
 
-Your Relay Franchise Management System is:
-- ✅ Professional and production-ready
-- ✅ Feature-complete with multi-role support
-- ✅ Ready to demo to stakeholders
-- ✅ Fully documented and maintainable
+Your Relay Franchise Management System is fully verified, refactored, and ready to impress stakeholders.
 
-**Enjoy your impressive prototype! 🚀**
-
----
-
-**Last Updated:** March 11, 2026  
-**Version:** 3.0 (Modular Frontend Refactor & Custom Hooks)
+**Enjoy your polished prototype! 🚀**

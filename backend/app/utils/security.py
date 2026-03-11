@@ -39,7 +39,11 @@ _DEFAULT_DEV_SECRET = "dev-secret-key"
 
 def _get_jwt_secret() -> bytes:
     """Retrieve the JWT secret key safely."""
-    secret = current_app.config.get("JWT_SECRET") or os.environ.get("JWT_SECRET") or _DEFAULT_DEV_SECRET
+    secret = (
+        current_app.config.get("JWT_SECRET")
+        or os.environ.get("JWT_SECRET")
+        or _DEFAULT_DEV_SECRET
+    )
     if secret == _DEFAULT_DEV_SECRET and not current_app.debug:
         raise RuntimeError(
             "JWT_SECRET must be set in production. "
@@ -57,10 +61,12 @@ def _b64url_decode(data: str) -> bytes:
     return base64.urlsafe_b64decode(data + padding)
 
 
-def generate_token(user_id: int, *, user_type: str, expires_in_minutes: int = 60 * 24) -> str:
+def generate_token(
+    user_id: int, *, user_type: str, expires_in_minutes: int = 60 * 24
+) -> str:
     """
     Generate a signed JWT for the given subject id and declared user type.
-    
+
     Args:
         user_id: Primary Key of User or Franchisor.
         user_type: 'franchisor' or 'user'.
@@ -70,15 +76,19 @@ def generate_token(user_id: int, *, user_type: str, expires_in_minutes: int = 60
 
     header = {"alg": "HS256", "typ": "JWT"}
     expires_at = datetime.now(tz=timezone.utc) + timedelta(minutes=expires_in_minutes)
-    
+
     payload = {
         "sub": user_id,
         "exp": int(expires_at.timestamp()),
-        "typ": user_type # Crucial for distinguishing tables
+        "typ": user_type,  # Crucial for distinguishing tables
     }
 
-    header_segment = _b64url_encode(json.dumps(header, separators=(",", ":")).encode("utf-8"))
-    payload_segment = _b64url_encode(json.dumps(payload, separators=(",", ":")).encode("utf-8"))
+    header_segment = _b64url_encode(
+        json.dumps(header, separators=(",", ":")).encode("utf-8")
+    )
+    payload_segment = _b64url_encode(
+        json.dumps(payload, separators=(",", ":")).encode("utf-8")
+    )
     signing_input = f"{header_segment}.{payload_segment}".encode("ascii")
 
     signature = hmac_new(_get_jwt_secret(), signing_input, sha256).digest()
@@ -138,7 +148,7 @@ def _load_principal_from_token(token: str | None):
 
     user_id = payload.get("sub")
     user_type = payload.get("typ")
-    
+
     if not isinstance(user_id, int) or user_type not in {"franchisor", "user"}:
         return None, None, None, None
 
@@ -158,12 +168,16 @@ def _load_principal_from_token(token: str | None):
         return principal, role_stub, "FRANCHISOR", user_type
 
     # Path B: User (Owner, Manager, Staff)
-    user = User.query.options(joinedload(User.user_roles).joinedload(UserRole.role)).get(user_id)
+    user = User.query.options(
+        joinedload(User.user_roles).joinedload(UserRole.role)
+    ).get(user_id)
     if not user:
         return None, None, None, None
 
     primary_role = _select_primary_role(user)
-    role_name = primary_role.role.name if primary_role and primary_role.role else "UNKNOWN"
+    role_name = (
+        primary_role.role.name if primary_role and primary_role.role else "UNKNOWN"
+    )
     setattr(user, "is_franchisor", False)
     return user, primary_role, role_name, user_type
 
@@ -175,7 +189,7 @@ def _select_primary_role(user: User) -> Optional[UserRole]:
     return (
         UserRole.query.options(joinedload(UserRole.role))
         .filter(UserRole.user_id == user.user_id)
-        .order_by(UserRole.role_id.asc()) 
+        .order_by(UserRole.role_id.asc())
         .first()
     )
 
@@ -192,13 +206,21 @@ def token_required(allowed_roles: Iterable[str] | None = None):
                 return current_app.make_default_options_response()
 
             token = _extract_token()
-            principal, primary_role, role_name, user_type = _load_principal_from_token(token)
-            
+            principal, primary_role, role_name, user_type = _load_principal_from_token(
+                token
+            )
+
             if not principal:
-                return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
+                return jsonify(
+                    {"error": "Authentication required."}
+                ), HTTPStatus.UNAUTHORIZED
 
             # Active check for regular users
-            if user_type == "user" and hasattr(principal, "is_active") and not principal.is_active:
+            if (
+                user_type == "user"
+                and hasattr(principal, "is_active")
+                and not principal.is_active
+            ):
                 return jsonify({"error": "Account is inactive."}), HTTPStatus.FORBIDDEN
 
             # Role Permission Check
@@ -208,17 +230,21 @@ def token_required(allowed_roles: Iterable[str] | None = None):
                 is_allowed = role_name in allowed_set
                 if "SYSTEM_ADMIN" in allowed_set and role_name == "FRANCHISOR":
                     is_allowed = True
-                
+
                 if not is_allowed:
                     return (
-                        jsonify({"error": "You do not have permission to perform this action."}),
+                        jsonify(
+                            {
+                                "error": "You do not have permission to perform this action."
+                            }
+                        ),
                         HTTPStatus.FORBIDDEN,
                     )
 
             g.current_user = principal
             g.current_role = primary_role
             g.current_user_type = user_type
-            
+
             return func(*args, **kwargs)
 
         return wrapper

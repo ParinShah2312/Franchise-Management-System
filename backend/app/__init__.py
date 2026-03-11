@@ -92,5 +92,7 @@ def shell_context() -> dict[str, Any]:
     from . import models
 
     context: dict[str, Any] = {"db": db}
-    context.update({name: getattr(models, name) for name in dir(models) if name[0].isupper()})
+    context.update(
+        {name: getattr(models, name) for name in dir(models) if name[0].isupper()}
+    )
     return context

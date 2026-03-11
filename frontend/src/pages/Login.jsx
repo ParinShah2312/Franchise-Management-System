@@ -39,6 +39,8 @@ export default function Login() {
         navigate('/manager', { replace: true });
       } else if (role === 'STAFF') {
         navigate('/staff', { replace: true });
+      } else if (role === 'PENDING_APPLICANT') {
+        navigate('/pending', { replace: true });
       } else {
         navigate('/', { replace: true });
       }

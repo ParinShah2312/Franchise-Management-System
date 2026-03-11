@@ -53,16 +53,42 @@ dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
 @token_required({"FRANCHISOR"})
 def get_franchisor_metrics() -> tuple[dict[str, object], int]:
     """Return high-level metrics required for the franchisor dashboard."""
+    from flask import g
+    current_user = getattr(g, "current_user", None)
+    franchisor_id = getattr(current_user, "franchisor_id", None)
+
+    if not franchisor_id:
+        return jsonify({"error": "Franchisor context missing."}), HTTPStatus.FORBIDDEN
 
     total_revenue = (
         db.session.query(func.coalesce(func.sum(Sale.total_amount), 0))
-        .filter(Sale.status_id == 1)
+        .join(Branch, Sale.branch_id == Branch.branch_id)
+        .join(Franchise, Branch.franchise_id == Franchise.franchise_id)
+        .filter(
+            Sale.status_id == 1,
+            Franchise.franchisor_id == franchisor_id
+        )
         .scalar()
         or 0
     )
 
-    active_branches = Branch.query.filter(Branch.status_id == 1).count()
-    pending_applications = FranchiseApplication.query.filter(FranchiseApplication.status_id == 1).count()
+    active_branches = (
+        Branch.query
+        .join(Franchise, Branch.franchise_id == Franchise.franchise_id)
+        .filter(
+            Branch.status_id == 1,
+            Franchise.franchisor_id == franchisor_id
+        ).count()
+    )
+
+    pending_applications = (
+        FranchiseApplication.query
+        .join(Franchise, FranchiseApplication.franchise_id == Franchise.franchise_id)
+        .filter(
+            FranchiseApplication.status_id == 1,
+            Franchise.franchisor_id == franchisor_id
+        ).count()
+    )
 
     payload = {
         "revenue": _floatify(total_revenue),
@@ -107,7 +133,11 @@ def get_branch_metrics() -> tuple[dict[str, object], int]:
                 0,
             )
         )
-        .join(TransactionType, InventoryTransaction.transaction_type_id == TransactionType.transaction_type_id)
+        .join(
+            TransactionType,
+            InventoryTransaction.transaction_type_id
+            == TransactionType.transaction_type_id,
+        )
         .filter(
             InventoryTransaction.branch_id == branch_id,
             TransactionType.type_name == "IN",
@@ -181,7 +211,8 @@ def get_dashboard_metrics() -> tuple[dict[str, object], int]:
     )
     pending_applications = (
         FranchiseApplication.query.join(
-            ApplicationStatus, FranchiseApplication.status_id == ApplicationStatus.status_id
+            ApplicationStatus,
+            FranchiseApplication.status_id == ApplicationStatus.status_id,
         )
         .filter(ApplicationStatus.status_name == "PENDING")
         .count()

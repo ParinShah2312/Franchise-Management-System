@@ -20,7 +20,7 @@ export default function StaffDashboard() {
   const [activeTab, setActiveTab] = useState('inventory');
   const [toast, setToast] = useState(null);
 
-  const { inventoryItems, stockItems, loading: invLoading, error: invError, addInventory, refreshInventory } = useInventory(branchId);
+  const { inventoryItems, stockItems, loading: invLoading, error: invError, recordDelivery, refreshInventory } = useInventory(branchId);
   const { sales, products, loading: salesLoading, error: salesError, logSale, refreshSales } = useSales(branchId);
 
   const loading = !branchId ? false : (invLoading || salesLoading);
@@ -89,7 +89,7 @@ export default function StaffDashboard() {
               <StaffInventory
                 inventoryItems={inventoryItems}
                 stockItems={stockItems}
-                addInventory={addInventory}
+                recordDelivery={recordDelivery}
                 onRefresh={refreshInventory}
                 setToast={setToast}
               />

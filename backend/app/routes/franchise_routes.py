@@ -46,7 +46,9 @@ def list_active_branches() -> tuple[list[dict[str, object]], int]:
 
     active_status = BranchStatus.query.filter_by(status_name="ACTIVE").first()
     if not active_status:
-        return jsonify({"error": "ACTIVE branch status not configured."}), HTTPStatus.INTERNAL_SERVER_ERROR
+        return jsonify(
+            {"error": "ACTIVE branch status not configured."}
+        ), HTTPStatus.INTERNAL_SERVER_ERROR
 
     branches = (
         Branch.query.options(joinedload(Branch.franchise))
@@ -61,7 +63,9 @@ def list_active_branches() -> tuple[list[dict[str, object]], int]:
             "name": branch.name,
             "franchise_id": branch.franchise_id,
             "franchise_name": branch.franchise.name if branch.franchise else None,
-            "location": branch.address.city if branch.address else "Unknown", # Added location for UI
+            "location": branch.address.city
+            if branch.address
+            else "Unknown",  # Added location for UI
         }
         for branch in branches
     ]
@@ -83,7 +87,9 @@ def upload_franchise_menu(franchise_id: int) -> tuple[dict[str, object], int]:
         franchisor_id = getattr(current_user, "franchisor_id", None)
         if franchisor_id != franchise.franchisor_id:
             return (
-                jsonify({"error": "You do not have permission to manage this franchise."}),
+                jsonify(
+                    {"error": "You do not have permission to manage this franchise."}
+                ),
                 HTTPStatus.FORBIDDEN,
             )
 
@@ -93,7 +99,9 @@ def upload_franchise_menu(franchise_id: int) -> tuple[dict[str, object], int]:
 
     filename = secure_filename(upload.filename)
     if not filename:
-        return jsonify({"error": "Uploaded file name is invalid."}), HTTPStatus.BAD_REQUEST
+        return jsonify(
+            {"error": "Uploaded file name is invalid."}
+        ), HTTPStatus.BAD_REQUEST
 
     allowed_extensions = {".pdf", ".png", ".jpg", ".jpeg"}
     extension = os.path.splitext(filename)[1].lower()
@@ -137,12 +145,16 @@ def upload_franchise_menu(franchise_id: int) -> tuple[dict[str, object], int]:
         )
 
     if previous_menu_path:
-        old_full_path = os.path.join(current_app.root_path, "static", previous_menu_path)
+        old_full_path = os.path.join(
+            current_app.root_path, "static", previous_menu_path
+        )
         try:
             if os.path.exists(old_full_path):
                 os.remove(old_full_path)
         except OSError:
-            current_app.logger.warning("Failed to remove previous menu file at %s", old_full_path)
+            current_app.logger.warning(
+                "Failed to remove previous menu file at %s", old_full_path
+            )
 
     return (
         jsonify(
@@ -195,7 +207,9 @@ def list_pending_applications() -> tuple[list[dict[str, object]], int]:
             {
                 "application_id": application.application_id,
                 "franchise_id": application.franchise_id,
-                "franchise_name": application.franchise.name if application.franchise else None,
+                "franchise_name": application.franchise.name
+                if application.franchise
+                else None,
                 "applicant_id": applicant.user_id if applicant else None,
                 "applicant_name": applicant.name if applicant else None,
                 "applicant_email": applicant.email if applicant else None,
@@ -204,9 +218,15 @@ def list_pending_applications() -> tuple[list[dict[str, object]], int]:
                 "investment_capacity": str(application.investment_capacity or "0"),
                 "business_experience": application.business_experience,
                 "reason": application.reason,
-                "document_url": f"/static/{application.document_path}" if application.document_path else None,
-                "status": application.status.status_name if application.status else None,
-                "submitted_at": application.created_at.isoformat() if application.created_at else None,
+                "document_url": f"/static/{application.document_path}"
+                if application.document_path
+                else None,
+                "status": application.status.status_name
+                if application.status
+                else None,
+                "submitted_at": application.created_at.isoformat()
+                if application.created_at
+                else None,
             }
         )
 
@@ -277,10 +297,14 @@ def approve_application(application_id: int) -> tuple[dict[str, object], int]:
         return jsonify({"error": "Application not found."}), HTTPStatus.NOT_FOUND
 
     if not application.branch_owner_user:
-        return jsonify({"error": "Application is missing an associated applicant user."}), HTTPStatus.BAD_REQUEST
+        return jsonify(
+            {"error": "Application is missing an associated applicant user."}
+        ), HTTPStatus.BAD_REQUEST
 
     if application.status and application.status.status_name != "PENDING":
-        return jsonify({"error": "Only pending applications can be approved."}), HTTPStatus.BAD_REQUEST
+        return jsonify(
+            {"error": "Only pending applications can be approved."}
+        ), HTTPStatus.BAD_REQUEST
 
     try:
         support = _ensure_supporting_rows()
@@ -291,11 +315,15 @@ def approve_application(application_id: int) -> tuple[dict[str, object], int]:
     db.session.add(address)
     db.session.flush()
 
-    city_suffix = address.city if address.city and address.city != "UNKNOWN" else application.proposed_location
+    city_suffix = (
+        address.city
+        if address.city and address.city != "UNKNOWN"
+        else application.proposed_location
+    )
     branch_name = f"{application.franchise.name if application.franchise else 'Franchise'} - {city_suffix}".strip()
 
     # Unique code generation
-    timestamp_code = datetime.now(timezone.utc).strftime('%y%m%d')
+    timestamp_code = datetime.now(timezone.utc).strftime("%y%m%d")
     branch_code = f"BR-{application.application_id}-{timestamp_code}"
 
     branch = Branch(
@@ -330,15 +358,17 @@ def approve_application(application_id: int) -> tuple[dict[str, object], int]:
     # 4. Update Application Status
     application.status_id = support["app_status"].status_id
     # Optional: Link decision maker if current_user is available in context
-    # application.decision_by_franchisor_id = g.user.id 
-    
+    # application.decision_by_franchisor_id = g.user.id
+
     db.session.commit()
 
     return (
-        jsonify({
-            "message": "Application approved and Branch created", 
-            "branch_id": branch.branch_id
-        }),
+        jsonify(
+            {
+                "message": "Application approved and Branch created",
+                "branch_id": branch.branch_id,
+            }
+        ),
         HTTPStatus.OK,
     )
 
@@ -348,17 +378,27 @@ def approve_application(application_id: int) -> tuple[dict[str, object], int]:
 def list_franchise_network() -> tuple[list[dict[str, object]], int]:
     """Return a hierarchical view of franchises and their branches."""
 
-    franchises = (
-        Franchise.query.options(
-            joinedload(Franchise.branches)
-            .joinedload(Branch.address),
-            joinedload(Franchise.branches).joinedload(Branch.branch_owner),
-            joinedload(Franchise.branches).joinedload(Branch.manager),
-            joinedload(Franchise.branches).joinedload(Branch.status),
-        )
-        .order_by(Franchise.name.asc())
-        .all()
+    query = Franchise.query.options(
+        joinedload(Franchise.branches).joinedload(Branch.address),
+        joinedload(Franchise.branches).joinedload(Branch.branch_owner),
+        joinedload(Franchise.branches).joinedload(Branch.manager),
+        joinedload(Franchise.branches).joinedload(Branch.status),
     )
+
+    role = getattr(g, "current_role", None)
+    current_user = getattr(g, "current_user", None)
+    role_name = getattr(getattr(role, "role", None), "name", None)
+
+    if role_name == "FRANCHISOR":
+        franchisor_id = getattr(current_user, "franchisor_id", None)
+        if franchisor_id is None:
+            return (
+                jsonify({"error": "Franchisor context missing."}),
+                HTTPStatus.FORBIDDEN,
+            )
+        query = query.filter(Franchise.franchisor_id == franchisor_id)
+
+    franchises = query.order_by(Franchise.name.asc()).all()
 
     def _branch_location(branch: Branch) -> str:
         if branch.address:
@@ -369,13 +409,17 @@ def list_franchise_network() -> tuple[list[dict[str, object]], int]:
     network: list[dict[str, object]] = []
     for franchise in franchises:
         branches_payload = []
-        for branch in sorted(franchise.branches, key=lambda b: b.name.lower() if b.name else ""):
+        for branch in sorted(
+            franchise.branches, key=lambda b: b.name.lower() if b.name else ""
+        ):
             branches_payload.append(
                 {
                     "branch_id": branch.branch_id,
                     "name": branch.name,
                     "location": _branch_location(branch),
-                    "owner_name": branch.branch_owner.name if branch.branch_owner else None,
+                    "owner_name": branch.branch_owner.name
+                    if branch.branch_owner
+                    else None,
                     "manager_name": branch.manager.name if branch.manager else None,
                     "status": branch.status.status_name if branch.status else None,
                 }
@@ -385,7 +429,9 @@ def list_franchise_network() -> tuple[list[dict[str, object]], int]:
             {
                 "franchise_id": franchise.franchise_id,
                 "franchise_name": franchise.name,
-                "menu_file_url": f"/static/{franchise.menu_file_path}" if franchise.menu_file_path else None,
+                "menu_file_url": f"/static/{franchise.menu_file_path}"
+                if franchise.menu_file_path
+                else None,
                 "branches": branches_payload,
             }
         )
@@ -410,11 +456,15 @@ def reject_application(application_id: int) -> tuple[dict[str, object], int]:
         return jsonify({"error": "Application not found."}), HTTPStatus.NOT_FOUND
 
     if application.status is None or application.status.status_name != "PENDING":
-        return jsonify({"error": "Only pending applications can be rejected."}), HTTPStatus.BAD_REQUEST
+        return jsonify(
+            {"error": "Only pending applications can be rejected."}
+        ), HTTPStatus.BAD_REQUEST
 
     rejected_status = ApplicationStatus.query.filter_by(status_name="REJECTED").first()
     if not rejected_status:
-        return jsonify({"error": "REJECTED application status not configured."}), HTTPStatus.INTERNAL_SERVER_ERROR
+        return jsonify(
+            {"error": "REJECTED application status not configured."}
+        ), HTTPStatus.INTERNAL_SERVER_ERROR
 
     application.status_id = rejected_status.status_id
     application.decision_notes = notes

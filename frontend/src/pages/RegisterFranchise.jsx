@@ -375,7 +375,7 @@ export default function RegisterFranchise() {
                   name="investment_capacity"
                   type="number"
                   min="0"
-                  step="1000"
+                  step="1"
                   required
                   className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                   placeholder="150000"

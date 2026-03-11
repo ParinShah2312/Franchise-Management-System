@@ -71,7 +71,7 @@ body {
   }
 
   .card {
-    @apply rounded-2xl border border-border bg-white p-6 shadow-sm transition duration-200 hover:shadow-lg;
+    @apply rounded-xl border border-gray-100 bg-white p-6 shadow-sm transition-all duration-200 hover:shadow-md;
   }
 
   .input-field {

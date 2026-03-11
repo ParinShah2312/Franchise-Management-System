@@ -44,7 +44,7 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
     };
 
     return (
-        <>
+        <div>
             <div className="bg-white border border-gray-200 rounded-xl">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <div>
@@ -205,6 +205,6 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
                     </div>
                 </div>
             ) : null}
-        </>
+        </div>
     );
 }

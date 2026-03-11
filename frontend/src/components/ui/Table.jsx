@@ -8,22 +8,22 @@ export default function Table({ headers, data, renderRow, emptyMessage }) {
     }
 
     return (
-        <div className="overflow-x-auto rounded-xl border border-border bg-white">
-            <table className="min-w-full divide-y divide-border">
-                <thead className="bg-gray-50">
+        <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
+            <table className="min-w-full divide-y divide-gray-100">
+                <thead className="bg-gray-50/50">
                     <tr>
                         {headers.map((heading) => (
                             <th
                                 key={heading}
                                 scope="col"
-                                className="px-5 py-3 text-left text-xs font-semibold uppercase tracking-wide text-gray-500"
+                                className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
                             >
                                 {heading}
                             </th>
                         ))}
                     </tr>
                 </thead>
-                <tbody className="divide-y divide-border bg-white">
+                <tbody className="divide-y divide-gray-100 bg-white text-sm">
                     {data.map((item, index) => renderRow(item, index))}
                 </tbody>
             </table>

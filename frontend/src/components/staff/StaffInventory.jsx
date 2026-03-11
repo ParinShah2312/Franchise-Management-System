@@ -6,7 +6,7 @@ const initialDeliveryForm = {
     note: '',
 };
 
-export default function StaffInventory({ inventoryItems, stockItems, addInventory, onRefresh, setToast }) {
+export default function StaffInventory({ inventoryItems, stockItems, recordDelivery, onRefresh, setToast }) {
     const [showDeliveryModal, setShowDeliveryModal] = useState(false);
     const [deliverySubmitting, setDeliverySubmitting] = useState(false);
     const [deliveryForm, setDeliveryForm] = useState(initialDeliveryForm);
@@ -49,7 +49,7 @@ export default function StaffInventory({ inventoryItems, stockItems, addInventor
         setDeliverySubmitting(true);
 
         try {
-            await addInventory(payload);
+            await recordDelivery(payload);
             setToast({ message: 'Delivery recorded successfully!', variant: 'success' });
             closeDeliveryModal();
         } catch (err) {
@@ -60,7 +60,7 @@ export default function StaffInventory({ inventoryItems, stockItems, addInventor
     };
 
     return (
-        <>
+        <div>
             <div className="bg-white border border-gray-200 rounded-xl">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <div>
@@ -92,8 +92,8 @@ export default function StaffInventory({ inventoryItems, stockItems, addInventor
                     </div>
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-gray-100">
+                        <thead className="bg-gray-50/50">
                             <tr>
                                 <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">
                                     Item
@@ -149,8 +149,8 @@ export default function StaffInventory({ inventoryItems, stockItems, addInventor
             </div>
 
             {showDeliveryModal ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-6">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-6">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-semibold text-gray-800">Record Stock Delivery</h3>
                             <button
@@ -240,6 +240,6 @@ export default function StaffInventory({ inventoryItems, stockItems, addInventor
                     </div>
                 </div>
             ) : null}
-        </>
+        </div>
     );
 }

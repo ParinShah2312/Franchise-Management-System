@@ -37,9 +37,9 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
     };
 
     return (
-        <>
-            <div className="bg-white border border-gray-200 rounded-xl">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+        <div>
+            <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
+                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
                     <h3 className="text-lg font-semibold text-gray-800">Inventory Items</h3>
                     <div className="flex items-center gap-3">
                         <button
@@ -62,8 +62,8 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                     </div>
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-gray-100">
+                        <thead className="bg-gray-50/50">
                             <tr>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Item</th>
                                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit</th>
@@ -71,7 +71,7 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                                 <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Reorder Level</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-200">
+                        <tbody className="bg-white divide-y divide-gray-100">
                             {inventoryItems.length === 0 ? (
                                 <tr>
                                     <td colSpan={4} className="px-4 py-8 text-center text-gray-500 text-sm">
@@ -98,8 +98,8 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
             </div>
 
             {showInventoryModal ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-6">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-6">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-semibold text-gray-800">Add Inventory Item</h3>
                             <button
@@ -192,6 +192,6 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                     </div>
                 </div>
             ) : null}
-        </>
+        </div>
     );
 }
