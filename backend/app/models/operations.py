@@ -1,0 +1,200 @@
+"""Operational transaction models — sales, inventory movements, purchase requests."""
+
+from __future__ import annotations
+
+from datetime import datetime, timezone
+from decimal import Decimal
+from typing import Optional
+
+from sqlalchemy import ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
+from sqlalchemy.types import (
+    BigInteger, DateTime, Integer,
+    Numeric, String, Text,
+)
+
+from ..extensions import db
+from .core import TimestampMixin
+
+
+class Sale(TimestampMixin, db.Model):
+    __tablename__ = "sales"
+    sale_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    branch_id: Mapped[int] = mapped_column(
+        ForeignKey("branches.branch_id", ondelete="CASCADE"), nullable=False
+    )
+    sold_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+    )
+    sale_datetime: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    total_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    status_id: Mapped[int] = mapped_column(
+        ForeignKey("sale_statuses.sale_status_id"), nullable=False
+    )
+
+    branch: Mapped["Branch"] = relationship("Branch", back_populates="sales")
+    sold_by_user: Mapped[Optional["User"]] = relationship(
+        "User", back_populates="sales", foreign_keys=[sold_by_user_id]
+    )
+    status: Mapped["SaleStatus"] = relationship("SaleStatus", back_populates="sales")
+    items: Mapped[list["SaleItem"]] = relationship(
+        "SaleItem", back_populates="sale", cascade="all, delete-orphan"
+    )
+
+
+class SaleItem(db.Model):
+    __tablename__ = "sale_items"
+    sale_item_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    sale_id: Mapped[int] = mapped_column(
+        ForeignKey("sales.sale_id", ondelete="CASCADE"), nullable=False
+    )
+    product_id: Mapped[int] = mapped_column(
+        ForeignKey("products.product_id", ondelete="RESTRICT"), nullable=False
+    )
+    quantity: Mapped[int] = mapped_column(db.Integer, nullable=False)
+    unit_price: Mapped[Decimal] = mapped_column(Numeric(10, 2), nullable=False)
+    line_total: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+
+    sale: Mapped["Sale"] = relationship("Sale", back_populates="items")
+    product: Mapped["Product"] = relationship("Product", back_populates="sale_items")
+    inventory_transactions: Mapped[list["InventoryTransaction"]] = relationship(
+        "InventoryTransaction", back_populates="related_sale_item"
+    )
+
+
+class InventoryTransaction(db.Model):
+    __tablename__ = "inventory_transactions"
+    transaction_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    branch_id: Mapped[int] = mapped_column(
+        ForeignKey("branches.branch_id", ondelete="CASCADE"), nullable=False
+    )
+    stock_item_id: Mapped[int] = mapped_column(
+        ForeignKey("stock_items.stock_item_id", ondelete="CASCADE"), nullable=False
+    )
+    transaction_type_id: Mapped[int] = mapped_column(
+        ForeignKey("transaction_types.transaction_type_id"), nullable=False
+    )
+    quantity_change: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False)
+    unit_cost: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
+    related_sale_item_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("sale_items.sale_item_id")
+    )
+    created_by_user_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.user_id")
+    )
+    approved_by_user_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.user_id")
+    )
+    note: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    branch: Mapped["Branch"] = relationship(
+        "Branch", back_populates="inventory_transactions"
+    )
+    stock_item: Mapped["StockItem"] = relationship(
+        "StockItem", back_populates="inventory_transactions"
+    )
+    transaction_type: Mapped["TransactionType"] = relationship(
+        "TransactionType", back_populates="inventory_transactions"
+    )
+    related_sale_item: Mapped[Optional["SaleItem"]] = relationship(
+        "SaleItem", back_populates="inventory_transactions"
+    )
+    created_by_user: Mapped[Optional["User"]] = relationship(
+        "User",
+        foreign_keys=[created_by_user_id],
+        back_populates="created_inventory_transactions",
+    )
+    approved_by_user: Mapped[Optional["User"]] = relationship(
+        "User",
+        foreign_keys=[approved_by_user_id],
+        back_populates="approved_inventory_transactions",
+    )
+
+
+class StockPurchaseRequest(db.Model):
+    __tablename__ = "stock_purchase_requests"
+    request_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    branch_id: Mapped[int] = mapped_column(
+        ForeignKey("branches.branch_id", ondelete="CASCADE"), nullable=False
+    )
+    requested_by_user_id: Mapped[int] = mapped_column(
+        ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
+    )
+    approved_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+    )
+    status_id: Mapped[int] = mapped_column(
+        ForeignKey("request_statuses.request_status_id"), nullable=False
+    )
+    note: Mapped[str | None] = mapped_column(Text)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    approved_at: Mapped[datetime | None] = mapped_column(DateTime)
+    rejected_at: Mapped[datetime | None] = mapped_column(DateTime)
+
+    branch: Mapped["Branch"] = relationship(
+        "Branch", back_populates="stock_purchase_requests"
+    )
+    requested_by_user: Mapped["User"] = relationship(
+        "User",
+        foreign_keys=[requested_by_user_id],
+        back_populates="stock_purchase_requests_requested",
+    )
+    approved_by_user: Mapped[Optional["User"]] = relationship(
+        "User",
+        foreign_keys=[approved_by_user_id],
+        back_populates="stock_purchase_requests_approved",
+    )
+    status: Mapped["RequestStatus"] = relationship(
+        "RequestStatus", back_populates="stock_purchase_requests"
+    )
+    items: Mapped[list["StockPurchaseRequestItem"]] = relationship(
+        "StockPurchaseRequestItem",
+        back_populates="request",
+        cascade="all, delete-orphan",
+    )
+
+
+class StockPurchaseRequestItem(db.Model):
+    __tablename__ = "stock_purchase_request_items"
+    request_item_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    request_id: Mapped[int] = mapped_column(
+        ForeignKey("stock_purchase_requests.request_id", ondelete="CASCADE"),
+        nullable=False,
+    )
+    stock_item_id: Mapped[int] = mapped_column(
+        ForeignKey("stock_items.stock_item_id", ondelete="RESTRICT"), nullable=False
+    )
+    requested_quantity: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False)
+    estimated_unit_cost: Mapped[Optional[Decimal]] = mapped_column(Numeric(10, 2))
+
+    request: Mapped["StockPurchaseRequest"] = relationship(
+        "StockPurchaseRequest", back_populates="items"
+    )
+    stock_item: Mapped["StockItem"] = relationship(
+        "StockItem", back_populates="purchase_request_items"
+    )

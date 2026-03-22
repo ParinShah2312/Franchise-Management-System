@@ -1,1 +1,1 @@
-"""Utility helpers for the application."""
+"""Utility helpers for the Relay backend application."""

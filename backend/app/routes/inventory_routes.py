@@ -15,7 +15,10 @@ from ..models import (
     BranchInventory,
     InventoryTransaction,
     StockItem,
-    TransactionType,
+)
+from ..services.inventory_service import (
+    apply_inventory_transaction,
+    get_transaction_type_id,
 )
 from ..utils.security import token_required
 
@@ -73,7 +76,6 @@ def _serialize_inventory(record: BranchInventory) -> dict[str, object]:
         "updated_at": record.updated_at.isoformat() if record.updated_at else None,
     }
 
-
 @inventory_bp.route("", methods=["GET"])
 @token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
 def list_inventory() -> tuple[list[dict[str, object]], int]:
@@ -92,50 +94,6 @@ def list_inventory() -> tuple[list[dict[str, object]], int]:
     )
 
     return jsonify([_serialize_inventory(record) for record in records]), HTTPStatus.OK
-
-
-def _get_or_create_inventory(branch_id: int, stock_item_id: int) -> BranchInventory:
-    record = BranchInventory.query.filter_by(
-        branch_id=branch_id, stock_item_id=stock_item_id
-    ).first()
-    if record:
-        return record
-    record = BranchInventory(
-        branch_id=branch_id,
-        stock_item_id=stock_item_id,
-        quantity=Decimal("0"),
-    )
-    db.session.add(record)
-    db.session.flush()
-    return record
-
-
-def _apply_transaction(
-    *,
-    branch: Branch,
-    stock_item: StockItem,
-    quantity_delta: Decimal,
-    transaction_type_id: int,
-    note: str | None = None,
-) -> tuple[InventoryTransaction, BranchInventory]:
-    record = _get_or_create_inventory(branch.branch_id, stock_item.stock_item_id)
-    record.quantity = record.quantity + quantity_delta
-
-    current_user = getattr(g, "current_user", None)
-
-    transaction = InventoryTransaction(
-        branch_id=branch.branch_id,
-        stock_item_id=stock_item.stock_item_id,
-        transaction_type_id=transaction_type_id,
-        quantity_change=quantity_delta,
-        created_by_user_id=current_user.user_id if current_user else None,
-        created_at=datetime.now(timezone.utc),
-        note=note,
-    )
-    db.session.add(transaction)
-    db.session.flush()
-
-    return transaction, record
 
 
 @inventory_bp.route("/transaction", methods=["POST"])
@@ -196,22 +154,17 @@ def create_transaction() -> tuple[dict[str, object], int]:
 
     note = payload.get("note")
 
-    transaction_type = TransactionType.query.filter_by(
-        type_name=transaction_code
-    ).first()
-    if not transaction_type:
-        return (
-            jsonify(
-                {"error": f"Transaction type '{transaction_code}' is not configured."}
-            ),
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
+    try:
+        transaction_type_id = get_transaction_type_id(transaction_code)
+    except LookupError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.INTERNAL_SERVER_ERROR
 
-    transaction, inventory_record = _apply_transaction(
-        branch=branch,
-        stock_item=stock_item,
+    transaction, inventory_record = apply_inventory_transaction(
+        branch_id=branch.branch_id,
+        stock_item_id=stock_item.stock_item_id,
         quantity_delta=quantity,
-        transaction_type_id=transaction_type.transaction_type_id,
+        transaction_type_id=transaction_type_id,
+        created_by_user_id=getattr(g, "current_user", None).user_id if getattr(g, "current_user", None) else None,
         note=note,
     )
 
@@ -228,14 +181,13 @@ def create_transaction() -> tuple[dict[str, object], int]:
         jsonify(
             {
                 "transaction_id": transaction.transaction_id,
-                "transaction_type": transaction_type.type_name,
+                "transaction_type": transaction_code,
                 "quantity_change": float(transaction.quantity_change),
                 "branch_inventory": _serialize_inventory(refreshed_record),
             }
         ),
         HTTPStatus.CREATED,
     )
-
 
 @inventory_bp.route("/stock-in", methods=["POST"])
 @token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
@@ -274,17 +226,17 @@ def record_stock_delivery() -> tuple[dict[str, object], int]:
             {"error": "Stock item is not available for this branch."}
         ), HTTPStatus.BAD_REQUEST
 
-    transaction_type = TransactionType.query.filter_by(type_name="IN").first()
-    if not transaction_type:
-        return jsonify(
-            {"error": "Transaction type 'IN' is not configured."}
-        ), HTTPStatus.INTERNAL_SERVER_ERROR
+    try:
+        transaction_type_id = get_transaction_type_id("IN")
+    except LookupError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.INTERNAL_SERVER_ERROR
 
-    transaction, inventory_record = _apply_transaction(
-        branch=branch,
-        stock_item=stock_item,
+    transaction, inventory_record = apply_inventory_transaction(
+        branch_id=branch.branch_id,
+        stock_item_id=stock_item.stock_item_id,
         quantity_delta=quantity,
-        transaction_type_id=transaction_type.transaction_type_id,
+        transaction_type_id=transaction_type_id,
+        created_by_user_id=getattr(g, "current_user", None).user_id if getattr(g, "current_user", None) else None,
         note=(payload.get("note") or "Recorded via staff delivery"),
     )
 
@@ -301,14 +253,13 @@ def record_stock_delivery() -> tuple[dict[str, object], int]:
         jsonify(
             {
                 "transaction_id": transaction.transaction_id,
-                "transaction_type": transaction_type.type_name,
+                "transaction_type": "IN",
                 "quantity_change": float(transaction.quantity_change),
                 "branch_inventory": _serialize_inventory(refreshed_record),
             }
         ),
         HTTPStatus.CREATED,
     )
-
 
 @inventory_bp.route("/stock-items", methods=["GET"])
 @token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
@@ -336,7 +287,6 @@ def list_stock_items() -> tuple[list[dict[str, object]], int]:
         for item in items
     ]
     return jsonify(payload), HTTPStatus.OK
-
 
 @inventory_bp.route("", methods=["POST"])
 @token_required({"BRANCH_OWNER", "MANAGER"})
@@ -409,19 +359,19 @@ def create_branch_inventory() -> tuple[dict[str, object], int]:
     db.session.add(inventory)
     db.session.flush()
 
-    transaction_type = TransactionType.query.filter_by(type_name="ADJUSTMENT").first()
-    if not transaction_type:
-        transaction_type = TransactionType.query.filter_by(type_name="IN").first()
-        if not transaction_type:
+    try:
+        transaction_type_id = get_transaction_type_id("ADJUSTMENT")
+    except LookupError:
+        try:
+            transaction_type_id = get_transaction_type_id("IN")
+        except LookupError as exc:
             db.session.rollback()
-            return jsonify(
-                {"error": "Transaction type 'ADJUSTMENT' or 'IN' is not configured."}
-            ), HTTPStatus.INTERNAL_SERVER_ERROR
+            return jsonify({"error": str(exc)}), HTTPStatus.INTERNAL_SERVER_ERROR
 
     transaction = InventoryTransaction(
         branch_id=result,
         stock_item_id=stock_item_id,
-        transaction_type_id=transaction_type.transaction_type_id,
+        transaction_type_id=transaction_type_id,
         quantity_change=quantity,
         note="Initial inventory load",
         created_by_user_id=getattr(getattr(g, "current_user", None), "user_id", None),

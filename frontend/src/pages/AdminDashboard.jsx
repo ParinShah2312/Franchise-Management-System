@@ -142,6 +142,64 @@ function ApplicationModal({ application, onClose, onApprove, onReject, actionSta
   );
 }
 
+function RejectionModal({ isOpen, onClose, onSubmit, rejectionNote, setRejectionNote, isSubmitting, error }) {
+  if (!isOpen) return null;
+
+  return (
+    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
+      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-lg font-semibold text-gray-900">Reject Application</h2>
+          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
+        </div>
+        
+        <p className="text-sm text-gray-600">
+          Please provide a reason for rejection. This will be recorded against the application.
+        </p>
+        
+        {error && (
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+            {error}
+          </div>
+        )}
+
+        <div>
+          <textarea
+            className="input-field w-full"
+            rows={5}
+            maxLength={500}
+            placeholder="e.g. Investment capacity does not meet the minimum threshold for this franchise."
+            value={rejectionNote}
+            onChange={(e) => setRejectionNote(e.target.value)}
+          />
+          <div className="text-xs text-gray-400 text-right mt-1">
+            {rejectionNote.length} / 500 characters
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-3">
+          <button
+            type="button"
+            onClick={onClose}
+            className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100"
+            disabled={isSubmitting}
+          >
+            Cancel
+          </button>
+          <button
+            type="button"
+            onClick={onSubmit}
+            className="px-4 py-2 text-sm font-semibold text-white bg-red-600 rounded-lg shadow hover:bg-red-700 disabled:opacity-60"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? 'Rejecting…' : 'Confirm Rejection'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 export default function AdminDashboard() {
   const { logout } = useAuth();
 
@@ -158,6 +216,11 @@ export default function AdminDashboard() {
   const [modalApplication, setModalApplication] = useState(null);
   const [actionState, setActionState] = useState({ id: null, type: null });
   const fileInputRef = useRef(null);
+
+  const [rejectionModal, setRejectionModal] = useState({ open: false, applicationId: null });
+  const [rejectionNote, setRejectionNote] = useState('');
+  const [rejectionSubmitting, setRejectionSubmitting] = useState(false);
+  const [rejectionError, setRejectionError] = useState('');
 
   const formatCurrency = (value) => {
     const numericValue = Number(value) || 0;
@@ -220,31 +283,41 @@ export default function AdminDashboard() {
     }
   };
 
-  const handleReject = async (applicationId) => {
-    const reason = window.prompt('Please provide a reason for rejection:');
-    if (reason === null) {
+  const openRejectionModal = (applicationId) => {
+    setRejectionModal({ open: true, applicationId });
+    setRejectionNote('');
+    setRejectionError('');
+  };
+
+  const closeRejectionModal = () => {
+    setRejectionModal({ open: false, applicationId: null });
+    setRejectionNote('');
+    setRejectionError('');
+  };
+
+  const submitRejection = async () => {
+    const trimmed = rejectionNote.trim();
+    if (trimmed.length < 10) {
+      setRejectionError('Rejection reason must be at least 10 characters.');
       return;
     }
-
-    const trimmed = reason.trim();
-    if (!trimmed) {
-      window.alert('Rejection reason is required.');
-      return;
-    }
-
-    beginAction(applicationId, 'reject');
+    
+    setRejectionError('');
+    setRejectionSubmitting(true);
     try {
-      await api.put(`/franchises/applications/${applicationId}/reject`, {
-        notes: trimmed,
-      });
-      await fetchDashboard();
-      setModalApplication((prev) =>
-        prev && prev.application_id === applicationId ? null : prev
+      await api.put(
+        `/franchises/applications/${rejectionModal.applicationId}/reject`,
+        { notes: trimmed }
       );
+      await fetchDashboard();
+      setRejectionModal({ open: false, applicationId: null });
+      setRejectionNote('');
+      setModalApplication(null); // close the ApplicationModal too if still open
+      setToast({ message: 'Application rejected successfully.', variant: 'success' });
     } catch (err) {
-      setError(err.message || 'Failed to reject application.');
+      setRejectionError(err.message || 'Failed to reject application.');
     } finally {
-      endAction();
+      setRejectionSubmitting(false);
     }
   };
 
@@ -521,8 +594,18 @@ export default function AdminDashboard() {
         application={modalApplication}
         onClose={closeModal}
         onApprove={handleApprove}
-        onReject={handleReject}
+        onReject={openRejectionModal}
         actionState={actionState}
+      />
+
+      <RejectionModal
+        isOpen={rejectionModal.open}
+        onClose={closeRejectionModal}
+        onSubmit={submitRejection}
+        rejectionNote={rejectionNote}
+        setRejectionNote={setRejectionNote}
+        isSubmitting={rejectionSubmitting}
+        error={rejectionError}
       />
 
       {toast ? (

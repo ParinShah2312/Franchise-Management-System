@@ -6,6 +6,7 @@ from datetime import date
 from http import HTTPStatus
 
 from flask import Blueprint, jsonify
+from ..utils.db_helpers import floatify, month_bounds
 from sqlalchemy import func
 
 from ..extensions import db
@@ -23,27 +24,6 @@ from ..models import (
 )
 from ..utils.security import token_required
 
-
-def _floatify(value: object) -> float:
-    """Best-effort conversion of numeric database values to float."""
-
-    if value is None:
-        return 0.0
-    try:
-        return float(value)
-    except (TypeError, ValueError):
-        return 0.0
-
-
-def _month_bounds(today: date) -> tuple[date, date]:
-    """Return the inclusive/exclusive boundaries for the month of ``today``."""
-
-    start = date(today.year, today.month, 1)
-    if today.month == 12:
-        end = date(today.year + 1, 1, 1)
-    else:
-        end = date(today.year, today.month + 1, 1)
-    return start, end
 
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
@@ -91,7 +71,7 @@ def get_franchisor_metrics() -> tuple[dict[str, object], int]:
     )
 
     payload = {
-        "revenue": _floatify(total_revenue),
+        "revenue": floatify(total_revenue),
         "branches": active_branches,
         "pending_apps": pending_applications,
     }
@@ -176,10 +156,10 @@ def get_branch_metrics() -> tuple[dict[str, object], int]:
     )
 
     payload = {
-        "revenue": _floatify(total_revenue),
-        "inventory_value": _floatify(inventory_value),
+        "revenue": floatify(total_revenue),
+        "inventory_value": floatify(inventory_value),
         "pending_requests": int(pending_requests),
-        "pending_items": _floatify(pending_items),
+        "pending_items": floatify(pending_items),
     }
 
     return jsonify(payload), HTTPStatus.OK
@@ -195,7 +175,7 @@ def get_dashboard_metrics() -> tuple[dict[str, object], int]:
     )
 
     today = date.today()
-    month_start, month_end = _month_bounds(today)
+    month_start, month_end = month_bounds(today)
     monthly_revenue = (
         db.session.query(func.coalesce(func.sum(Sale.total_amount), 0))
         .filter(Sale.sale_datetime >= month_start, Sale.sale_datetime < month_end)
@@ -219,8 +199,8 @@ def get_dashboard_metrics() -> tuple[dict[str, object], int]:
     )
 
     payload = {
-        "total_revenue": _floatify(total_revenue),
-        "monthly_revenue": _floatify(monthly_revenue),
+        "total_revenue": floatify(total_revenue),
+        "monthly_revenue": floatify(monthly_revenue),
         "total_franchises": total_franchises,
         "active_branches": active_branches,
         "pending_applications": pending_applications,
@@ -263,7 +243,7 @@ def get_recent_sales() -> tuple[list[dict[str, object]], int]:
             {
                 "id": row.sale_id,
                 "sale_datetime": sale_datetime,
-                "total_amount": _floatify(row.total_amount),
+                "total_amount": floatify(row.total_amount),
                 "branch_id": row.branch_id,
                 "branch_name": row.branch_name,
                 "franchise_id": row.franchise_id,

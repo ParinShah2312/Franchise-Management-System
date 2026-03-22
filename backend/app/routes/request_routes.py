@@ -12,14 +12,12 @@ from sqlalchemy.orm import joinedload
 from ..extensions import db
 from ..models import (
     Branch,
-    BranchInventory,
-    InventoryTransaction,
     RequestStatus,
     StockItem,
     StockPurchaseRequest,
     StockPurchaseRequestItem,
-    TransactionType,
 )
+from ..services.inventory_service import apply_inventory_transaction, get_transaction_type_id
 from ..utils.security import token_required
 
 
@@ -63,30 +61,6 @@ def _get_status_id(name: str) -> int:
     if not status:
         raise LookupError(f"Request status '{name}' is not configured.")
     return status.request_status_id
-
-
-def _get_transaction_type_id(code: str) -> int:
-    transaction_type = TransactionType.query.filter_by(type_name=code).first()
-    if not transaction_type:
-        raise LookupError(f"Transaction type '{code}' is not configured.")
-    return transaction_type.transaction_type_id
-
-
-def _get_or_create_inventory(branch_id: int, stock_item_id: int) -> BranchInventory:
-    record = BranchInventory.query.filter_by(
-        branch_id=branch_id, stock_item_id=stock_item_id
-    ).first()
-    if record:
-        return record
-
-    record = BranchInventory(
-        branch_id=branch_id,
-        stock_item_id=stock_item_id,
-        quantity=Decimal("0"),
-    )
-    db.session.add(record)
-    db.session.flush()
-    return record
 
 
 def _serialize_request(request_obj: StockPurchaseRequest) -> dict[str, object]:
@@ -318,30 +292,22 @@ def approve_request(request_id: int) -> tuple[dict[str, object], int]:
         ), HTTPStatus.NOT_FOUND
 
     try:
-        transaction_type_id = _get_transaction_type_id("IN")
+        transaction_type_id = get_transaction_type_id("IN")
     except LookupError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.INTERNAL_SERVER_ERROR
 
     current_user = getattr(g, "current_user", None)
 
     for item in record.items:
-        inventory_record = _get_or_create_inventory(
-            branch.branch_id, item.stock_item_id
-        )
-        inventory_record.quantity = inventory_record.quantity + item.requested_quantity
-
-        db.session.add(
-            InventoryTransaction(
-                branch_id=branch.branch_id,
-                stock_item_id=item.stock_item_id,
-                transaction_type_id=transaction_type_id,
-                quantity_change=item.requested_quantity,
-                unit_cost=item.estimated_unit_cost,
-                created_by_user_id=current_user.user_id if current_user else None,
-                approved_by_user_id=current_user.user_id if current_user else None,
-                note=f"Auto-approved from request {record.request_id}",
-                created_at=datetime.now(timezone.utc),
-            )
+        apply_inventory_transaction(
+            branch_id=branch.branch_id,
+            stock_item_id=item.stock_item_id,
+            quantity_delta=item.requested_quantity,
+            transaction_type_id=transaction_type_id,
+            unit_cost=item.estimated_unit_cost,
+            created_by_user_id=current_user.user_id if current_user else None,
+            approved_by_user_id=current_user.user_id if current_user else None,
+            note=f"Auto-approved from request {record.request_id}",
         )
 
     record.status_id = approved_status_id

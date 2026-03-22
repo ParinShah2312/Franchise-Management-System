@@ -12,15 +12,12 @@ from sqlalchemy.orm import joinedload
 from ..extensions import db
 from ..models import (
     Branch,
-    BranchInventory,
-    InventoryTransaction,
     Product,
-    ProductIngredient,
     Sale,
     SaleItem,
     SaleStatus,
-    TransactionType,
 )
+from ..services.inventory_service import deduct_ingredients_for_sale, get_transaction_type_id, InsufficientStockError
 from ..utils.security import token_required
 
 
@@ -114,14 +111,6 @@ def _sale_status_paid_id() -> int | tuple[dict[str, object], int]:
     return status.sale_status_id
 
 
-def _transaction_type_out_id() -> int | tuple[dict[str, object], int]:
-    transaction_type = TransactionType.query.filter_by(type_name="OUT").first()
-    if not transaction_type:
-        return (
-            jsonify({"error": "Transaction type 'OUT' is not configured."}),
-            HTTPStatus.INTERNAL_SERVER_ERROR,
-        )
-    return transaction_type.transaction_type_id
 
 
 @sales_bp.route("", methods=["POST"])
@@ -213,52 +202,23 @@ def create_sale() -> tuple[dict[str, object], int]:
         db.session.flush()
         sale_item_records.append((sale_item, product, quantity))
 
-    transaction_type_out_id = _transaction_type_out_id()
-    if isinstance(transaction_type_out_id, tuple):
+    try:
+        transaction_type_out_id = get_transaction_type_id("OUT")
+    except LookupError as exc:
         db.session.rollback()
-        return transaction_type_out_id
+        return jsonify({"error": str(exc)}), HTTPStatus.INTERNAL_SERVER_ERROR
 
-    for sale_item, product, quantity in sale_item_records:
-        ingredients = ProductIngredient.query.filter_by(
-            product_id=product.product_id
-        ).all()
-        if not ingredients:
-            continue
-
-        for ingredient in ingredients:
-            total_required = Decimal(quantity) * ingredient.quantity_required
-
-            inventory_record = BranchInventory.query.filter_by(
-                branch_id=branch.branch_id,
-                stock_item_id=ingredient.stock_item_id,
-            ).first()
-
-            stock_name = (
-                ingredient.stock_item.name
-                if ingredient.stock_item
-                else f"Stock Item {ingredient.stock_item_id}"
-            )
-
-            if not inventory_record or inventory_record.quantity < total_required:
-                db.session.rollback()
-                return (
-                    jsonify({"error": f"Insufficient stock for {stock_name}."}),
-                    HTTPStatus.BAD_REQUEST,
-                )
-
-            inventory_record.quantity = inventory_record.quantity - total_required
-
-            db.session.add(
-                InventoryTransaction(
-                    branch_id=branch.branch_id,
-                    stock_item_id=ingredient.stock_item_id,
-                    transaction_type_id=transaction_type_out_id,
-                    quantity_change=-total_required,
-                    related_sale_item_id=sale_item.sale_item_id,
-                    created_by_user_id=current_user.user_id if current_user else None,
-                    note=f"Sale #{sale.sale_id}",
-                )
-            )
+    try:
+        deduct_ingredients_for_sale(
+            branch_id=branch.branch_id,
+            sale_items=sale_item_records,
+            transaction_type_out_id=transaction_type_out_id,
+            created_by_user_id=current_user.user_id if current_user else None,
+            sale_id=sale.sale_id,
+        )
+    except InsufficientStockError as exc:
+        db.session.rollback()
+        return jsonify({"error": f"Insufficient stock for {exc.stock_item_name}."}), HTTPStatus.BAD_REQUEST
 
     sale.total_amount = running_total
 
