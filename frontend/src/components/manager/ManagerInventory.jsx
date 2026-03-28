@@ -7,10 +7,58 @@ const initialInventoryForm = {
     reorder_level: '',
 };
 
-export default function ManagerInventory({ inventoryItems, stockItems, addInventory, refreshInventory, setToast }) {
+const initialDeliveryForm = {
+    stock_item_id: '',
+    quantity: '',
+    note: '',
+};
+
+export default function ManagerInventory({ inventoryItems, stockItems, addInventory, recordDelivery, refreshInventory, setToast }) {
     const [showInventoryModal, setShowInventoryModal] = useState(false);
     const [inventoryForm, setInventoryForm] = useState(initialInventoryForm);
     const [inventorySubmitting, setInventorySubmitting] = useState(false);
+
+    const [showDeliveryModal, setShowDeliveryModal] = useState(false);
+    const [deliverySubmitting, setDeliverySubmitting] = useState(false);
+    const [deliveryForm, setDeliveryForm] = useState(initialDeliveryForm);
+
+    const closeDeliveryModal = () => {
+        if (deliverySubmitting) return;
+        setShowDeliveryModal(false);
+        setDeliveryForm(initialDeliveryForm);
+    };
+
+    const submitDelivery = async (event) => {
+        event.preventDefault();
+
+        const payload = {
+            stock_item_id: Number(deliveryForm.stock_item_id),
+            quantity: Number(deliveryForm.quantity),
+            note: deliveryForm.note || undefined,
+        };
+
+        if (!payload.stock_item_id) {
+            setToast({ message: 'Select a stock item before submitting.', variant: 'error' });
+            return;
+        }
+
+        if (!payload.quantity || Number.isNaN(payload.quantity) || payload.quantity <= 0) {
+            setToast({ message: 'Quantity must be greater than zero.', variant: 'error' });
+            return;
+        }
+
+        setDeliverySubmitting(true);
+
+        try {
+            await recordDelivery(payload);
+            setToast({ message: 'Delivery recorded successfully!', variant: 'success' });
+            closeDeliveryModal();
+        } catch (err) {
+            setToast({ message: err.message || 'Failed to record delivery.', variant: 'error' });
+        } finally {
+            setDeliverySubmitting(false);
+        }
+    };
 
     const handleAddInventory = async (event) => {
         event.preventDefault();
@@ -59,6 +107,16 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                             className="text-sm px-4 py-2 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
                         >
                             Add Item
+                        </button>
+                        <button
+                            type="button"
+                            onClick={() => {
+                                setDeliveryForm(initialDeliveryForm);
+                                setShowDeliveryModal(true);
+                            }}
+                            className="text-sm px-4 py-2 bg-green-600 text-white rounded-lg shadow hover:bg-green-700"
+                        >
+                            Record Delivery
                         </button>
                     </div>
                 </div>
@@ -187,6 +245,99 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                                     className="px-4 py-2 text-sm font-semibold text-white bg-blue-600 rounded-lg shadow hover:bg-blue-700 disabled:opacity-60"
                                 >
                                     {inventorySubmitting ? 'Adding…' : 'Add Item'}
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            ) : null}
+
+            {showDeliveryModal ? (
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-6">
+                        <div className="flex items-center justify-between">
+                            <h3 className="text-xl font-semibold text-gray-800">Record Stock Delivery</h3>
+                            <button
+                                type="button"
+                                onClick={closeDeliveryModal}
+                                className="text-gray-400 hover:text-gray-600"
+                                aria-label="Close delivery modal"
+                            >
+                                ✕
+                            </button>
+                        </div>
+
+                        <form className="space-y-4" onSubmit={submitDelivery}>
+                            <div>
+                                <label className="label" htmlFor="delivery_stock_item">
+                                    Stock Item*
+                                </label>
+                                <select
+                                    id="delivery_stock_item"
+                                    required
+                                    value={deliveryForm.stock_item_id}
+                                    onChange={(event) =>
+                                        setDeliveryForm((prev) => ({ ...prev, stock_item_id: event.target.value }))
+                                    }
+                                    className="input-field"
+                                >
+                                    <option value="">Select item</option>
+                                    {stockItems.map((item) => (
+                                        <option key={item.stock_item_id || item.id} value={item.stock_item_id || item.id}>
+                                            {item.name || item.stock_item_name}
+                                        </option>
+                                    ))}
+                                </select>
+                            </div>
+
+                            <div>
+                                <label className="label" htmlFor="delivery_quantity">
+                                    Quantity Received*
+                                </label>
+                                <input
+                                    id="delivery_quantity"
+                                    type="number"
+                                    min={1}
+                                    required
+                                    value={deliveryForm.quantity}
+                                    onChange={(event) =>
+                                        setDeliveryForm((prev) => ({ ...prev, quantity: event.target.value }))
+                                    }
+                                    className="input-field"
+                                    placeholder="0"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="label" htmlFor="delivery_note">
+                                    Note
+                                </label>
+                                <textarea
+                                    id="delivery_note"
+                                    rows={3}
+                                    value={deliveryForm.note}
+                                    onChange={(event) =>
+                                        setDeliveryForm((prev) => ({ ...prev, note: event.target.value }))
+                                    }
+                                    className="input-field resize-none"
+                                    placeholder="Reference or remarks"
+                                />
+                            </div>
+
+                            <div className="flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={closeDeliveryModal}
+                                    className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-100"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={deliverySubmitting}
+                                    className="px-4 py-2 text-sm font-semibold text-white bg-green-600 rounded-lg shadow hover:bg-green-700 disabled:opacity-60"
+                                >
+                                    {deliverySubmitting ? 'Recording…' : 'Record Delivery'}
                                 </button>
                             </div>
                         </form>

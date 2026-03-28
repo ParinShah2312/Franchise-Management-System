@@ -22,7 +22,7 @@ export default function ManagerDashboard() {
 
   const {
     staff, addStaff, refreshStaff,
-    inventoryItems, stockItems, addInventory, refreshInventory,
+    inventoryItems, stockItems, addInventory, recordDelivery, refreshInventory,
     sales, products, logSale, refreshSales,
     requests, createRequest, refreshRequests,
     loading, error, pendingRequestsCount, lowStockItems, lowStockItemsCount, todaySalesTotal, loadData,
@@ -41,7 +41,7 @@ export default function ManagerDashboard() {
       case 'staff':
         return <ManagerStaff staff={staff} addStaff={addStaff} setToast={setToast} />;
       case 'inventory':
-        return <ManagerInventory inventoryItems={inventoryItems} stockItems={stockItems} addInventory={addInventory} refreshInventory={refreshInventory} setToast={setToast} />;
+        return <ManagerInventory inventoryItems={inventoryItems} stockItems={stockItems} addInventory={addInventory} recordDelivery={recordDelivery} refreshInventory={refreshInventory} setToast={setToast} />;
       case 'sales':
         return <ManagerSales sales={sales} products={products} logSale={logSale} refreshSales={refreshSales} setToast={setToast} />;
       case 'requests':
