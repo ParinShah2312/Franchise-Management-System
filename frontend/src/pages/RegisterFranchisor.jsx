@@ -2,7 +2,9 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { api } from '../api';
+import { ContactInfoSection, OrgInfoSection } from '../components/register';
 import { useAuth } from '../context/AuthContext';
+import { hasEmailTypo, isValidEmail, isValidPassword, isValidPhone, sanitizePhone } from '../utils';
 
 const initialState = {
   organization_name: '',
@@ -27,6 +29,10 @@ export default function RegisterFranchisor() {
     setFormState((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handlePhoneChange = (event) => {
+    setFormState((prev) => ({ ...prev, phone: sanitizePhone(event.target.value) }));
+  };
+
   const validateForm = () => {
     const errors = {};
 
@@ -38,21 +44,17 @@ export default function RegisterFranchisor() {
       errors.contact_person = 'Contact person name is required.';
     }
 
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    const emailLower = formState.email.toLowerCase();
-    if (!emailPattern.test(formState.email)) {
+    if (!isValidEmail(formState.email)) {
       errors.email = 'Invalid email format.';
-    } else if (emailLower.includes('@gamil.com')) {
+    } else if (hasEmailTypo(formState.email)) {
       errors.email = 'Did you mean @gmail.com? Please check for typos.';
     }
 
-    const phoneDigits = formState.phone.replace(/\D/g, '');
-    if (phoneDigits.length !== 10) {
+    if (!isValidPhone(formState.phone)) {
       errors.phone = 'Phone number must be exactly 10 digits.';
     }
 
-    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d).{8,}$/;
-    if (!passwordPattern.test(formState.password)) {
+    if (!isValidPassword(formState.password)) {
       errors.password = 'Password must be 8+ chars with 1 uppercase, 1 lowercase, and 1 number.';
     }
 
@@ -78,7 +80,7 @@ export default function RegisterFranchisor() {
         organization_name: formState.organization_name.trim(),
         contact_person: formState.contact_person.trim(),
         email: formState.email.trim().toLowerCase(),
-        phone: formState.phone.replace(/\D/g, ''),
+        phone: sanitizePhone(formState.phone),
         password: formState.password,
       });
 
@@ -117,109 +119,23 @@ export default function RegisterFranchisor() {
 
         <form className="space-y-6" onSubmit={handleSubmit}>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="organization_name">
-                Organization Name*
-              </label>
-              <input
-                id="organization_name"
-                name="organization_name"
-                type="text"
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Relay Coffee Brands"
-                value={formState.organization_name}
-                onChange={handleChange}
-              />
-              {formErrors.organization_name ? (
-                <p className="mt-1 text-xs text-red-600">{formErrors.organization_name}</p>
-              ) : null}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="contact_person">
-                Contact Person*
-              </label>
-              <input
-                id="contact_person"
-                name="contact_person"
-                type="text"
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="Jordan Smith"
-                value={formState.contact_person}
-                onChange={handleChange}
-              />
-              {formErrors.contact_person ? (
-                <p className="mt-1 text-xs text-red-600">{formErrors.contact_person}</p>
-              ) : null}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">
-                Email*
-              </label>
-              <input
-                id="email"
-                name="email"
-                type="email"
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="you@example.com"
-                value={formState.email}
-                onChange={handleChange}
-              />
-              {formErrors.email ? (
-                <p className="mt-1 text-xs text-red-600">{formErrors.email}</p>
-              ) : null}
-            </div>
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="phone">
-                Phone Number*
-              </label>
-              <input
-                id="phone"
-                name="phone"
-                type="tel"
-                required
-                className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                placeholder="5551234567"
-                value={formState.phone}
-                onChange={(event) => {
-                  const sanitized = event.target.value.replace(/\D/g, '');
-                  setFormState((prev) => ({ ...prev, phone: sanitized }));
-                }}
-                maxLength={10}
-              />
-              {formErrors.phone ? (
-                <p className="mt-1 text-xs text-red-600">{formErrors.phone}</p>
-              ) : null}
-            </div>
-            <div className="md:col-span-2">
-              <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="password">
-                Password*
-              </label>
-              <div className="relative">
-                <input
-                  id="password"
-                  name="password"
-                  type={showPassword ? 'text' : 'password'}
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-14"
-                  placeholder="Create a secure password"
-                  value={formState.password}
-                  onChange={handleChange}
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowPassword((prev) => !prev)}
-                  className="absolute inset-y-0 right-3 flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700"
-                >
-                  {showPassword ? 'Hide' : 'Show'}
-                </button>
-              </div>
-              {formErrors.password ? (
-                <p className="mt-1 text-xs text-red-600">{formErrors.password}</p>
-              ) : null}
-            </div>
+            <OrgInfoSection
+              organizationName={formState.organization_name}
+              contactPerson={formState.contact_person}
+              formErrors={formErrors}
+              onChange={handleChange}
+            />
+
+            <ContactInfoSection
+              email={formState.email}
+              phone={formState.phone}
+              password={formState.password}
+              showPassword={showPassword}
+              formErrors={formErrors}
+              onChange={handleChange}
+              onPhoneChange={handlePhoneChange}
+              onTogglePassword={() => setShowPassword((prev) => !prev)}
+            />
           </div>
 
           {error ? (

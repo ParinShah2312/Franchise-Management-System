@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDateTime, formatNumber } from '../../utils';
 
 export default function FranchiseeRequests({ requests, updateRequestStatus, onRefresh, setToast }) {
     const [requestAction, setRequestAction] = useState({ id: null, type: null });
@@ -59,12 +60,12 @@ export default function FranchiseeRequests({ requests, updateRequestStatus, onRe
                             requests.map((request) => (
                                 <tr key={request.request_id} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="px-6 py-4 text-sm text-gray-700">
-                                        {request.created_at ? new Date(request.created_at).toLocaleString() : '—'}
+                                        {formatDateTime(request.created_at) || '—'}
                                     </td>
                                     <td className="px-6 py-4 text-sm text-gray-500">
                                         {request.items.map((item) => (
                                             <div key={item.request_item_id}>
-                                                {item.stock_item_name || 'Item'} – {item.requested_quantity}
+                                                {item.stock_item_name || 'Item'} – {formatNumber(item.requested_quantity)}
                                             </div>
                                         ))}
                                     </td>

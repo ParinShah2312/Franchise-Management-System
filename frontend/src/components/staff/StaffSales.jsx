@@ -1,9 +1,8 @@
 import { useState } from 'react';
-
-const PAYMENT_MODES = ['Cash', 'Card', 'UPI', 'Other'];
+import { PAYMENT_MODES, getTodayString, formatDateTime, formatINRDecimal } from '../../utils';
 
 const createInitialSaleForm = () => ({
-    sale_date: new Date().toISOString().slice(0, 10),
+    sale_date: getTodayString(),
     payment_mode: PAYMENT_MODES[0],
     items: [{ product_id: '', quantity: '' }],
 });
@@ -132,13 +131,11 @@ export default function StaffSales({ sales, products, logSale, onRefresh, setToa
                                 sales.map((sale) => (
                                     <tr key={sale.sale_id || sale.id}>
                                         <td className="px-4 py-3 text-sm text-gray-800">
-                                            {sale.sale_datetime || sale.sale_date
-                                                ? new Date(sale.sale_datetime || sale.sale_date).toLocaleString()
-                                                : '—'}
+                                            {formatDateTime(sale.sale_datetime || sale.sale_date) || '—'}
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-500">{sale.payment_mode || '—'}</td>
                                         <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                                            ₹{Number(sale.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            {formatINRDecimal(sale.total_amount)}
                                         </td>
                                     </tr>
                                 ))

@@ -1,25 +1,15 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import { useAuth } from '../context/AuthContext';
-import { useStaff } from '../hooks/useStaff';
-import { useInventory } from '../hooks/useInventory';
-import { useSales } from '../hooks/useSales';
-import { useRequests } from '../hooks/useRequests';
-import Toast from '../components/Toast';
+import { useManagerDashboard } from '../hooks/useManagerDashboard';
 
+import Toast from '../components/Toast';
+import Tabs from '../components/ui/Tabs';
 import ManagerOverview from '../components/manager/ManagerOverview';
 import ManagerStaff from '../components/manager/ManagerStaff';
 import ManagerInventory from '../components/manager/ManagerInventory';
 import ManagerSales from '../components/manager/ManagerSales';
 import ManagerRequests from '../components/manager/ManagerRequests';
-
-const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'staff', label: 'My Staff' },
-  { id: 'inventory', label: 'Inventory' },
-  { id: 'sales', label: 'Sales' },
-  { id: 'requests', label: 'Stock Requests' },
-];
 
 export default function ManagerDashboard() {
   const { user, getBranchId, logout } = useAuth();
@@ -28,42 +18,21 @@ export default function ManagerDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [toast, setToast] = useState(null);
 
-  const { staff, loading: staffLoading, error: staffError, addStaff, refreshStaff } = useStaff(branchId);
-  const { inventoryItems, stockItems, loading: invLoading, error: invError, addInventory, refreshInventory } = useInventory(branchId);
-  const { sales, products, loading: salesLoading, error: salesError, logSale, refreshSales } = useSales(branchId);
-  const { requests, loading: reqLoading, error: reqError, createRequest, refreshRequests } = useRequests(branchId);
+  const {
+    staff, addStaff, refreshStaff,
+    inventoryItems, stockItems, addInventory, refreshInventory,
+    sales, products, logSale, refreshSales,
+    requests, createRequest, refreshRequests,
+    loading, error, pendingRequestsCount, lowStockItemsCount, todaySalesTotal, loadData,
+  } = useManagerDashboard(branchId);
 
-  const loading = !branchId ? false : (staffLoading || invLoading || salesLoading || reqLoading);
-  const error = !branchId ? 'No branch is assigned to your account. Please contact your branch owner.' : (staffError || invError || salesError || reqError || '');
-
-  const loadData = useCallback(() => {
-    refreshStaff();
-    refreshInventory();
-    refreshSales();
-    refreshRequests();
-  }, [refreshStaff, refreshInventory, refreshSales, refreshRequests]);
-
-  const pendingRequestsCount = useMemo(
-    () => requests.filter((item) => item.status === 'PENDING').length,
-    [requests]
-  );
-
-  const lowStockItemsCount = useMemo(
-    () =>
-      inventoryItems.filter((item) => {
-        const quantity = Number(item.quantity || 0);
-        const reorder = Number(item.reorder_level || 0);
-        return reorder > 0 && quantity <= reorder;
-      }).length,
-    [inventoryItems]
-  );
-
-  const todaySalesTotal = useMemo(() => {
-    const today = new Date().toISOString().slice(0, 10);
-    return sales
-      .filter((sale) => (sale.sale_datetime || sale.sale_date || '').slice(0, 10) === today)
-      .reduce((total, sale) => total + Number(sale.total_amount || 0), 0);
-  }, [sales]);
+  const TABS = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'staff', label: 'My Staff' },
+    { key: 'inventory', label: 'Inventory' },
+    { key: 'sales', label: 'Sales' },
+    { key: 'requests', label: 'Stock Requests', badge: pendingRequestsCount > 0 ? pendingRequestsCount : null },
+  ];
 
   const renderContent = () => {
     switch (activeTab) {
@@ -125,22 +94,7 @@ export default function ManagerDashboard() {
           </div>
         ) : (
           <div className="space-y-8">
-            <nav className="flex space-x-3">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${activeTab === tab.id
-                      ? 'bg-blue-600 text-white border-blue-600 shadow'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200 hover:text-blue-600'
-                    }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
-
+            <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
             {renderContent()}
           </div>
         )}
@@ -152,3 +106,4 @@ export default function ManagerDashboard() {
     </div>
   );
 }
+

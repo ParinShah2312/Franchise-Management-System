@@ -1,55 +1,49 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useState } from 'react';
 import PropTypes from 'prop-types';
 
-import { api, clearAuthToken, setAuthToken } from '../api';
+import { api, clearAuthToken, registerUnauthorizedHandler, setAuthToken } from '../api';
+import { STORAGE_KEYS, parseToken, isTokenExpired } from '../utils';
 
 const AuthContext = createContext(null);
 
-const STORAGE_TOKEN_KEY = 'relay_token';
-const STORAGE_USER_KEY = 'relay_user';
-const STORAGE_SCOPE_KEY = 'relay_scope';
-
 export function AuthProvider({ children }) {
   const [user, setUser] = useState(() => {
-    const storedUser = localStorage.getItem(STORAGE_USER_KEY);
+    const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
     return storedUser ? JSON.parse(storedUser) : null;
   });
-  const [token, setToken] = useState(() => localStorage.getItem(STORAGE_TOKEN_KEY));
+  const [token, setToken] = useState(() => localStorage.getItem(STORAGE_KEYS.TOKEN));
   const [scope, setScope] = useState(() => {
-    const storedScope = localStorage.getItem(STORAGE_SCOPE_KEY);
+    const storedScope = localStorage.getItem(STORAGE_KEYS.SCOPE);
     return storedScope ? JSON.parse(storedScope) : null;
   });
   const [loading, setLoading] = useState(true);
 
+  const logout = useCallback(() => {
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem(STORAGE_KEYS.SCOPE);
+    clearAuthToken();
+    setToken(null);
+    setUser(null);
+    setScope(null);
+  }, []);
+
+  // Register the API logout handler on mount
+  useEffect(() => {
+    registerUnauthorizedHandler(logout);
+  }, [logout]);
+
   useEffect(() => {
     if (token) {
-      // Check if the JWT is expired
-      try {
-        const payload = JSON.parse(atob(token.split('.')[1]));
-        if (payload.exp && payload.exp * 1000 < Date.now()) {
-          // Token expired — auto-logout
-          localStorage.removeItem(STORAGE_TOKEN_KEY);
-          localStorage.removeItem(STORAGE_USER_KEY);
-          localStorage.removeItem(STORAGE_SCOPE_KEY);
-          clearAuthToken();
-          setToken(null);
-          setUser(null);
-          setScope(null);
-          setLoading(false);
-          return;
-        }
-      } catch {
-        // If token can't be parsed, treat as invalid
-        localStorage.removeItem(STORAGE_TOKEN_KEY);
-        clearAuthToken();
-        setToken(null);
-        setUser(null);
+      if (isTokenExpired(token)) {
+        // Token expired — auto-logout
+        logout();
         setLoading(false);
         return;
       }
 
-      const storedUser = localStorage.getItem(STORAGE_USER_KEY);
-      const storedScope = localStorage.getItem(STORAGE_SCOPE_KEY);
+      const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
+      const storedScope = localStorage.getItem(STORAGE_KEYS.SCOPE);
       if (storedUser) {
         setUser(JSON.parse(storedUser));
       }
@@ -61,7 +55,7 @@ export function AuthProvider({ children }) {
       clearAuthToken();
     }
     setLoading(false);
-  }, [token]);
+  }, [token, logout]);
 
   const login = useCallback(async (email, password) => {
     const data = await api.post('/auth/login', { email, password });
@@ -75,12 +69,12 @@ export function AuthProvider({ children }) {
     };
     const sessionScope = data?.scope ?? null;
 
-    localStorage.setItem(STORAGE_TOKEN_KEY, data.token);
-    localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(session));
+    localStorage.setItem(STORAGE_KEYS.TOKEN, data.token);
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(session));
     if (sessionScope) {
-      localStorage.setItem(STORAGE_SCOPE_KEY, JSON.stringify(sessionScope));
+      localStorage.setItem(STORAGE_KEYS.SCOPE, JSON.stringify(sessionScope));
     } else {
-      localStorage.removeItem(STORAGE_SCOPE_KEY);
+      localStorage.removeItem(STORAGE_KEYS.SCOPE);
     }
 
     setAuthToken(data.token);
@@ -91,23 +85,13 @@ export function AuthProvider({ children }) {
     return { ...session, scope: sessionScope, token: data.token };
   }, []);
 
-  const logout = useCallback(() => {
-    localStorage.removeItem(STORAGE_TOKEN_KEY);
-    localStorage.removeItem(STORAGE_USER_KEY);
-    localStorage.removeItem(STORAGE_SCOPE_KEY);
-    clearAuthToken();
-    setToken(null);
-    setUser(null);
-    setScope(null);
-  }, []);
-
   const updateUser = useCallback((updates) => {
     setUser((previous) => {
       if (!previous) {
         return previous;
       }
       const next = { ...previous, ...updates };
-      localStorage.setItem(STORAGE_USER_KEY, JSON.stringify(next));
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(next));
       return next;
     });
   }, []);

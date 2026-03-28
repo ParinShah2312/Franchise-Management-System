@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatNumber } from '../../utils';
 
 const initialInventoryForm = {
     stock_item_id: '',
@@ -84,10 +85,10 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                                         <td className="px-4 py-3 text-sm text-gray-800">{item.stock_item_name || item.item_name}</td>
                                         <td className="px-4 py-3 text-sm text-gray-500">{item.unit_name || '—'}</td>
                                         <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                                            {Number(item.quantity || 0).toLocaleString('en-IN')}
+                                            {formatNumber(item.quantity)}
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-500 text-right">
-                                            {item.reorder_level != null ? Number(item.reorder_level).toLocaleString('en-IN') : '—'}
+                                            {formatNumber(item.reorder_level)}
                                         </td>
                                     </tr>
                                 ))

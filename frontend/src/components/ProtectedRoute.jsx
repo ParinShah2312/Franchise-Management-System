@@ -3,13 +3,7 @@ import PropTypes from 'prop-types';
 import { useMemo } from 'react';
 
 import { useAuth } from '../context/AuthContext';
-
-const ROLE_REDIRECTS = {
-  FRANCHISOR: '/admin',
-  BRANCH_OWNER: '/dashboard',
-  MANAGER: '/manager',
-  STAFF: '/staff',
-};
+import { ROLE_REDIRECTS } from '../utils';
 
 export default function ProtectedRoute({ allowedRoles = [], allowReset = false, children }) {
   const { isAuthenticated, user, loading } = useAuth();

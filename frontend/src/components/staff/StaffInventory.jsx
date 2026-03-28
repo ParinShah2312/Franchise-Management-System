@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { formatNumber } from '../../utils';
 
 const initialDeliveryForm = {
     stock_item_id: '',
@@ -134,10 +135,10 @@ export default function StaffInventory({ inventoryItems, stockItems, recordDeliv
                                                 {item.unit_name || item.unit || '—'}
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                                                {quantity.toLocaleString('en-IN')}
+                                                {formatNumber(quantity)}
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-500 text-right">
-                                                {reorder != null ? reorder.toLocaleString('en-IN') : '—'}
+                                                {formatNumber(reorder)}
                                             </td>
                                         </tr>
                                     );

@@ -89,18 +89,31 @@ Relay is a complete end-to-end franchise management ecosystem designed to stream
 ```
 Relay/
 ├── backend/
-│   ├── app/                  # Flask application (Models, Routes, Auth)
+│   ├── app/                  # Flask application (Modular logic)
+│   │   ├── models/           # SQLAlchemy DB Models
+│   │   ├── routes/           # Blueprint API Endpoints
+│   │   ├── services/         # Business Logic & DB Interactions
+│   │   └── utils/            # Shared Decorators & Validation
 │   ├── tests/                # Pytest unit & integration tests
 │   ├── run.py                # Application entry point
 │   ├── requirements.txt      # Python dependencies
 │   └── relay.db              # SQLite Database (Auto-generated)
 ├── frontend/
 │   ├── src/
-│   │   ├── components/       # Modular UI blocks (manager/, admin/, ui/, etc.)
-│   │   ├── hooks/            # Custom React Hooks for data fetching
-│   │   ├── pages/            # Top-level route components
+│   │   ├── api.js            # Axios/Fetch wrapper (Global Interceptors & Error Handling)
+│   │   ├── components/       # Modular UI blocks
+│   │   │   ├── admin/        # Franchisor Dashboard Modals & Sections
+│   │   │   ├── franchisee/   # Franchisee Dashboard Features
+│   │   │   ├── layout/       # Navbar & Footer Partials
+│   │   │   ├── manager/      # Manager Dashboard Modals & Sections
+│   │   │   ├── register/     # Extracted Multi-Step Registration Forms
+│   │   │   ├── staff/        # Staff Dashboard Views
+│   │   │   └── ui/           # Generic Reusable Components (Tabs, Stats)
 │   │   ├── context/          # Global State (AuthContext)
-│   │   └── api.js            # Axios/Fetch wrapper for backend communication
+│   │   ├── hooks/            # Custom React Hooks (Data Fetching abstracted)
+│   │   ├── layouts/          # Top-Level Layout Wrappers (PublicLayout)
+│   │   ├── pages/            # Top-level route container orchestrators
+│   │   └── utils/            # Extracted UI Helpers (Calculations, Currencies, Dates)
 │   ├── package.json          # Node dependencies
 │   └── vite.config.js        # Vite configuration
 ├── START_HERE.md             # Complete startup guide ⭐

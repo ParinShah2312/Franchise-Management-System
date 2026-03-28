@@ -2,6 +2,13 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { api } from '../api';
+import {
+  AccountInfoSection,
+  PersonalInfoSection,
+  FranchiseDetailsSection,
+  BusinessInfoSection,
+} from '../components/register';
+import { isValidEmail, isValidPassword, isValidPhone, sanitizePhone } from '../utils';
 
 const initialState = {
   email: '',
@@ -72,6 +79,10 @@ export default function RegisterFranchise() {
     setFormState((prev) => ({ ...prev, [name]: value }));
   };
 
+  const handlePhoneChange = (event) => {
+    setFormState((prev) => ({ ...prev, phone: sanitizePhone(event.target.value) }));
+  };
+
   const handleFileChange = (event) => {
     const file = event.target.files?.[0] || null;
     setApplicationFile(file);
@@ -80,18 +91,15 @@ export default function RegisterFranchise() {
   const validateForm = () => {
     const errors = {};
 
-    const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    if (!emailPattern.test(formState.email)) {
+    if (!isValidEmail(formState.email)) {
       errors.email = 'Invalid email format.';
     }
 
-    const passwordPattern = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)[a-zA-Z\d]{8,}$/;
-    if (!passwordPattern.test(formState.password)) {
+    if (!isValidPassword(formState.password)) {
       errors.password = 'Password must be 8+ chars with 1 uppercase, 1 lowercase, and 1 number.';
     }
 
-    const phoneDigits = formState.phone.trim();
-    if (!/^\d{10}$/.test(phoneDigits)) {
+    if (!isValidPhone(formState.phone)) {
       errors.phone = 'Contact number must be exactly 10 digits.';
     }
 
@@ -198,233 +206,43 @@ export default function RegisterFranchise() {
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
-          <section>
-            <h2 className="text-lg font-semibold text-gray-700 mb-4">Account Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="email">
-                  Email*
-                </label>
-                <input
-                  id="email"
-                  name="email"
-                  type="email"
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="your.email@example.com"
-                  value={formState.email}
-                  onChange={handleChange}
-                />
-                {formErrors.email ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.email}</p>
-                ) : null}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="password">
-                  Password*
-                </label>
-                <div className="relative">
-                  <input
-                    id="password"
-                    name="password"
-                    type={showPassword ? 'text' : 'password'}
-                    required
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 pr-14"
-                    placeholder="Create a strong password"
-                    value={formState.password}
-                    onChange={handleChange}
-                  />
-                  <button
-                    type="button"
-                    onClick={() => setShowPassword((prev) => !prev)}
-                    className="absolute inset-y-0 right-3 flex items-center text-sm font-semibold text-blue-600 hover:text-blue-700"
-                  >
-                    {showPassword ? 'Hide' : 'Show'}
-                  </button>
-                </div>
-                {formErrors.password ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.password}</p>
-                ) : null}
-              </div>
-            </div>
-          </section>
+          <AccountInfoSection
+            email={formState.email}
+            password={formState.password}
+            showPassword={showPassword}
+            formErrors={formErrors}
+            onChange={handleChange}
+            onTogglePassword={() => setShowPassword((prev) => !prev)}
+          />
 
-          <section>
-            <h2 className="text-lg font-semibold text-gray-700 mb-4">Personal Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="name">
-                  Full Name*
-                </label>
-                <input
-                  id="name"
-                  name="name"
-                  type="text"
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="John Doe"
-                  value={formState.name}
-                  onChange={handleChange}
-                />
-                {formErrors.name ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.name}</p>
-                ) : null}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="phone">
-                  Phone Number*
-                </label>
-                <input
-                  id="phone"
-                  name="phone"
-                  type="tel"
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="5551234567"
-                  value={formState.phone}
-                  maxLength={10}
-                  onChange={(event) => {
-                    const sanitized = event.target.value.replace(/\D/g, '');
-                    setFormState((prev) => ({ ...prev, phone: sanitized }));
-                  }}
-                />
-                {formErrors.phone ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.phone}</p>
-                ) : null}
-              </div>
-            </div>
-          </section>
+          <PersonalInfoSection
+            name={formState.name}
+            phone={formState.phone}
+            formErrors={formErrors}
+            onChange={handleChange}
+            onPhoneChange={handlePhoneChange}
+          />
 
-          <section>
-            <h2 className="text-lg font-semibold text-gray-700 mb-4">Franchise Details</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="franchise_id">
-                  Select Franchise Brand*
-                </label>
-                <select
-                  id="franchise_id"
-                  name="franchise_id"
-                  required
-                  disabled={loadingBrands || brandOptions.length === 0}
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
-                  value={formState.franchise_id}
-                  onChange={handleChange}
-                >
-                  <option value="">{loadingBrands ? 'Loading brands…' : 'Select a franchise brand'}</option>
-                  {brandOptions.map((brand) => (
-                    <option key={brand.id} value={brand.id}>
-                      {brand.name}
-                    </option>
-                  ))}
-                </select>
-                {brandsError ? <p className="mt-1 text-xs text-amber-600">{brandsError}</p> : null}
-                {formErrors.franchise_id ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.franchise_id}</p>
-                ) : null}
-              </div>
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="proposed_location">
-                  Proposed Location (City, State)*
-                </label>
-                <input
-                  id="proposed_location"
-                  name="proposed_location"
-                  type="text"
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Austin, TX"
-                  value={formState.proposed_location}
-                  onChange={handleChange}
-                />
-                {formErrors.proposed_location ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.proposed_location}</p>
-                ) : null}
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="application_file">
-                  Application Document (PDF/JPG/PNG)*
-                </label>
-                <input
-                  id="application_file"
-                  name="application_file"
-                  type="file"
-                  required
-                  ref={fileInputRef}
-                  accept=".pdf,.jpg,.jpeg,.png"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 file:mr-4 file:py-2 file:px-4 file:rounded-lg file:border-0 file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100"
-                  onChange={handleFileChange}
-                />
-                <p className="mt-1 text-xs text-gray-500">Attach your government ID or business plan supporting this expansion request.</p>
-                {formErrors.application_file ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.application_file}</p>
-                ) : null}
-              </div>
-            </div>
-          </section>
+          <FranchiseDetailsSection
+            franchiseId={formState.franchise_id}
+            proposedLocation={formState.proposed_location}
+            brandOptions={brandOptions}
+            loadingBrands={loadingBrands}
+            brandsError={brandsError}
+            applicationFile={applicationFile}
+            formErrors={formErrors}
+            onChange={handleChange}
+            onFileChange={handleFileChange}
+            fileInputRef={fileInputRef}
+          />
 
-          <section>
-            <h2 className="text-lg font-semibold text-gray-700 mb-4">Business Information</h2>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="investment_capacity">
-                  Investment Capacity (USD)*
-                </label>
-                <input
-                  id="investment_capacity"
-                  name="investment_capacity"
-                  type="number"
-                  min="0"
-                  step="1"
-                  required
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="150000"
-                  value={formState.investment_capacity}
-                  onChange={handleChange}
-                />
-                <p className="mt-1 text-xs text-gray-500">Enter a whole number (e.g. 150000 for $150k).</p>
-                {formErrors.investment_capacity ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.investment_capacity}</p>
-                ) : null}
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="business_experience">
-                  Business Experience*
-                </label>
-                <textarea
-                  id="business_experience"
-                  name="business_experience"
-                  required
-                  rows="3"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Describe your relevant business experience"
-                  value={formState.business_experience}
-                  onChange={handleChange}
-                />
-                {formErrors.business_experience ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.business_experience}</p>
-                ) : null}
-              </div>
-              <div className="md:col-span-2">
-                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="reason_for_franchise">
-                  Why do you want to open a Relay franchise?*
-                </label>
-                <textarea
-                  id="reason"
-                  name="reason"
-                  required
-                  rows="4"
-                  className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                  placeholder="Tell us about your motivation and goals"
-                  value={formState.reason}
-                  onChange={handleChange}
-                />
-                {formErrors.reason ? (
-                  <p className="mt-1 text-xs text-red-600">{formErrors.reason}</p>
-                ) : null}
-              </div>
-            </div>
-          </section>
+          <BusinessInfoSection
+            investmentCapacity={formState.investment_capacity}
+            businessExperience={formState.business_experience}
+            reason={formState.reason}
+            formErrors={formErrors}
+            onChange={handleChange}
+          />
 
           {error ? (
             <div className="bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg text-sm">

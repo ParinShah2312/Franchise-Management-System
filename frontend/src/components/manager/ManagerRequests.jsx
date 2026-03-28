@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { formatDateTime, formatNumber } from '../../utils';
 
 const initialRequestForm = {
     stock_item_id: '',
@@ -87,13 +88,13 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
                                 requests.map((request) => (
                                     <tr key={request.request_id}>
                                         <td className="px-4 py-3 text-sm text-gray-700">
-                                            {request.created_at ? new Date(request.created_at).toLocaleString() : '—'}
+                                            {formatDateTime(request.created_at) || '—'}
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-500">
                                             {Array.isArray(request.items) && request.items.length > 0
                                                 ? request.items.map((item) => (
                                                     <div key={item.request_item_id}>
-                                                        {item.stock_item_name || 'Item'} — {item.requested_quantity}
+                                                        {item.stock_item_name || 'Item'} — {formatNumber(item.requested_quantity)}
                                                     </div>
                                                 ))
                                                 : '—'}
@@ -185,9 +186,9 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
                                 <label className="label" htmlFor="manager_request_note">
                                     Note
                                 </label>
-                                <textarea
+                                <input
                                     id="manager_request_note"
-                                    rows={3}
+                                    type="text"
                                     value={requestForm.note}
                                     onChange={(event) =>
                                         setRequestForm((prev) => ({ ...prev, note: event.target.value }))

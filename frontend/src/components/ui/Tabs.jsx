@@ -12,7 +12,14 @@ export default function Tabs({ tabs, activeTab, onTabChange }) {
                             : 'text-gray-500 hover:text-gray-700 hover:bg-gray-100/50'
                     }`}
                 >
-                    {tab.label}
+                    <span className="inline-flex items-center gap-2">
+                        {tab.label}
+                        {tab.badge ? (
+                            <span className="inline-flex items-center justify-center text-xs font-semibold text-white bg-red-500 rounded-full px-2 ml-1">
+                                {tab.badge}
+                            </span>
+                        ) : null}
+                    </span>
                 </button>
             ))}
         </nav>

@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { isValidPhone, sanitizePhone } from '../../utils';
 
 const initialStaffForm = {
     name: '',
@@ -15,7 +16,7 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
 
     const validateStaffForm = () => {
         const errors = {};
-        if (staffForm.phone.length !== 10) {
+        if (!isValidPhone(staffForm.phone)) {
             errors.phone = 'Phone number must be exactly 10 digits.';
         }
         return errors;
@@ -153,8 +154,7 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
                                     maxLength={10}
                                     value={staffForm.phone}
                                     onChange={(event) => {
-                                        const sanitized = event.target.value.replace(/\D/g, '').slice(0, 10);
-                                        setStaffForm((prev) => ({ ...prev, phone: sanitized }));
+                                        setStaffForm((prev) => ({ ...prev, phone: sanitizePhone(event.target.value) }));
                                     }}
                                     className={`input-field ${staffErrors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
                                     placeholder="9876543210"

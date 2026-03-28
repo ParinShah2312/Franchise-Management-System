@@ -1,21 +1,13 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useState } from 'react';
 
 import { useAuth } from '../context/AuthContext';
-import { useSales } from '../hooks/useSales';
-import { useRequests } from '../hooks/useRequests';
-import { useFranchiseMetrics } from '../hooks/useFranchiseMetrics';
-import { useFranchiseStaff } from '../hooks/useFranchiseStaff';
+import { useFranchiseeDashboard } from '../hooks/useFranchiseeDashboard';
 
 import Toast from '../components/Toast';
+import Tabs from '../components/ui/Tabs';
 import FranchiseeOverview from '../components/franchisee/FranchiseeOverview';
 import FranchiseeRequests from '../components/franchisee/FranchiseeRequests';
 import FranchiseeStaff from '../components/franchisee/FranchiseeStaff';
-
-const TABS = [
-  { id: 'overview', label: 'Overview' },
-  { id: 'requests', label: 'Stock Requests' },
-  { id: 'staff', label: 'My Staff' },
-];
 
 export default function FranchiseeDashboard() {
   const { user, getBranchId, logout } = useAuth();
@@ -24,25 +16,17 @@ export default function FranchiseeDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
   const [toast, setToast] = useState(null);
 
-  const { metrics, loading: metricsLoading, error: metricsError, refreshMetrics } = useFranchiseMetrics(branchId);
-  const { sales, loading: salesLoading, error: salesError, refreshSales } = useSales(branchId);
-  const { requests, loading: reqLoading, error: reqError, updateRequestStatus, refreshRequests } = useRequests(branchId);
-  const { staff, loading: staffLoading, error: staffError, appointManager, refreshStaff } = useFranchiseStaff(branchId);
+  const {
+    metrics, sales, requests, staff,
+    updateRequestStatus, appointManager,
+    loading, error, pendingRequestsCount, loadData,
+  } = useFranchiseeDashboard(branchId);
 
-  const loading = !branchId ? false : (metricsLoading || salesLoading || reqLoading || staffLoading);
-  const error = !branchId ? 'No branch is currently assigned to your account. Please contact support.' : (metricsError || salesError || reqError || staffError || '');
-
-  const loadData = useCallback(() => {
-    refreshMetrics();
-    refreshSales();
-    refreshRequests();
-    refreshStaff();
-  }, [refreshMetrics, refreshSales, refreshRequests, refreshStaff]);
-
-  const pendingRequestsCount = useMemo(
-    () => requests.filter((item) => item.status === 'PENDING').length,
-    [requests]
-  );
+  const TABS = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'requests', label: 'Stock Requests', badge: pendingRequestsCount > 0 ? pendingRequestsCount : null },
+    { key: 'staff', label: 'My Staff' },
+  ];
 
   const renderContent = () => {
     switch (activeTab) {
@@ -109,29 +93,7 @@ export default function FranchiseeDashboard() {
           </div>
         ) : (
           <div className="space-y-8">
-            <nav className="flex space-x-3">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${activeTab === tab.id
-                      ? 'bg-blue-600 text-white border-blue-600 shadow'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200 hover:text-blue-600'
-                    }`}
-                >
-                  <span className="inline-flex items-center gap-2">
-                    {tab.label}
-                    {tab.id === 'requests' && pendingRequestsCount > 0 ? (
-                      <span className="inline-flex items-center justify-center text-xs font-semibold text-white bg-red-500 rounded-full px-2">
-                        {pendingRequestsCount}
-                      </span>
-                    ) : null}
-                  </span>
-                </button>
-              ))}
-            </nav>
-
+            <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
             {renderContent()}
           </div>
         )}

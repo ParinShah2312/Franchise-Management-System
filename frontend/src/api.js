@@ -1,7 +1,17 @@
 const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:5000/api';
+export const API_BASE_URL = API_URL;
 export const API_ORIGIN = API_URL.replace(/\/api$/, '');
 
 let authToken = null;
+let _onUnauthorized = null;
+
+/**
+ * Register a callback to be called when the server returns 401 Unauthorized.
+ * Usually used by AuthProvider to trigger a logout.
+ */
+export function registerUnauthorizedHandler(callback) {
+  _onUnauthorized = callback;
+}
 
 export const setAuthToken = (token) => {
   authToken = token;
@@ -10,6 +20,45 @@ export const setAuthToken = (token) => {
 export const clearAuthToken = () => {
   authToken = null;
 };
+
+/**
+ * Normalize and handle API responses.
+ * Triggers auto-logout on 401 and throws formatted errors for non-ok responses.
+ */
+function handleResponse(response, data, isJson) {
+  if (response.ok) {
+    return data;
+  }
+
+  const message = (isJson && (data.error || data.message)) || null;
+
+  if (response.status === 401) {
+    _onUnauthorized?.();
+    throw new Error('Session expired. Please log in again.');
+  }
+
+  if (response.status === 403) {
+    throw new Error(message || 'You do not have permission to perform this action.');
+  }
+
+  if (response.status === 404) {
+    throw new Error(message || 'Resource not found.');
+  }
+
+  if (response.status === 409) {
+    throw new Error(message || 'A conflict occurred.');
+  }
+
+  if (response.status === 422 || response.status === 400) {
+    throw new Error(message || 'Invalid request.');
+  }
+
+  if (response.status >= 500) {
+    throw new Error(message || 'A server error occurred. Please try again.');
+  }
+
+  throw new Error(message || response.statusText || 'Request failed.');
+}
 
 async function request(path, options = {}) {
   const url = `${API_URL}${path}`;
@@ -30,12 +79,7 @@ async function request(path, options = {}) {
   const isJson = contentType.includes('application/json');
   const data = isJson ? await response.json() : await response.text();
 
-  if (!response.ok) {
-    const errorMessage = (isJson && (data.error || data.message)) || response.statusText;
-    throw new Error(errorMessage || 'Request failed');
-  }
-
-  return data;
+  return handleResponse(response, data, isJson);
 }
 
 const prepareBody = (body) => {

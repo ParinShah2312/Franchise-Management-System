@@ -129,12 +129,15 @@ Relay supports four distinct dashboards. You can test them by creating users via
 
 ## 4. 🎯 Complete Feature List
 
-**Version 3.0 Architecture (Current State):**
-✅ **Fully Modular React Frontend:** Large dashboards (`ManagerDashboard.jsx`, `StaffDashboard.jsx`, etc.) split into distinct, highly readable components (`ManagerOverview`, `ManagerSales`, `StaffInventory`).
+**Version 3.0 Architecture (Current Refactored State):**
+✅ **Fully Modular Backend:** Application logic segmented into `routes/`, `services/`, `models/`, and `utils/` for massive scalability.
+✅ **Decoupled API Layer:** Frontend API interactions centralized in `api.js` with structured global error boundaries and automatic 401 logouts.
+✅ **Modular React Frontend:** Large dashboards and registration pages are extracted into clean, context-specific components (`admin/`, `manager/`, `staff/`, `register/`).
+✅ **Shared Utility Layer:** Repeated layout wrappers, currency handling, date formatting, and input sanitization abstracted into `utils/` and `layouts/`.
 ✅ **Custom React Hooks:** All data fetching decoupled from components into `useAuth`, `useInventory`, `useSales`, `useStaff`, `useFranchiseMetrics`, and `useRequests`.
 ✅ **Zero-Warning Codebase:** Strictly linted using `eslint` and `ruff`.
 ✅ **Multi-Role Authentication:** Admin, Franchisee, Manager, Staff.
-✅ **Detailed Franchise Registration:** Investment capacity, business experience, file uploads.
+✅ **Detailed Franchise Registration:** Segmented registration flow for investment capacity, business experience, file uploads.
 ✅ **Admin Review Process:** Modal-based approve/reject workflow.
 ✅ **Hierarchical Inventory Management:** Stock limits, low-stock warnings, request tracking.
 ✅ **Sales Tracking:** Daily submission, historical graphs, system-wide revenue tracking.

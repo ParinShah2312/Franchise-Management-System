@@ -4,13 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
 import Toast from '../components/Toast';
 import { useAuth } from '../context/AuthContext';
-
-const ROLE_REDIRECTS = {
-  FRANCHISOR: '/admin',
-  BRANCH_OWNER: '/dashboard',
-  MANAGER: '/manager',
-  STAFF: '/staff',
-};
+import { isValidPassword, ROLE_REDIRECTS } from '../utils';
 
 export default function ResetPassword() {
   const { user, updateUser } = useAuth();
@@ -33,8 +27,8 @@ export default function ResetPassword() {
       return;
     }
 
-    if (form.newPassword.length < 8) {
-      setToast({ message: 'Password must be at least 8 characters.', variant: 'error' });
+    if (!isValidPassword(form.newPassword)) {
+      setToast({ message: 'Password must be 8+ chars with 1 uppercase, 1 lowercase, and 1 number.', variant: 'error' });
       return;
     }
 

@@ -1,16 +1,16 @@
-import { useCallback, useState } from 'react';
+import { useState } from 'react';
 
 import { useAuth } from '../context/AuthContext';
-import { useInventory } from '../hooks/useInventory';
-import { useSales } from '../hooks/useSales';
+import { useStaffDashboard } from '../hooks/useStaffDashboard';
 
 import Toast from '../components/Toast';
+import Tabs from '../components/ui/Tabs';
 import StaffInventory from '../components/staff/StaffInventory';
 import StaffSales from '../components/staff/StaffSales';
 
 const TABS = [
-  { id: 'inventory', label: 'Inventory' },
-  { id: 'sales', label: 'Sales' },
+  { key: 'inventory', label: 'Inventory' },
+  { key: 'sales', label: 'Sales' },
 ];
 
 export default function StaffDashboard() {
@@ -20,16 +20,11 @@ export default function StaffDashboard() {
   const [activeTab, setActiveTab] = useState('inventory');
   const [toast, setToast] = useState(null);
 
-  const { inventoryItems, stockItems, loading: invLoading, error: invError, recordDelivery, refreshInventory } = useInventory(branchId);
-  const { sales, products, loading: salesLoading, error: salesError, logSale, refreshSales } = useSales(branchId);
-
-  const loading = !branchId ? false : (invLoading || salesLoading);
-  const error = !branchId ? 'No branch assigned. Please contact your manager.' : (invError || salesError || '');
-
-  const loadData = useCallback(() => {
-    refreshInventory();
-    refreshSales();
-  }, [refreshInventory, refreshSales]);
+  const {
+    inventoryItems, stockItems, recordDelivery, refreshInventory,
+    sales, products, logSale, refreshSales,
+    loading, error, loadData,
+  } = useStaffDashboard(branchId);
 
   return (
     <div className="min-h-screen bg-gray-50">
@@ -69,21 +64,7 @@ export default function StaffDashboard() {
           </div>
         ) : (
           <div className="space-y-8">
-            <nav className="flex space-x-3">
-              {TABS.map((tab) => (
-                <button
-                  key={tab.id}
-                  type="button"
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`px-4 py-2 rounded-lg text-sm font-medium border transition ${activeTab === tab.id
-                      ? 'bg-blue-600 text-white border-blue-600 shadow'
-                      : 'bg-white text-gray-600 border-gray-200 hover:border-blue-200 hover:text-blue-600'
-                    }`}
-                >
-                  {tab.label}
-                </button>
-              ))}
-            </nav>
+            <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
 
             {activeTab === 'inventory' ? (
               <StaffInventory

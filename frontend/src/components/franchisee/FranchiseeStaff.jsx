@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { sanitizePhone } from '../../utils';
 
 export default function FranchiseeStaff({ staff, appointManager, setToast }) {
     const [showManagerModal, setShowManagerModal] = useState(false);
@@ -161,9 +162,10 @@ export default function FranchiseeStaff({ staff, appointManager, setToast }) {
                                     type="tel"
                                     required
                                     value={managerForm.phone}
-                                    onChange={(event) => setManagerForm((prev) => ({ ...prev, phone: event.target.value }))}
+                                    onChange={(event) => setManagerForm((prev) => ({ ...prev, phone: sanitizePhone(event.target.value) }))}
                                     className="w-full px-3.5 py-2.5 bg-white border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 sm:text-sm transition-colors duration-200"
                                     placeholder="1234567890"
+                                    maxLength={10}
                                 />
                             </div>
 

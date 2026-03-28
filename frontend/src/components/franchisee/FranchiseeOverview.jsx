@@ -1,3 +1,5 @@
+import { formatINR, formatINRDecimal, formatDateTime } from '../../utils';
+
 export default function FranchiseeOverview({ metrics, sales, onRefresh }) {
     return (
         <div className="space-y-6">
@@ -5,14 +7,14 @@ export default function FranchiseeOverview({ metrics, sales, onRefresh }) {
                 <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                     <p className="text-sm text-gray-500">Revenue (MTD)</p>
                     <h3 className="text-xl font-semibold text-gray-800 mt-2">
-                        ₹{Number(metrics.revenue || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+                        {formatINR(metrics.revenue)}
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">Total sales recorded this month.</p>
                 </div>
                 <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                     <p className="text-sm text-gray-500">Inventory Value</p>
                     <h3 className="text-xl font-semibold text-gray-800 mt-2">
-                        ₹{Number(metrics.inventory_value || 0).toLocaleString('en-IN', { minimumFractionDigits: 0 })}
+                        {formatINR(metrics.inventory_value)}
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">Based on approved stock-in transactions.</p>
                 </div>
@@ -67,12 +69,10 @@ export default function FranchiseeOverview({ metrics, sales, onRefresh }) {
                                 sales.slice(0, 10).map((sale) => (
                                     <tr key={sale.sale_id || sale.id}>
                                         <td className="px-4 py-3 text-sm text-gray-700">
-                                            {sale.sale_datetime || sale.sale_date
-                                                ? new Date(sale.sale_datetime || sale.sale_date).toLocaleString()
-                                                : '—'}
+                                            {formatDateTime(sale.sale_datetime || sale.sale_date) || '—'}
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                                            ₹{Number(sale.total_amount || 0).toLocaleString('en-IN', { minimumFractionDigits: 2 })}
+                                            {formatINRDecimal(sale.total_amount)}
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-500">{sale.payment_mode || '—'}</td>
                                     </tr>
