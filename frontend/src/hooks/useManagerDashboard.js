@@ -26,14 +26,19 @@ export function useManagerDashboard(branchId) {
     [requests]
   );
 
-  const lowStockItemsCount = useMemo(
+  const lowStockItems = useMemo(
     () =>
       inventoryItems.filter((item) => {
         const quantity = Number(item.quantity || 0);
         const reorder = Number(item.reorder_level || 0);
         return reorder > 0 && quantity <= reorder;
-      }).length,
+      }),
     [inventoryItems]
+  );
+
+  const lowStockItemsCount = useMemo(
+    () => lowStockItems.length,
+    [lowStockItems]
   );
 
   const todaySalesTotal = useMemo(() => {
@@ -48,6 +53,6 @@ export function useManagerDashboard(branchId) {
     inventoryItems, stockItems, invLoading, invError, addInventory, refreshInventory,
     sales, products, salesLoading, salesError, logSale, refreshSales,
     requests, reqLoading, reqError, createRequest, refreshRequests,
-    loading, error, pendingRequestsCount, lowStockItemsCount, todaySalesTotal, loadData,
+    loading, error, pendingRequestsCount, lowStockItems, lowStockItemsCount, todaySalesTotal, loadData,
   };
 }

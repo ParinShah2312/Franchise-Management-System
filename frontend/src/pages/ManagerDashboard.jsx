@@ -5,6 +5,7 @@ import { useManagerDashboard } from '../hooks/useManagerDashboard';
 
 import Toast from '../components/Toast';
 import Tabs from '../components/ui/Tabs';
+import LowStockBanner from '../components/ui/LowStockBanner';
 import ManagerOverview from '../components/manager/ManagerOverview';
 import ManagerStaff from '../components/manager/ManagerStaff';
 import ManagerInventory from '../components/manager/ManagerInventory';
@@ -16,6 +17,7 @@ export default function ManagerDashboard() {
   const branchId = getBranchId();
 
   const [activeTab, setActiveTab] = useState('overview');
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [toast, setToast] = useState(null);
 
   const {
@@ -23,7 +25,7 @@ export default function ManagerDashboard() {
     inventoryItems, stockItems, addInventory, refreshInventory,
     sales, products, logSale, refreshSales,
     requests, createRequest, refreshRequests,
-    loading, error, pendingRequestsCount, lowStockItemsCount, todaySalesTotal, loadData,
+    loading, error, pendingRequestsCount, lowStockItems, lowStockItemsCount, todaySalesTotal, loadData,
   } = useManagerDashboard(branchId);
 
   const TABS = [
@@ -94,6 +96,12 @@ export default function ManagerDashboard() {
           </div>
         ) : (
           <div className="space-y-8">
+            {!bannerDismissed && lowStockItems.length > 0 ? (
+              <LowStockBanner
+                items={lowStockItems}
+                onDismiss={() => setBannerDismissed(true)}
+              />
+            ) : null}
             <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
             {renderContent()}
           </div>

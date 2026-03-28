@@ -1,4 +1,4 @@
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useInventory } from './useInventory';
 import { useSales } from './useSales';
 
@@ -14,9 +14,19 @@ export function useStaffDashboard(branchId) {
     refreshSales();
   }, [refreshInventory, refreshSales]);
 
+  const lowStockItems = useMemo(
+    () =>
+      inventoryItems.filter((item) => {
+        const quantity = Number(item.quantity || 0);
+        const reorder = Number(item.reorder_level || 0);
+        return reorder > 0 && quantity <= reorder;
+      }),
+    [inventoryItems]
+  );
+
   return {
     inventoryItems, stockItems, invLoading, invError, recordDelivery, refreshInventory,
     sales, products, salesLoading, salesError, logSale, refreshSales,
-    loading, error, loadData,
+    loading, error, lowStockItems, loadData,
   };
 }

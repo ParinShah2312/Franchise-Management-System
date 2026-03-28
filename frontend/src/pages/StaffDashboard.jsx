@@ -5,6 +5,7 @@ import { useStaffDashboard } from '../hooks/useStaffDashboard';
 
 import Toast from '../components/Toast';
 import Tabs from '../components/ui/Tabs';
+import LowStockBanner from '../components/ui/LowStockBanner';
 import StaffInventory from '../components/staff/StaffInventory';
 import StaffSales from '../components/staff/StaffSales';
 
@@ -18,12 +19,13 @@ export default function StaffDashboard() {
   const branchId = getBranchId();
 
   const [activeTab, setActiveTab] = useState('inventory');
+  const [bannerDismissed, setBannerDismissed] = useState(false);
   const [toast, setToast] = useState(null);
 
   const {
     inventoryItems, stockItems, recordDelivery, refreshInventory,
     sales, products, logSale, refreshSales,
-    loading, error, loadData,
+    loading, error, lowStockItems, loadData,
   } = useStaffDashboard(branchId);
 
   return (
@@ -64,6 +66,12 @@ export default function StaffDashboard() {
           </div>
         ) : (
           <div className="space-y-8">
+            {!bannerDismissed && lowStockItems.length > 0 ? (
+              <LowStockBanner
+                items={lowStockItems}
+                onDismiss={() => setBannerDismissed(true)}
+              />
+            ) : null}
             <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
 
             {activeTab === 'inventory' ? (
