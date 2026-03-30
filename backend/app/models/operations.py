@@ -35,6 +35,7 @@ class Sale(TimestampMixin, db.Model):
     status_id: Mapped[int] = mapped_column(
         ForeignKey("sale_statuses.sale_status_id"), nullable=False
     )
+    payment_mode: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
     branch: Mapped["Branch"] = relationship("Branch", back_populates="sales")
     sold_by_user: Mapped[Optional["User"]] = relationship(

@@ -62,6 +62,16 @@ export function getTodayString() {
 }
 
 /**
+ * Return today's date and time as YYYY-MM-DDThh:mm string for datetime-local
+ * @returns {string}
+ */
+export function getNowString() {
+  const date = new Date();
+  date.setMinutes(date.getMinutes() - date.getTimezoneOffset());
+  return date.toISOString().slice(0, 16);
+}
+
+/**
  * Format a number/string as locale string (Indian format by default)
  * @param {number|string} value 
  * @returns {string}

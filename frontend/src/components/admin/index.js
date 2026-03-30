@@ -7,3 +7,8 @@ export { default as AdminCatalog } from './AdminCatalog';
 export { default as CatalogStockItems } from './CatalogStockItems';
 export { default as CatalogProductRecipes } from './CatalogProductRecipes';
 export { default as CatalogAddStockItemModal } from './CatalogAddStockItemModal';
+export { default as CatalogCategories } from './CatalogCategories';
+export { default as CatalogProducts } from './CatalogProducts';
+export { default as CatalogAddCategoryModal } from './CatalogAddCategoryModal';
+export { default as CatalogAddProductModal } from './CatalogAddProductModal';
+export { default as CatalogEditProductModal } from './CatalogEditProductModal';

@@ -83,7 +83,7 @@ export default function CatalogProductRecipes({
                       {formatINR(product.base_price)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {recipe ? `${recipe.length} item(s)` : '—'}
+                      {product.ingredient_count ?? '0'} item(s)
                     </td>
                     <td className="px-6 py-4 text-right text-sm">
                       <button

@@ -322,6 +322,7 @@ def seed_database() -> None:
             sale_datetime=datetime.now(timezone.utc),
             total_amount=Decimal("0"),
             status_id=sale_status_lookup["PAID"].sale_status_id,
+            payment_mode="Card",
         )
         db.session.add(sale)
         db.session.flush()

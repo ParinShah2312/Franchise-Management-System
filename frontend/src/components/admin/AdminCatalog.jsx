@@ -2,6 +2,11 @@ import React, { useState, useCallback } from 'react';
 import CatalogStockItems from './CatalogStockItems';
 import CatalogProductRecipes from './CatalogProductRecipes';
 import CatalogAddStockItemModal from './CatalogAddStockItemModal';
+import CatalogCategories from './CatalogCategories';
+import CatalogProducts from './CatalogProducts';
+import CatalogAddCategoryModal from './CatalogAddCategoryModal';
+import CatalogAddProductModal from './CatalogAddProductModal';
+import CatalogEditProductModal from './CatalogEditProductModal';
 import Toast from '../Toast';
 
 export default function AdminCatalog({
@@ -16,9 +21,24 @@ export default function AdminCatalog({
   fetchIngredients,
   addIngredient,
   removeIngredient,
+  categories,
+  categoriesLoading,
+  createCategory,
+  createProduct,
+  updateProduct,
+  refreshProducts,
 }) {
   const [showAddStockItemModal, setShowAddStockItemModal] = useState(false);
   const [addStockItemSubmitting, setAddStockItemSubmitting] = useState(false);
+
+  const [showAddCategoryModal, setShowAddCategoryModal] = useState(false);
+  const [addCategorySubmitting, setAddCategorySubmitting] = useState(false);
+
+  const [showAddProductModal, setShowAddProductModal] = useState(false);
+  const [addProductSubmitting, setAddProductSubmitting] = useState(false);
+
+  const [editingProduct, setEditingProduct] = useState(null);
+  const [editProductSubmitting, setEditProductSubmitting] = useState(false);
   
   const [expandedStockItemId, setExpandedStockItemId] = useState(null);
   const [expandedProductId, setExpandedProductId] = useState(null);
@@ -38,6 +58,54 @@ export default function AdminCatalog({
       throw err; // Passed up to modal
     } finally {
       setAddStockItemSubmitting(false);
+    }
+  };
+
+  const handleCreateCategory = async (data) => {
+    setAddCategorySubmitting(true);
+    try {
+      await createCategory(data);
+      setShowAddCategoryModal(false);
+      setToast({ message: 'Category created successfully.', variant: 'success' });
+    } catch (err) {
+      throw err;
+    } finally {
+      setAddCategorySubmitting(false);
+    }
+  };
+
+  const handleCreateProduct = async (data) => {
+    setAddProductSubmitting(true);
+    try {
+      await createProduct(data);
+      setShowAddProductModal(false);
+      setToast({ message: 'Product created successfully.', variant: 'success' });
+    } catch (err) {
+      throw err;
+    } finally {
+      setAddProductSubmitting(false);
+    }
+  };
+
+  const handleEditProduct = async (productId, data) => {
+    setEditProductSubmitting(true);
+    try {
+      await updateProduct(productId, data);
+      setEditingProduct(null);
+      setToast({ message: 'Product updated successfully.', variant: 'success' });
+    } catch (err) {
+      throw err;
+    } finally {
+      setEditProductSubmitting(false);
+    }
+  };
+
+  const handleToggleActive = async (product) => {
+    try {
+      await updateProduct(product.product_id, { is_active: !product.is_active });
+      setToast({ message: `Product ${product.is_active ? 'deactivated' : 'activated'}.`, variant: 'success' });
+    } catch (err) {
+      setToast({ message: err.message || 'Failed to toggle status.', variant: 'error' });
     }
   };
 
@@ -150,6 +218,47 @@ export default function AdminCatalog({
         stockItems={stockItems}
         onAddIngredient={handleAddIngredient}
         onRemoveIngredient={handleRemoveIngredient}
+      />
+
+      {/* Product Categories Section */}
+      <CatalogCategories
+        categories={categories}
+        loading={categoriesLoading}
+        onAddCategory={() => setShowAddCategoryModal(true)}
+      />
+
+      {/* Products Section */}
+      <CatalogProducts
+        products={products}
+        categories={categories}
+        loading={productsLoading}
+        onAddProduct={() => setShowAddProductModal(true)}
+        onEditProduct={(p) => setEditingProduct(p)}
+        onToggleActive={handleToggleActive}
+      />
+
+      <CatalogAddCategoryModal
+        isOpen={showAddCategoryModal}
+        onClose={() => setShowAddCategoryModal(false)}
+        onSubmit={handleCreateCategory}
+        submitting={addCategorySubmitting}
+      />
+
+      <CatalogAddProductModal
+        isOpen={showAddProductModal}
+        onClose={() => setShowAddProductModal(false)}
+        onSubmit={handleCreateProduct}
+        categories={categories}
+        submitting={addProductSubmitting}
+      />
+
+      <CatalogEditProductModal
+        isOpen={!!editingProduct}
+        onClose={() => setEditingProduct(null)}
+        onSubmit={handleEditProduct}
+        product={editingProduct}
+        categories={categories}
+        submitting={editProductSubmitting}
       />
 
       <CatalogAddStockItemModal

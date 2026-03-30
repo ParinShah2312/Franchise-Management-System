@@ -12,13 +12,13 @@ export function useAdminDashboard() {
   const [network, setNetwork] = useState([]);
   const [applications, setApplications] = useState([]);
   const [menuUploading, setMenuUploading] = useState(false);
-  const [products, setProducts] = useState([]);
-  const [productsLoading, setProductsLoading] = useState(true);
-
   const {
     stockItems, stockItemsLoading, stockItemsError, refreshStockItems,
     units, unitsLoading,
-    createStockItem, fetchIngredients, addIngredient, removeIngredient,
+    categories, categoriesLoading, categoriesError, refreshCategories,
+    products, productsLoading, refreshProducts,
+    createStockItem, createCategory, createProduct, updateProduct,
+    fetchIngredients, addIngredient, removeIngredient,
   } = useCatalog();
 
   const [modalApplication, setModalApplication] = useState(null);
@@ -32,29 +32,27 @@ export function useAdminDashboard() {
 
   const fetchDashboard = useCallback(async () => {
     setLoading(true);
-    setProductsLoading(true);
     setError('');
     try {
-      const [metricsResponse, networkResponse, applicationsResponse, productsResponse] = await Promise.all([
+      const [metricsResponse, networkResponse, applicationsResponse] = await Promise.all([
         api.get('/dashboard/franchisor/metrics'),
         api.get('/franchises/network'),
         api.get('/franchises/applications'),
-        api.get('/catalog/products'),
       ]);
 
       setMetrics(metricsResponse);
       setNetwork(Array.isArray(networkResponse) ? networkResponse : []);
       setApplications(Array.isArray(applicationsResponse) ? applicationsResponse : []);
-      setProducts(Array.isArray(productsResponse) ? productsResponse : []);
+
+      await Promise.all([refreshStockItems(), refreshCategories(), refreshProducts()]);
     } catch (err) {
       const message = err.message || 'Unable to load dashboard data.';
       setError(message);
       setToast({ message, variant: 'error' });
     } finally {
       setLoading(false);
-      setProductsLoading(false);
     }
-  }, []);
+  }, [refreshStockItems, refreshCategories, refreshProducts]);
 
   useEffect(() => {
     fetchDashboard();
@@ -180,6 +178,8 @@ export function useAdminDashboard() {
   return {
     metrics, network, applications, loading, error, toast,
     products, productsLoading,
+    categories, categoriesLoading, categoriesError, refreshCategories, refreshProducts,
+    createCategory, createProduct, updateProduct,
     stockItems, stockItemsLoading, stockItemsError, refreshStockItems,
     units, unitsLoading,
     createStockItem, fetchIngredients, addIngredient, removeIngredient,

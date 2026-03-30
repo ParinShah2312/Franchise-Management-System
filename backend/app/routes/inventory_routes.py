@@ -480,7 +480,7 @@ def list_all_stock_items() -> tuple[list[dict[str, object]], int]:
         return jsonify({"error": "No franchise found for this franchisor."}), HTTPStatus.NOT_FOUND
 
     items = (
-        StockItem.query.options(joinedload(StockItem.unit))
+        StockItem.query.options(joinedload(StockItem.unit), joinedload(StockItem.product_ingredients))
         .filter_by(franchise_id=franchise.franchise_id)
         .order_by(StockItem.name.asc())
         .all()
@@ -493,7 +493,8 @@ def list_all_stock_items() -> tuple[list[dict[str, object]], int]:
             "description": item.description,
             "unit_id": item.unit_id,
             "unit_name": item.unit.unit_name if item.unit else None,
-            "franchise_id": item.franchise_id
+            "franchise_id": item.franchise_id,
+            "used_in_count": len(item.product_ingredients)
         }
         for item in items
     ]

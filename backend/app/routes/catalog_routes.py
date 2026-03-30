@@ -34,7 +34,7 @@ def list_catalog_products() -> tuple[list[dict[str, object]], int]:
         return jsonify({"error": "No franchise found for this franchisor."}), HTTPStatus.NOT_FOUND
 
     products = (
-        Product.query.options(joinedload(Product.category))
+        Product.query.options(joinedload(Product.category), joinedload(Product.ingredients))
         .filter_by(franchise_id=franchise.franchise_id)
         .order_by(Product.name.asc())
         .all()
@@ -44,15 +44,220 @@ def list_catalog_products() -> tuple[list[dict[str, object]], int]:
         {
             "product_id": p.product_id,
             "name": p.name,
+            "description": p.description,
             "base_price": float(p.base_price),
             "category_id": p.category_id,
             "category_name": p.category.name if p.category else None,
-            "is_active": p.is_active
+            "is_active": p.is_active,
+            "ingredient_count": len(p.ingredients)
         }
         for p in products
     ]
 
     return jsonify(payload), HTTPStatus.OK
+
+
+@catalog_bp.route("/categories", methods=["GET"])
+@token_required({"FRANCHISOR"})
+def list_catalog_categories() -> tuple[list[dict[str, object]], int]:
+    franchisor = getattr(g, "current_user", None)
+    
+    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
+    if not franchise:
+        return jsonify({"error": "No franchise found for this franchisor."}), HTTPStatus.NOT_FOUND
+
+    categories = (
+        ProductCategory.query.options(joinedload(ProductCategory.products))
+        .filter_by(franchise_id=franchise.franchise_id)
+        .order_by(ProductCategory.name.asc())
+        .all()
+    )
+
+    payload = [
+        {
+            "category_id": c.category_id,
+            "name": c.name,
+            "description": c.description,
+            "franchise_id": c.franchise_id,
+            "product_count": len([p for p in c.products if p.is_active])
+        }
+        for c in categories
+    ]
+    return jsonify(payload), HTTPStatus.OK
+
+
+@catalog_bp.route("/categories", methods=["POST"])
+@token_required({"FRANCHISOR"})
+def create_category() -> tuple[dict[str, object], int]:
+    franchisor = getattr(g, "current_user", None)
+    
+    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
+    if not franchise:
+        return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
+
+    payload = request.get_json(silent=True) or {}
+    name = (payload.get("name") or "").strip()
+    description = payload.get("description")
+
+    if not name:
+        return jsonify({"error": "name is required."}), HTTPStatus.BAD_REQUEST
+
+    existing = ProductCategory.query.filter(
+        ProductCategory.franchise_id == franchise.franchise_id,
+        db.func.lower(ProductCategory.name) == name.lower()
+    ).first()
+
+    if existing:
+        return jsonify({"error": "A category with this name already exists."}), HTTPStatus.CONFLICT
+
+    category = ProductCategory(
+        franchise_id=franchise.franchise_id,
+        name=name,
+        description=description
+    )
+    db.session.add(category)
+    db.session.commit()
+
+    return jsonify({
+        "category_id": category.category_id,
+        "name": category.name,
+        "description": category.description,
+        "franchise_id": category.franchise_id,
+        "product_count": 0
+    }), HTTPStatus.CREATED
+
+
+@catalog_bp.route("/products", methods=["POST"])
+@token_required({"FRANCHISOR"})
+def create_product() -> tuple[dict[str, object], int]:
+    franchisor = getattr(g, "current_user", None)
+    
+    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
+    if not franchise:
+        return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
+
+    payload = request.get_json(silent=True) or {}
+    name = (payload.get("name") or "").strip()
+    category_id = payload.get("category_id")
+    base_price_raw = payload.get("base_price")
+    description = payload.get("description")
+
+    if not name:
+        return jsonify({"error": "name is required."}), HTTPStatus.BAD_REQUEST
+    if not category_id:
+        return jsonify({"error": "category_id is required."}), HTTPStatus.BAD_REQUEST
+    if base_price_raw is None:
+        return jsonify({"error": "base_price is required."}), HTTPStatus.BAD_REQUEST
+
+    try:
+        base_price = Decimal(str(base_price_raw))
+    except (InvalidOperation, TypeError, ValueError):
+        return jsonify({"error": "base_price must be numeric."}), HTTPStatus.BAD_REQUEST
+
+    if base_price <= 0:
+        return jsonify({"error": "base_price must be a positive number."}), HTTPStatus.BAD_REQUEST
+
+    category = ProductCategory.query.get(category_id)
+    if not category or category.franchise_id != franchise.franchise_id:
+        return jsonify({"error": "Invalid category for this franchise."}), HTTPStatus.BAD_REQUEST
+
+    existing = Product.query.filter(
+        Product.franchise_id == franchise.franchise_id,
+        db.func.lower(Product.name) == name.lower()
+    ).first()
+
+    if existing:
+        return jsonify({"error": "A product with this name already exists."}), HTTPStatus.CONFLICT
+
+    product = Product(
+        franchise_id=franchise.franchise_id,
+        category_id=category_id,
+        name=name,
+        base_price=base_price,
+        description=description,
+        is_active=True
+    )
+    db.session.add(product)
+    db.session.commit()
+
+    return jsonify({
+        "product_id": product.product_id,
+        "name": product.name,
+        "description": product.description,
+        "base_price": float(product.base_price),
+        "is_active": product.is_active,
+        "category_id": product.category_id,
+        "category_name": category.name,
+        "franchise_id": product.franchise_id
+    }), HTTPStatus.CREATED
+
+
+@catalog_bp.route("/products/<int:product_id>", methods=["PUT"])
+@token_required({"FRANCHISOR"})
+def update_product(product_id: int) -> tuple[dict[str, object], int]:
+    franchisor = getattr(g, "current_user", None)
+    
+    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
+    if not franchise:
+        return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
+
+    product = Product.query.get(product_id)
+    if not product:
+        return jsonify({"error": "Product not found."}), HTTPStatus.NOT_FOUND
+    if product.franchise_id != franchise.franchise_id:
+        return jsonify({"error": "Unauthorized to edit this product."}), HTTPStatus.FORBIDDEN
+
+    payload = request.get_json(silent=True) or {}
+    
+    if "name" in payload:
+        name = (payload["name"] or "").strip()
+        if not name:
+            return jsonify({"error": "name cannot be empty."}), HTTPStatus.BAD_REQUEST
+        if name.lower() != product.name.lower():
+            existing = Product.query.filter(
+                Product.franchise_id == franchise.franchise_id,
+                db.func.lower(Product.name) == name.lower()
+            ).first()
+            if existing:
+                return jsonify({"error": "A product with this name already exists."}), HTTPStatus.CONFLICT
+        product.name = name
+
+    if "category_id" in payload:
+        category_id = payload["category_id"]
+        if category_id != product.category_id:
+            category = ProductCategory.query.get(category_id)
+            if not category or category.franchise_id != franchise.franchise_id:
+                return jsonify({"error": "Invalid category for this franchise."}), HTTPStatus.BAD_REQUEST
+            product.category_id = category_id
+
+    if "base_price" in payload:
+        try:
+            base_price = Decimal(str(payload["base_price"]))
+        except (InvalidOperation, TypeError, ValueError):
+            return jsonify({"error": "base_price must be numeric."}), HTTPStatus.BAD_REQUEST
+        if base_price <= 0:
+            return jsonify({"error": "base_price must be a positive number."}), HTTPStatus.BAD_REQUEST
+        product.base_price = base_price
+
+    if "description" in payload:
+        product.description = payload["description"]
+
+    if "is_active" in payload:
+        product.is_active = bool(payload["is_active"])
+
+    db.session.commit()
+
+    category = ProductCategory.query.get(product.category_id)
+    return jsonify({
+        "product_id": product.product_id,
+        "name": product.name,
+        "description": product.description,
+        "base_price": float(product.base_price),
+        "is_active": product.is_active,
+        "category_id": product.category_id,
+        "category_name": category.name if category else None,
+        "franchise_id": product.franchise_id
+    }), HTTPStatus.OK
 
 
 @catalog_bp.route("/products/<int:product_id>/ingredients", methods=["GET"])

@@ -88,6 +88,7 @@ def _serialize_sale(sale: Sale) -> dict[str, object]:
         "total_amount": float(sale.total_amount),
         "sale_datetime": sale.sale_datetime.isoformat() if sale.sale_datetime else None,
         "status_id": sale.status_id,
+        "payment_mode": sale.payment_mode,
         "items": [
             {
                 "sale_item_id": item.sale_item_id,
@@ -159,6 +160,7 @@ def create_sale() -> tuple[dict[str, object], int]:
         sale_datetime=sale_datetime,
         total_amount=Decimal("0"),
         status_id=status_id,
+        payment_mode=payload.get("payment_mode", "Cash"),
         sold_by_user_id=current_user.user_id if current_user else None,
     )
     db.session.add(sale)

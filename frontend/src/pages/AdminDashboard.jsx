@@ -19,7 +19,7 @@ const TABS = [
 ];
 
 export default function AdminDashboard() {
-  const { logout } = useAuth();
+  const { user, logout } = useAuth();
   const {
     metrics, applications, loading, error, toast,
     activeTab, setActiveTab,
@@ -32,10 +32,12 @@ export default function AdminDashboard() {
     openApplication, closeModal,
     handleMenuButtonClick, handleMenuFileChange,
     setToast, fileInputRef,
-    products, productsLoading,
+    products, productsLoading, refreshProducts,
+    categories, categoriesLoading, createCategory, createProduct, updateProduct,
     stockItems, stockItemsLoading, stockItemsError,
     units, unitsLoading,
-    createStockItem, fetchIngredients, addIngredient, removeIngredient
+    createStockItem, fetchIngredients, addIngredient, removeIngredient,
+    fetchDashboard
   } = useAdminDashboard();
 
   const renderTabContent = () => {
@@ -55,6 +57,12 @@ export default function AdminDashboard() {
         fetchIngredients={fetchIngredients}
         addIngredient={addIngredient}
         removeIngredient={removeIngredient}
+        categories={categories}
+        categoriesLoading={categoriesLoading}
+        createCategory={createCategory}
+        createProduct={createProduct}
+        updateProduct={updateProduct}
+        refreshProducts={refreshProducts}
       />
     );
     return <AdminApplications applications={applications} onOpenApplication={openApplication} />;
@@ -62,13 +70,30 @@ export default function AdminDashboard() {
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-white">
-        <div className="mx-auto flex max-w-6xl flex-wrap items-center justify-between gap-4 px-6 py-5">
+      <header className="bg-white border-b border-gray-200">
+        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
           <div>
-            <h1 className="text-2xl font-bold text-gray-900">Franchisor Dashboard</h1>
-            <p className="text-sm text-gray-500">Monitor network health and manage expansion requests</p>
+            <h1 className="text-2xl font-bold text-gray-800">Franchisor Dashboard</h1>
+            <p className="text-gray-500 text-sm">
+              Welcome back{user?.name ? `, ${user.name}` : ''}! Monitor network health and manage expansion requests.
+            </p>
           </div>
-          <button type="button" onClick={logout} className="btn-outline px-4 py-2 text-sm">Logout</button>
+          <div className="flex items-center space-x-3">
+            <button
+              type="button"
+              onClick={fetchDashboard}
+              className="px-4 py-2 text-sm font-semibold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50"
+            >
+              Refresh Data
+            </button>
+            <button
+              type="button"
+              onClick={logout}
+              className="px-4 py-2 text-sm font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-6 py-8">

@@ -50,7 +50,7 @@ export default function CatalogStockItems({
                       {item.description || '—'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {usedInProducts.length} product(s)
+                      {item.used_in_count ?? usedInProducts.length} product(s)
                     </td>
                     <td className="px-6 py-4 text-right text-sm">
                       <button

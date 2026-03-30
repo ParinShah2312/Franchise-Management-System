@@ -1,8 +1,8 @@
 import { useState } from 'react';
-import { PAYMENT_MODES, getTodayString, formatDateTime, formatINRDecimal } from '../../utils';
+import { PAYMENT_MODES, getNowString, formatDateTime, formatINRDecimal } from '../../utils';
 
 const createInitialSaleForm = () => ({
-    sale_date: getTodayString(),
+    sale_date: getNowString(),
     payment_mode: PAYMENT_MODES[0],
     items: [{ product_id: '', quantity: '' }],
 });
@@ -163,7 +163,7 @@ export default function ManagerSales({ sales, products, logSale, refreshSales, s
                                     </label>
                                     <input
                                         id="manager_sale_date"
-                                        type="date"
+                                        type="datetime-local"
                                         required
                                         value={saleForm.sale_date}
                                         onChange={(event) =>
