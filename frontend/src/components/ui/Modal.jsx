@@ -1,7 +1,9 @@
+import { createPortal } from 'react-dom';
+
 export default function Modal({ isOpen, onClose, title, description, children, maxWidth = 'max-w-md' }) {
     if (!isOpen) return null;
 
-    return (
+    return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
             <div className={`w-full ${maxWidth} overflow-hidden rounded-xl bg-white shadow-2xl max-h-[90vh] flex flex-col`}>
                 {(title || description || onClose) && (
@@ -26,6 +28,7 @@ export default function Modal({ isOpen, onClose, title, description, children, m
                     {children}
                 </div>
             </div>
-        </div>
+        </div>,
+        document.body
     );
 }

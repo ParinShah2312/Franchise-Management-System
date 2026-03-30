@@ -8,12 +8,14 @@ import {
   AdminOverview,
   AdminNetwork,
   AdminApplications,
+  AdminCatalog,
 } from '../components/admin';
 
 const TABS = [
   { key: 'overview', label: 'Overview' },
   { key: 'network', label: 'Network' },
   { key: 'applications', label: 'Applications' },
+  { key: 'catalog', label: 'Catalog' },
 ];
 
 export default function AdminDashboard() {
@@ -29,13 +31,32 @@ export default function AdminDashboard() {
     handleApprove, openRejectionModal, closeRejectionModal, submitRejection,
     openApplication, closeModal,
     handleMenuButtonClick, handleMenuFileChange,
-    setToast, fileInputRef
+    setToast, fileInputRef,
+    products, productsLoading,
+    stockItems, stockItemsLoading, stockItemsError,
+    units, unitsLoading,
+    createStockItem, fetchIngredients, addIngredient, removeIngredient
   } = useAdminDashboard();
 
   const renderTabContent = () => {
     if (loading) return <div className="flex justify-center py-20"><p className="text-gray-500">Loading dashboard…</p></div>;
     if (activeTab === 'overview') return <AdminOverview metrics={metrics} primaryFranchise={primaryFranchise} menuUploading={menuUploading} onMenuButtonClick={handleMenuButtonClick} onMenuFileChange={handleMenuFileChange} fileInputRef={fileInputRef} />;
     if (activeTab === 'network') return <AdminNetwork flattenedBranches={flattenedBranches} />;
+    if (activeTab === 'catalog') return (
+      <AdminCatalog
+        stockItems={stockItems}
+        stockItemsLoading={stockItemsLoading}
+        stockItemsError={stockItemsError}
+        units={units}
+        unitsLoading={unitsLoading}
+        products={products}
+        productsLoading={productsLoading}
+        createStockItem={createStockItem}
+        fetchIngredients={fetchIngredients}
+        addIngredient={addIngredient}
+        removeIngredient={removeIngredient}
+      />
+    );
     return <AdminApplications applications={applications} onOpenApplication={openApplication} />;
   };
 

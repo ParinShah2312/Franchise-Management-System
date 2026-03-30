@@ -3,3 +3,7 @@ export { default as RejectionModal } from './RejectionModal';
 export { default as AdminOverview } from './AdminOverview';
 export { default as AdminNetwork } from './AdminNetwork';
 export { default as AdminApplications } from './AdminApplications';
+export { default as AdminCatalog } from './AdminCatalog';
+export { default as CatalogStockItems } from './CatalogStockItems';
+export { default as CatalogProductRecipes } from './CatalogProductRecipes';
+export { default as CatalogAddStockItemModal } from './CatalogAddStockItemModal';

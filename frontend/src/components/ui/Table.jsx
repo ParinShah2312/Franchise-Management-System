@@ -1,5 +1,5 @@
-export default function Table({ headers, data, renderRow, emptyMessage }) {
-    if (!data || data.length === 0) {
+export default function Table({ headers, data, renderRow, emptyMessage, children }) {
+    if ((!data || data.length === 0) && !children) {
         return (
             <div className="rounded-xl border border-dashed border-border bg-white py-12 text-center text-gray-500">
                 {emptyMessage || 'No data available.'}
@@ -24,7 +24,7 @@ export default function Table({ headers, data, renderRow, emptyMessage }) {
                     </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100 bg-white text-sm">
-                    {data.map((item, index) => renderRow(item, index))}
+                    {children ? children : data?.map((item, index) => renderRow(item, index))}
                 </tbody>
             </table>
         </div>

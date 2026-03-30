@@ -12,4 +12,5 @@ Route files:
 - sales_routes.py        → /api/sales        (sales and products)
 - report_routes.py       → /api/reports      (reporting)
 - dashboard_routes.py    → /api/dashboard    (metrics)
+- catalog_routes.py      → /api/catalog      (recipe management)
 """

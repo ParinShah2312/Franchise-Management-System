@@ -13,8 +13,10 @@ from ..extensions import db
 from ..models import (
     Branch,
     BranchInventory,
+    Franchise,
     InventoryTransaction,
     StockItem,
+    Unit,
 )
 from ..services.inventory_service import (
     apply_inventory_transaction,
@@ -390,3 +392,110 @@ def create_branch_inventory() -> tuple[dict[str, object], int]:
         ),
         HTTPStatus.CREATED,
     )
+
+
+@inventory_bp.route("/stock-items", methods=["POST"])
+@token_required({"FRANCHISOR"})
+def create_stock_item() -> tuple[dict[str, object], int]:
+    payload = request.get_json(silent=True) or {}
+    
+    name = payload.get("name")
+    if not name or not str(name).strip():
+        return jsonify({"error": "name is required and must be a non-empty string."}), HTTPStatus.BAD_REQUEST
+    name = str(name).strip()
+
+    unit_id = payload.get("unit_id")
+    if not unit_id:
+        return jsonify({"error": "unit_id is required."}), HTTPStatus.BAD_REQUEST
+
+    try:
+        unit_id = int(unit_id)
+    except (TypeError, ValueError):
+        return jsonify({"error": "unit_id must be numeric."}), HTTPStatus.BAD_REQUEST
+
+    unit = Unit.query.get(unit_id)
+    if not unit:
+        return jsonify({"error": "Invalid unit reference."}), HTTPStatus.BAD_REQUEST
+
+    franchisor = getattr(g, "current_user", None)
+    if not franchisor:
+        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
+
+    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
+    if not franchise:
+        return jsonify({"error": "No franchise found for this franchisor."}), HTTPStatus.NOT_FOUND
+
+    existing = StockItem.query.filter(
+        db.func.lower(StockItem.name) == name.lower(),
+        StockItem.franchise_id == franchise.franchise_id
+    ).first()
+    
+    if existing:
+        return jsonify({"error": "A stock item with this name already exists."}), HTTPStatus.CONFLICT
+
+    description = payload.get("description")
+
+    stock_item = StockItem(
+        franchise_id=franchise.franchise_id,
+        name=name,
+        description=description,
+        unit_id=unit_id
+    )
+    db.session.add(stock_item)
+    db.session.commit()
+
+    return jsonify({
+        "stock_item_id": stock_item.stock_item_id,
+        "name": stock_item.name,
+        "description": stock_item.description,
+        "unit_id": stock_item.unit_id,
+        "unit_name": unit.unit_name,
+        "franchise_id": stock_item.franchise_id
+    }), HTTPStatus.CREATED
+
+
+@inventory_bp.route("/units", methods=["GET"])
+@token_required({"FRANCHISOR"})
+def list_units() -> tuple[list[dict[str, object]], int]:
+    units = Unit.query.order_by(Unit.unit_name.asc()).all()
+    payload = [
+        {
+            "unit_id": unit.unit_id,
+            "unit_name": unit.unit_name
+        }
+        for unit in units
+    ]
+    return jsonify(payload), HTTPStatus.OK
+
+
+@inventory_bp.route("/stock-items/all", methods=["GET"])
+@token_required({"FRANCHISOR"})
+def list_all_stock_items() -> tuple[list[dict[str, object]], int]:
+    franchisor = getattr(g, "current_user", None)
+    if not franchisor:
+        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
+
+    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
+    if not franchise:
+        return jsonify({"error": "No franchise found for this franchisor."}), HTTPStatus.NOT_FOUND
+
+    items = (
+        StockItem.query.options(joinedload(StockItem.unit))
+        .filter_by(franchise_id=franchise.franchise_id)
+        .order_by(StockItem.name.asc())
+        .all()
+    )
+
+    payload = [
+        {
+            "stock_item_id": item.stock_item_id,
+            "name": item.name,
+            "description": item.description,
+            "unit_id": item.unit_id,
+            "unit_name": item.unit.unit_name if item.unit else None,
+            "franchise_id": item.franchise_id
+        }
+        for item in items
+    ]
+    return jsonify(payload), HTTPStatus.OK
+

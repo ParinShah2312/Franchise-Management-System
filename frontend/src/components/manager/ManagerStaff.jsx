@@ -97,8 +97,8 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
             </div>
 
             {showAddStaffModal ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-6">
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-6">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-semibold text-gray-800">Add Staff Member</h3>
                             <button
@@ -113,7 +113,7 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
 
                         <form className="space-y-4" onSubmit={handleAddStaff}>
                             <div>
-                                <label className="label" htmlFor="manager_staff_name">
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="manager_staff_name">
                                     Full Name*
                                 </label>
                                 <input
@@ -122,13 +122,13 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
                                     required
                                     value={staffForm.name}
                                     onChange={(event) => setStaffForm((prev) => ({ ...prev, name: event.target.value }))}
-                                    className="input-field"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     placeholder="Jane Doe"
                                 />
                             </div>
 
                             <div>
-                                <label className="label" htmlFor="manager_staff_email">
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="manager_staff_email">
                                     Email*
                                 </label>
                                 <input
@@ -137,13 +137,13 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
                                     required
                                     value={staffForm.email}
                                     onChange={(event) => setStaffForm((prev) => ({ ...prev, email: event.target.value }))}
-                                    className="input-field"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     placeholder="jane@example.com"
                                 />
                             </div>
 
                             <div>
-                                <label className="label" htmlFor="manager_staff_phone">
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="manager_staff_phone">
                                     Phone*
                                 </label>
                                 <input
@@ -156,7 +156,7 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
                                     onChange={(event) => {
                                         setStaffForm((prev) => ({ ...prev, phone: sanitizePhone(event.target.value) }));
                                     }}
-                                    className={`input-field ${staffErrors.phone ? 'border-red-500 focus:border-red-500 focus:ring-red-200' : ''}`}
+                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 ${staffErrors.phone ? 'border-red-500 focus:ring-red-200' : 'border-gray-300 focus:ring-blue-500'}`}
                                     placeholder="9876543210"
                                 />
                                 {staffErrors.phone ? (
@@ -165,7 +165,7 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
                             </div>
 
                             <div>
-                                <label className="label" htmlFor="manager_staff_password">
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="manager_staff_password">
                                     Temporary Password*
                                 </label>
                                 <input
@@ -175,7 +175,7 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
                                     minLength={8}
                                     value={staffForm.password}
                                     onChange={(event) => setStaffForm((prev) => ({ ...prev, password: event.target.value }))}
-                                    className="input-field"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     placeholder="Minimum 8 characters"
                                 />
                             </div>

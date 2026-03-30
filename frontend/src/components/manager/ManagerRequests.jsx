@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { formatDateTime, formatNumber } from '../../utils';
 
 const initialRequestForm = {
@@ -44,7 +45,7 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
     };
 
     return (
-        <>
+        <div>
             <div className="bg-white border border-gray-200 rounded-xl">
                 <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
                     <h3 className="text-lg font-semibold text-gray-800">Stock Requests</h3>
@@ -108,9 +109,9 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
                 </div>
             </div>
 
-            {showRequestModal ? (
-                <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 px-4">
-                    <div className="bg-white rounded-2xl shadow-2xl max-w-lg w-full p-6 space-y-6">
+            {showRequestModal ? createPortal(
+                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-6">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-semibold text-gray-800">New Stock Request</h3>
                             <button
@@ -125,7 +126,7 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
 
                         <form className="space-y-4" onSubmit={handleCreateRequest}>
                             <div>
-                                <label className="label" htmlFor="manager_request_item">
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="manager_request_item">
                                     Stock Item*
                                 </label>
                                 <select
@@ -135,7 +136,7 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
                                     onChange={(event) =>
                                         setRequestForm((prev) => ({ ...prev, stock_item_id: event.target.value }))
                                     }
-                                    className="input-field"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                 >
                                     <option value="">Select item</option>
                                     {stockItems.map((item) => (
@@ -147,7 +148,7 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
                             </div>
 
                             <div>
-                                <label className="label" htmlFor="manager_request_quantity">
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="manager_request_quantity">
                                     Quantity*
                                 </label>
                                 <input
@@ -159,13 +160,13 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
                                     onChange={(event) =>
                                         setRequestForm((prev) => ({ ...prev, requested_quantity: event.target.value }))
                                     }
-                                    className="input-field"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     placeholder="50"
                                 />
                             </div>
 
                             <div>
-                                <label className="label" htmlFor="manager_request_cost">
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="manager_request_cost">
                                     Estimated Unit Cost
                                 </label>
                                 <input
@@ -177,13 +178,13 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
                                     onChange={(event) =>
                                         setRequestForm((prev) => ({ ...prev, estimated_unit_cost: event.target.value }))
                                     }
-                                    className="input-field"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     placeholder="Optional"
                                 />
                             </div>
 
                             <div>
-                                <label className="label" htmlFor="manager_request_note">
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="manager_request_note">
                                     Note
                                 </label>
                                 <input
@@ -193,7 +194,7 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
                                     onChange={(event) =>
                                         setRequestForm((prev) => ({ ...prev, note: event.target.value }))
                                     }
-                                    className="input-field"
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
                                     placeholder="Any additional context"
                                 />
                             </div>
@@ -217,7 +218,7 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
                         </form>
                     </div>
                 </div>
-            ) : null}
-        </>
+            , document.body) : null}
+        </div>
     );
 }

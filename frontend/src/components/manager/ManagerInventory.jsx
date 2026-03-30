@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { formatNumber } from '../../utils';
 
 const initialInventoryForm = {
@@ -21,6 +21,16 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
     const [showDeliveryModal, setShowDeliveryModal] = useState(false);
     const [deliverySubmitting, setDeliverySubmitting] = useState(false);
     const [deliveryForm, setDeliveryForm] = useState(initialDeliveryForm);
+
+    const lowStockItems = useMemo(
+        () =>
+            inventoryItems.filter((item) => {
+                const quantity = Number(item.quantity || 0);
+                const reorder = Number(item.reorder_level || 0);
+                return reorder > 0 && quantity <= reorder;
+            }),
+        [inventoryItems],
+    );
 
     const closeDeliveryModal = () => {
         if (deliverySubmitting) return;
@@ -89,7 +99,14 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
         <div>
             <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
                 <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
-                    <h3 className="text-lg font-semibold text-gray-800">Inventory Items</h3>
+                    <div>
+                        <h3 className="text-lg font-semibold text-gray-800">Inventory Items</h3>
+                        {lowStockItems.length > 0 ? (
+                            <p className="text-sm text-amber-600 font-medium mt-1">
+                                {lowStockItems.length} item{lowStockItems.length === 1 ? '' : 's'} at or below reorder level.
+                            </p>
+                        ) : null}
+                    </div>
                     <div className="flex items-center gap-3">
                         <button
                             type="button"
@@ -138,18 +155,27 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                                     </td>
                                 </tr>
                             ) : (
-                                inventoryItems.map((item) => (
-                                    <tr key={item.branch_inventory_id || item.id}>
-                                        <td className="px-4 py-3 text-sm text-gray-800">{item.stock_item_name || item.item_name}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-500">{item.unit_name || '—'}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-900 text-right">
-                                            {formatNumber(item.quantity)}
-                                        </td>
-                                        <td className="px-4 py-3 text-sm text-gray-500 text-right">
-                                            {formatNumber(item.reorder_level)}
-                                        </td>
-                                    </tr>
-                                ))
+                                inventoryItems.map((item) => {
+                                    const quantity = Number(item.quantity || 0);
+                                    const reorder = item.reorder_level != null ? Number(item.reorder_level) : null;
+                                    const isLow = reorder != null && reorder > 0 && quantity <= reorder;
+
+                                    return (
+                                        <tr
+                                            key={item.branch_inventory_id || item.id}
+                                            className={isLow ? 'bg-amber-50' : ''}
+                                        >
+                                            <td className="px-4 py-3 text-sm text-gray-800">{item.stock_item_name || item.item_name}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-500">{item.unit_name || '—'}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-900 text-right">
+                                                {formatNumber(quantity)}
+                                            </td>
+                                            <td className="px-4 py-3 text-sm text-gray-500 text-right">
+                                                {formatNumber(reorder)}
+                                            </td>
+                                        </tr>
+                                    );
+                                })
                             )}
                         </tbody>
                     </table>

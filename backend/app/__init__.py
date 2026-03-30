@@ -76,6 +76,7 @@ def register_blueprints(app: Flask) -> None:
     from .routes.request_routes import request_bp
     from .routes.report_routes import report_bp
     from .routes.sales_routes import sales_bp
+    from .routes.catalog_routes import catalog_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(registration_bp)
@@ -83,6 +84,7 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(franchise_bp)
     app.register_blueprint(application_bp)
     app.register_blueprint(sales_bp)
+    app.register_blueprint(catalog_bp)
     app.register_blueprint(inventory_bp)
     app.register_blueprint(request_bp)
     app.register_blueprint(report_bp)
