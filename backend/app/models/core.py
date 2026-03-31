@@ -88,6 +88,9 @@ class Franchise(TimestampMixin, db.Model):
     franchise_applications: Mapped[list["FranchiseApplication"]] = relationship(
         "FranchiseApplication", back_populates="franchise", cascade="all, delete-orphan"
     )
+    royalty_configs: Mapped[list["RoyaltyConfig"]] = relationship(
+        "RoyaltyConfig", back_populates="franchise", cascade="all, delete-orphan"
+    )
 
 
 class Address(db.Model):

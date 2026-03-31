@@ -9,5 +9,5 @@ operations.
 Service modules:
 - inventory_service.py  → inventory transaction and deduction logic
 - report_service.py     → report data aggregation and generation
-- royalty_service.py    → royalty split calculation (placeholder)
+- royalty_service.py    → royalty configuration, split calculation, royalty recording and summary aggregation
 """

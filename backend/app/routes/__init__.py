@@ -13,4 +13,5 @@ Route files:
 - report_routes.py       → /api/reports      (reporting)
 - dashboard_routes.py    → /api/dashboard    (metrics)
 - catalog_routes.py      → /api/catalog      (recipe management)
+- royalty_routes.py      → /api/royalty      (royalty configuration and summaries)
 """

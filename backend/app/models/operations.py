@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Optional
 
@@ -44,6 +44,9 @@ class Sale(TimestampMixin, db.Model):
     status: Mapped["SaleStatus"] = relationship("SaleStatus", back_populates="sales")
     items: Mapped[list["SaleItem"]] = relationship(
         "SaleItem", back_populates="sale", cascade="all, delete-orphan"
+    )
+    royalty: Mapped[Optional["SaleRoyalty"]] = relationship(
+        "SaleRoyalty", back_populates="sale", uselist=False
     )
 
 
@@ -199,3 +202,58 @@ class StockPurchaseRequestItem(db.Model):
     stock_item: Mapped["StockItem"] = relationship(
         "StockItem", back_populates="purchase_request_items"
     )
+
+
+class RoyaltyConfig(db.Model):
+    __tablename__ = "royalty_configs"
+    royalty_config_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    franchise_id: Mapped[int] = mapped_column(
+        ForeignKey("franchises.franchise_id", ondelete="CASCADE"), nullable=False
+    )
+    franchisor_cut_pct: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2), nullable=False
+    )
+    branch_owner_cut_pct: Mapped[Decimal] = mapped_column(
+        Numeric(5, 2), nullable=False
+    )
+    effective_from: Mapped[date] = mapped_column(db.Date, nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+    created_by_franchisor_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("franchisors.franchisor_id"), nullable=True
+    )
+
+    franchise: Mapped["Franchise"] = relationship(
+        "Franchise", back_populates="royalty_configs"
+    )
+
+
+class SaleRoyalty(db.Model):
+    __tablename__ = "sale_royalties"
+    sale_royalty_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    sale_id: Mapped[int] = mapped_column(
+        ForeignKey("sales.sale_id", ondelete="CASCADE"), nullable=False, unique=True
+    )
+    royalty_config_id: Mapped[int] = mapped_column(
+        ForeignKey("royalty_configs.royalty_config_id", ondelete="RESTRICT"),
+        nullable=False,
+    )
+    franchisor_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+    branch_owner_amount: Mapped[Decimal] = mapped_column(
+        Numeric(12, 2), nullable=False
+    )
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )
+
+    sale: Mapped["Sale"] = relationship("Sale", back_populates="royalty")
+    royalty_config: Mapped["RoyaltyConfig"] = relationship("RoyaltyConfig")

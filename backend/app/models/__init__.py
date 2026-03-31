@@ -13,7 +13,8 @@ Domain organization:
     catalog.py    -> ProductCategory, Product, StockItem,
                      ProductIngredient, BranchInventory
     operations.py -> Sale, SaleItem, InventoryTransaction,
-                     StockPurchaseRequest, StockPurchaseRequestItem
+                     StockPurchaseRequest, StockPurchaseRequestItem,
+                     RoyaltyConfig, SaleRoyalty
     business.py   -> FranchiseApplication, Report, ReportData
 """
 
@@ -62,6 +63,8 @@ from .operations import (
     InventoryTransaction,
     StockPurchaseRequest,
     StockPurchaseRequestItem,
+    RoyaltyConfig,
+    SaleRoyalty,
 )
 
 # Business processes
@@ -104,6 +107,8 @@ __all__ = [
     "InventoryTransaction",
     "StockPurchaseRequest",
     "StockPurchaseRequestItem",
+    "RoyaltyConfig",
+    "SaleRoyalty",
     # Business
     "FranchiseApplication",
     "Report",

@@ -6,7 +6,7 @@ from datetime import datetime, timezone
 from decimal import Decimal
 from http import HTTPStatus
 
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, jsonify, request, g, current_app
 from sqlalchemy.orm import joinedload
 
 from ..extensions import db
@@ -225,6 +225,31 @@ def create_sale() -> tuple[dict[str, object], int]:
     sale.total_amount = running_total
 
     db.session.commit()
+
+    # Best-effort royalty recording — sale is already committed at this point
+    try:
+        from ..services.royalty_service import (
+            get_active_royalty_config,
+            calculate_royalty_split,
+            record_sale_royalty,
+        )
+        royalty_config = get_active_royalty_config(branch.franchise_id)
+        if royalty_config:
+            franchisor_amount, branch_owner_amount = calculate_royalty_split(
+                sale.total_amount, royalty_config
+            )
+            record_sale_royalty(
+                sale_id=sale.sale_id,
+                config=royalty_config,
+                franchisor_amount=franchisor_amount,
+                branch_owner_amount=branch_owner_amount,
+            )
+            db.session.commit()
+    except Exception as exc:
+        current_app.logger.warning(
+            "Royalty recording failed for sale %s: %s", sale.sale_id, exc
+        )
+        db.session.rollback()
 
     sale = Sale.query.options(joinedload(Sale.items).joinedload(SaleItem.product)).get(
         sale.sale_id

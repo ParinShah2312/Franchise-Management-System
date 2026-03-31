@@ -20,6 +20,7 @@ export default function FranchiseeDashboard() {
     metrics, sales, requests, staff,
     updateRequestStatus, appointManager,
     loading, error, pendingRequestsCount, loadData,
+    branchSummary, branchSummaryLoading,
   } = useFranchiseeDashboard(branchId);
 
   const TABS = [
@@ -36,7 +37,7 @@ export default function FranchiseeDashboard() {
         return <FranchiseeStaff staff={staff} appointManager={appointManager} setToast={setToast} />;
       case 'overview':
       default:
-        return <FranchiseeOverview metrics={metrics} sales={sales} onRefresh={loadData} />;
+        return <FranchiseeOverview metrics={metrics} sales={sales} onRefresh={loadData} branchSummary={branchSummary} branchSummaryLoading={branchSummaryLoading} />;
     }
   };
 

@@ -1,9 +1,9 @@
 import { formatINR, formatINRDecimal, formatDateTime } from '../../utils';
 
-export default function FranchiseeOverview({ metrics, sales, onRefresh }) {
+export default function FranchiseeOverview({ metrics, sales, onRefresh, branchSummary, branchSummaryLoading }) {
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
                 <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                     <p className="text-sm text-gray-500">Revenue (MTD)</p>
                     <h3 className="text-xl font-semibold text-gray-800 mt-2">
@@ -29,6 +29,13 @@ export default function FranchiseeOverview({ metrics, sales, onRefresh }) {
                         {metrics.pending_items ?? 0}
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">Units requested by staff.</p>
+                </div>
+                <div className="bg-white border border-emerald-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
+                    <p className="text-sm text-emerald-600">Royalty Earned (MTD)</p>
+                    <h3 className="text-xl font-semibold text-gray-800 mt-2">
+                        {branchSummaryLoading ? '…' : formatINRDecimal(branchSummary?.branch_owner_earned ?? 0)}
+                    </h3>
+                    <p className="text-xs text-gray-500 mt-1">Your share of this month's sales.</p>
                 </div>
             </div>
 

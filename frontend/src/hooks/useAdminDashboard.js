@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import { useCatalog } from './useCatalog';
+import { useRoyalty } from './useRoyalty';
 
 export function useAdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -20,6 +21,12 @@ export function useAdminDashboard() {
     createStockItem, createCategory, createProduct, updateProduct,
     fetchIngredients, addIngredient, removeIngredient,
   } = useCatalog();
+
+  const {
+    config, configLoading, configured, refreshConfig,
+    summary, summaryLoading, summaryError, fetchSummary,
+    saveConfig, saving, saveError,
+  } = useRoyalty();
 
   const [modalApplication, setModalApplication] = useState(null);
   const [actionState, setActionState] = useState({ id: null, type: null });
@@ -202,6 +209,10 @@ export function useAdminDashboard() {
     uploadMenuFile,
     handleMenuFileChange,
     setToast,
-    fileInputRef
+    fileInputRef,
+    // Royalty
+    config, configLoading, configured, refreshConfig,
+    summary, summaryLoading, summaryError, fetchSummary,
+    saveConfig, saving, saveError,
   };
 }

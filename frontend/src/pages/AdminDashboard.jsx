@@ -9,6 +9,7 @@ import {
   AdminNetwork,
   AdminApplications,
   AdminCatalog,
+  AdminRoyalty,
 } from '../components/admin';
 
 const TABS = [
@@ -16,6 +17,7 @@ const TABS = [
   { key: 'network', label: 'Network' },
   { key: 'applications', label: 'Applications' },
   { key: 'catalog', label: 'Catalog' },
+  { key: 'royalty', label: 'Royalty' },
 ];
 
 export default function AdminDashboard() {
@@ -37,7 +39,9 @@ export default function AdminDashboard() {
     stockItems, stockItemsLoading, stockItemsError,
     units, unitsLoading,
     createStockItem, fetchIngredients, addIngredient, removeIngredient,
-    fetchDashboard
+    fetchDashboard,
+    config, configLoading, configured, saveConfig, saving, saveError,
+    summary, summaryLoading, summaryError, fetchSummary,
   } = useAdminDashboard();
 
   const renderTabContent = () => {
@@ -63,6 +67,20 @@ export default function AdminDashboard() {
         createProduct={createProduct}
         updateProduct={updateProduct}
         refreshProducts={refreshProducts}
+      />
+    );
+    if (activeTab === 'royalty') return (
+      <AdminRoyalty
+        config={config}
+        configLoading={configLoading}
+        configured={configured}
+        saveConfig={saveConfig}
+        saving={saving}
+        saveError={saveError}
+        summary={summary}
+        summaryLoading={summaryLoading}
+        summaryError={summaryError}
+        fetchSummary={fetchSummary}
       />
     );
     return <AdminApplications applications={applications} onOpenApplication={openApplication} />;
