@@ -34,5 +34,15 @@ export function useFranchiseStaff(branchId) {
         await fetchStaff();
     };
 
-    return { staff, loading, error, appointManager, refreshStaff: fetchStaff };
+    const deactivateUser = async (userId) => {
+        await api.put(`/users/${userId}/deactivate`);
+        await fetchStaff();
+    };
+
+    const activateUser = async (userId) => {
+        await api.put(`/users/${userId}/activate`);
+        await fetchStaff();
+    };
+
+    return { staff, loading, error, appointManager, refreshStaff: fetchStaff, deactivateUser, activateUser };
 }

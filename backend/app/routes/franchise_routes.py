@@ -191,3 +191,55 @@ def list_franchise_network() -> tuple[list[dict[str, object]], int]:
     return jsonify(network), HTTPStatus.OK
 
 
+@franchise_bp.route("/branches/<int:branch_id>/status", methods=["PUT"])
+@token_required({"FRANCHISOR"})
+def toggle_branch_status(branch_id: int) -> tuple[dict[str, object], int]:
+    """Toggle a branch's active/inactive status."""
+
+    data = request.get_json(silent=True) or {}
+    new_status = data.get("status", "")
+
+    if new_status not in ("ACTIVE", "INACTIVE"):
+        return jsonify({"error": "status must be ACTIVE or INACTIVE."}), HTTPStatus.BAD_REQUEST
+
+    branch = Branch.query.get(branch_id)
+    if not branch:
+        return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
+
+    current_user = getattr(g, "current_user", None)
+    franchise = Franchise.query.filter_by(
+        franchisor_id=current_user.franchisor_id
+    ).first()
+
+    if not franchise or branch.franchise_id != franchise.franchise_id:
+        return (
+            jsonify({"error": "You do not have permission to manage this branch."}),
+            HTTPStatus.FORBIDDEN,
+        )
+
+    target_status = BranchStatus.query.filter_by(status_name=new_status).first()
+    if not target_status:
+        return (
+            jsonify({"error": "Branch status configuration missing."}),
+            HTTPStatus.INTERNAL_SERVER_ERROR,
+        )
+
+    if branch.status_id == target_status.status_id:
+        return (
+            jsonify({"error": f"Branch is already {new_status}."}),
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    branch.status_id = target_status.status_id
+    db.session.commit()
+
+    return (
+        jsonify(
+            {
+                "message": f"Branch status updated to {new_status}.",
+                "branch_id": branch.branch_id,
+                "status": new_status,
+            }
+        ),
+        HTTPStatus.OK,
+    )

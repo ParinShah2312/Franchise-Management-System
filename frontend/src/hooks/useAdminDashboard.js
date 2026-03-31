@@ -183,6 +183,11 @@ export function useAdminDashboard() {
     event.target.value = '';
   };
 
+  const toggleBranchStatus = async (branchId, newStatus) => {
+    await api.put(`/franchises/branches/${branchId}/status`, { status: newStatus });
+    await fetchDashboard();
+  };
+
   const openApplication = (application) => {
     setModalApplication(application);
   };
@@ -215,6 +220,7 @@ export function useAdminDashboard() {
     handleMenuButtonClick,
     uploadMenuFile,
     handleMenuFileChange,
+    toggleBranchStatus,
     setToast,
     fileInputRef,
     // Royalty

@@ -42,6 +42,7 @@ export default function AdminDashboard() {
     units, unitsLoading,
     createStockItem, fetchIngredients, addIngredient, removeIngredient,
     fetchDashboard,
+    toggleBranchStatus,
     config, configLoading, configured, saveConfig, saving, saveError,
     summary, summaryLoading, summaryError, fetchSummary,
     report, reportLoading, reportError,
@@ -52,7 +53,7 @@ export default function AdminDashboard() {
   const renderTabContent = () => {
     if (loading) return <div className="flex justify-center py-20"><p className="text-gray-500">Loading dashboard…</p></div>;
     if (activeTab === 'overview') return <AdminOverview metrics={metrics} primaryFranchise={primaryFranchise} menuUploading={menuUploading} onMenuButtonClick={handleMenuButtonClick} onMenuFileChange={handleMenuFileChange} fileInputRef={fileInputRef} />;
-    if (activeTab === 'network') return <AdminNetwork flattenedBranches={flattenedBranches} />;
+    if (activeTab === 'network') return <AdminNetwork flattenedBranches={flattenedBranches} onToggleStatus={toggleBranchStatus} />;
     if (activeTab === 'catalog') return (
       <AdminCatalog
         stockItems={stockItems}

@@ -10,7 +10,7 @@ export function useFranchiseeDashboard(branchId) {
   const { metrics, loading: metricsLoading, error: metricsError, refreshMetrics } = useFranchiseMetrics(branchId);
   const { sales, loading: salesLoading, error: salesError, refreshSales } = useSales(branchId);
   const { requests, loading: reqLoading, error: reqError, updateRequestStatus, refreshRequests } = useRequests(branchId);
-  const { staff, loading: staffLoading, error: staffError, appointManager, refreshStaff } = useFranchiseStaff(branchId);
+  const { staff, loading: staffLoading, error: staffError, appointManager, refreshStaff, deactivateUser, activateUser } = useFranchiseStaff(branchId);
 
   const {
     branchSummary,
@@ -51,7 +51,7 @@ export function useFranchiseeDashboard(branchId) {
     metrics, metricsLoading, metricsError, refreshMetrics,
     sales, salesLoading, salesError, refreshSales,
     requests, reqLoading, reqError, updateRequestStatus, refreshRequests,
-    staff, staffLoading, staffError, appointManager, refreshStaff,
+    staff, staffLoading, staffError, appointManager, refreshStaff, deactivateUser, activateUser,
     loading, error, pendingRequestsCount, loadData,
     branchSummary, branchSummaryLoading, branchSummaryError, fetchBranchSummary,
     // Reports

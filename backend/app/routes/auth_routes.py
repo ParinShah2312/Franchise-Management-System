@@ -137,6 +137,7 @@ def get_branch_profile() -> tuple[dict[str, object], int]:
             "name": user.name,
             "email": user.email,
             "phone": user.phone,
+            "is_active": user.is_active,
         }
 
     payload = {
@@ -152,6 +153,8 @@ def get_branch_profile() -> tuple[dict[str, object], int]:
                 "name": assignment.user.name if assignment.user else None,
                 "email": assignment.user.email if assignment.user else None,
                 "phone": assignment.user.phone if assignment.user else None,
+                "is_active": assignment.user.is_active if assignment.user else None,
+                "role": "STAFF",
                 "joined_at": assignment.created_at.isoformat()
                 if assignment.created_at
                 else None,

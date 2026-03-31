@@ -1,188 +1,383 @@
-# 🚀 RELAY FRANCHISE MANAGEMENT SYSTEM - COMPLETE STARTUP GUIDE
+# 🚀 Relay Franchise Management System — Start Here
 
-**Start your demo from a fresh laptop boot in under 2 minutes!**
-
-> 💡 **Note:** This app uses SQLite (no MySQL server needed!) - everything auto-configures on the very first run. The codebase is fully modular and built with custom React Hooks!
-
----
-
-## 📋 Table of Contents
-
-1. [Quick Start (After Laptop Boot)](#1-quick-start-after-laptop-boot)
-2. [Prerequisites Check](#2-prerequisites-check)
-3. [Test the System](#3-test-the-system)
-4. [Complete Feature List](#4-complete-feature-list)
-5. [Common Issues & Fixes](#5-common-issues--fixes)
+> **From a fresh laptop boot to a fully running demo in under 2 minutes.**
+> No MySQL, no Postgres, no database server of any kind — SQLite auto-configures itself.
 
 ---
 
-## 1. ⚡ Quick Start (After Laptop Boot)
+## 📋 Contents
 
-**Every time you start your laptop and want to run the demo:**
+1. [Prerequisites](#1-prerequisites)
+2. [First-Time Setup](#2-first-time-setup)
+3. [Daily Startup (After First Setup)](#3-daily-startup-after-first-setup)
+4. [All Login Credentials](#4-all-login-credentials)
+5. [Complete Feature Walkthrough](#5-complete-feature-walkthrough)
+6. [Running the Test Suite](#6-running-the-test-suite)
+7. [Common Issues & Fixes](#7-common-issues--fixes)
 
-### **Step 1: Open Terminal 1 - Start Backend**
+---
+
+## 1. Prerequisites
+
+Check these once before anything else:
+
+```bash
+python --version    # Must be 3.8 or higher
+node --version      # Must be 18 or higher
+npm --version       # Comes with Node
+```
+
+If either is missing, install from [python.org](https://python.org) and [nodejs.org](https://nodejs.org).
+
+---
+
+## 2. First-Time Setup
+
+Only run these steps once — the first time you clone or receive this project.
+
+### Step 1 — Backend
 
 ```bash
 cd backend
 
-# Activate virtual environment
-# On Mac/Linux:
-source venv/bin/activate
-# On Windows:
+# Create virtual environment
+python -m venv venv
+
+# Activate it
+# Windows:
 venv\Scripts\activate
+# Mac / Linux:
+source venv/bin/activate
 
-# Create environment variables file (first time only)
-# On Mac/Linux: cp .env.example .env
-# On Windows: copy .env.example .env
+# Install Python dependencies
+pip install -r requirements.txt
 
-# Start Flask server
+# Create the environment file
+# Windows:
+copy .env.example .env
+# Mac / Linux:
+cp .env.example .env
+
+# Start the server (this auto-creates and seeds the database)
 python run.py
 ```
 
-**Expected Output:**
-```text
+**Expected output:**
+```
 ✅ Database initialized successfully!
  * Running on http://127.0.0.1:5000
 ```
-✅ **Leave this terminal running!**
+
+✅ Leave this terminal running. **Do not close it.**
 
 ---
 
-### **Step 2: Open Terminal 2 - Start Frontend**
+### Step 2 — Frontend
 
-**Open a NEW terminal window:**
+Open a **new** terminal window:
 
 ```bash
 cd frontend
-
-# Start React development server
+npm install
 npm run dev
 ```
 
-**Expected Output:**
-```text
+**Expected output:**
+```
   VITE v5.x.x  ready in XXX ms
-
   ➜  Local:   http://localhost:3000/
 ```
-✅ **Browser opens automatically to http://localhost:3000**
+
+✅ Open your browser to **http://localhost:3000**
 
 ---
 
-### **Step 3: Login & Test**
+## 3. Daily Startup (After First Setup)
 
-**Login with the Default Admin:**
-- Email: `admin@relay.com`
-- Password: `admin123`
+Every time you restart your laptop, just do this — no installation needed:
 
-**That's it! You're running! 🎉**
+**Terminal 1 — Backend:**
+```bash
+cd backend
+venv\Scripts\activate    # Windows
+# source venv/bin/activate  (Mac/Linux)
+python run.py
+```
 
----
+**Terminal 2 — Frontend:**
+```bash
+cd frontend
+npm run dev
+```
 
-## 2. ✅ Prerequisites Check
-
-**Only needed for first-time setup or if you switched laptops:**
-
-1. **Python 3 Installed:** `python --version` (Should be 3.8+)
-2. **Node.js and npm Installed:** `npm --version` (Should be 18+)
-
-### 🗄️ Database (SQLite - No Setup Needed!)
-- ✅ No MySQL server needed
-- ✅ No password configuration
-- ✅ Single file: `backend/relay.db`
-- **To reset the database, simply delete `backend/relay.db` and run `python run.py` again. Sample data will automatically regenerate.**
+Open **http://localhost:3000** and you're running.
 
 ---
 
-## 3. 🧪 Test the System
+## 4. All Login Credentials
 
-With both servers running, you can test the 4 major user roles!
+These accounts are auto-seeded the very first time `python run.py` runs:
 
-### **Test 1: Admin Login & System Metrics**
-1. **Login:** `admin@relay.com` / `admin123`
-2. **You should see:**
-   - System Metrics (Total Revenue, Active Franchises)
-   - Recent Sales Activity mapping
-   - Pending Applicant Approvals
-   - Global Inventory Oversight
+| Role | Email | Password | Access |
+|---|---|---|---|
+| **Franchisor** | `admin@relay.com` | `admin123` | Full admin dashboard |
+| **Branch Owner** | *(register via application form)* | *(your choice)* | Franchisee dashboard |
+| **Manager** | *(created by branch owner)* | *(temporary, reset on first login)* | Manager dashboard |
+| **Staff** | *(register via staff registration)* | *(your choice)* | Staff dashboard |
 
-### **Test 2: Register New Franchisee**
-1. **Logout** from admin, click **"Apply here"** on the login screen.
-2. Fill the detailed 11-field application form (Property Size, Investment Capacity, Location, etc.)
-3. Submit and receive a success toast notification!
-4. **Log back in as Admin** -> Find the yellow "Pending" application -> Click "Review" -> Click **"Approve"**.
-
-### **Test 3: The 4-Role Dashboard Ecosystem**
-Relay supports four distinct dashboards. You can test them by creating users via the application or checking the database for auto-seeded users:
-- **Admin (Franchisor):** Global oversight, approvals.
-- **Franchisee (Owner):** Oversees a specific branch, views branch analytics, manages local managers.
-- **Manager:** Oversees staff within a branch, fulfills local inventory requests, handles daily branch operations.
-- **Staff:** Submits daily pos sales, checks local stock, requests inventory from the manager.
-
-### **Test 4: Sales & Inventory Flow**
-1. Log in as a **Staff** or **Manager**.
-2. Navigate to the **Sales** tab to submit daily revenue numbers.
-3. Navigate to the **Inventory** tab to view your branch's current stock levels and submit a request for low-stock items.
-4. Log in as **Admin** to see those sales instantly reflected in the Global Revenue chart!
+> **Tip:** To reset everything and start fresh, delete `backend/relay.db` and restart `python run.py`. All seed data regenerates automatically.
 
 ---
 
-## 4. 🎯 Complete Feature List
+## 5. Complete Feature Walkthrough
 
-**Version 3.0 Architecture (Current Refactored State):**
-✅ **Fully Modular Backend:** Application logic segmented into `routes/`, `services/`, `models/`, and `utils/` for massive scalability.
-✅ **Decoupled API Layer:** Frontend API interactions centralized in `api.js` with structured global error boundaries and automatic 401 logouts.
-✅ **Modular React Frontend:** Large dashboards and registration pages are extracted into clean, context-specific components (`admin/`, `manager/`, `staff/`, `register/`).
-✅ **Shared Utility Layer:** Repeated layout wrappers, currency handling, date formatting, and input sanitization abstracted into `utils/` and `layouts/`.
-✅ **Custom React Hooks:** All data fetching decoupled from components into `useAuth`, `useInventory`, `useSales`, `useStaff`, `useFranchiseMetrics`, and `useRequests`.
-✅ **Zero-Warning Codebase:** Strictly linted using `eslint` and `ruff`.
-✅ **Multi-Role Authentication:** Admin, Franchisee, Manager, Staff.
-✅ **Detailed Franchise Registration:** Segmented registration flow for investment capacity, business experience, file uploads.
-✅ **Admin Review Process:** Modal-based approve/reject workflow.
-✅ **Hierarchical Inventory Management:** Stock limits, low-stock warnings, request tracking.
-✅ **Sales Tracking:** Daily submission, historical graphs, system-wide revenue tracking.
+Work through these tests in order to see every feature in the system.
 
 ---
 
-## 5. 🐛 Common Issues & Fixes
+### 🔐 Test 1 — Franchisor Login & Overview Dashboard
 
-### **Issue 1: "Port 5000 already in use" (Backend)**
-**Fix (Windows):**
+1. Go to `http://localhost:3000`
+2. Log in: `admin@relay.com` / `admin123`
+3. You land on the **Franchisor Dashboard → Overview tab**
+4. You should see metrics cards: Total Revenue, Active Branches, Total Franchises, Pending Applications
+5. Click **Refresh Data** — metrics reload from the live API
+
+---
+
+### 📋 Test 2 — Franchise Application Workflow
+
+1. **Log out** from the franchisor
+2. On the login page, click **"Apply here"** to start a franchisee registration
+3. Fill in the 11-field form:
+   - Personal details (name, email, phone, password)
+   - Business details (franchise brand, preferred branch location)
+   - Background (property size, investment capacity, prior business experience)
+4. Submit — you receive a success toast and are redirected to the **Pending Dashboard**
+5. **Log back in as Franchisor** → open the **Applications tab**
+6. Find the yellow `PENDING` badge row → click **"Review"**
+7. The Application Modal shows full applicant detail
+8. Click **"Approve"** — the application is accepted, a branch and branch-owner role are created automatically, and the row turns green `APPROVED`
+9. **Try rejection too:** Create another application, then click "Reject" — enter a reason (minimum 10 characters) and submit
+
+---
+
+### 🏢 Test 3 — Network Tab & Branch Status Toggle
+
+1. Log in as Franchisor → open the **Network tab**
+2. You see a table of all branches with columns: Branch, Franchise, Location, Owner, Manager, Status, Actions
+3. The **Status** column shows a green `ACTIVE` or gray `INACTIVE` badge
+4. Click **"Deactivate"** on any active branch → confirm the dialog → the status badge turns gray and the button changes to "Activate"
+5. Click **"Activate"** → the branch returns to green `ACTIVE`
+
+---
+
+### 📦 Test 4 — Product Catalog Management
+
+1. Franchisor → **Catalog tab**
+2. **Stock Items subtab:**
+   - Click "Add Stock Item" → enter a name (e.g. "Coffee Beans"), unit (e.g. "grams"), and reorder level
+   - The new item appears in the list
+3. **Categories subtab:**
+   - Click "Add Category" → enter a name (e.g. "Hot Drinks")
+4. **Products subtab:**
+   - Click "Add Product" → fill in name, category, price, description
+   - Click "Edit" on any product → modify fields and save
+5. **Recipes subtab:**
+   - Select a product → click "Manage Ingredients"
+   - Link stock items to the product with quantities (e.g. "Cappuccino needs 18g Coffee Beans")
+   - Add and remove ingredients in real time
+
+---
+
+### 💎 Test 5 — Royalty Configuration
+
+1. Franchisor → **Royalty tab**
+2. If no config exists, fill in:
+   - Royalty percentage (e.g. `8`)
+   - Minimum monthly royalty (e.g. `500`)
+   - Maximum monthly royalty (e.g. `5000`)
+   - Click **"Save Configuration"**
+3. Scroll down to **Royalty Summary**
+4. Select a month and year → click **"Generate Summary"**
+5. The table shows per-branch: total sales, royalty owed (capped to min/max), and transaction count
+
+---
+
+### 📊 Test 6 — Financial Reports & CSV Export
+
+1. Franchisor → **Reports tab**
+2. Select a month and year → click **"Generate Report"**
+3. A report table appears with per-branch revenue, royalty, and transaction counts
+4. Click **"Download CSV"** → a `.csv` file downloads immediately (client-side generation)
+
+---
+
+### 🏢 Test 7 — Branch Owner (Franchisee) Dashboard
+
+1. Log in as a branch owner (an approved applicant from Test 2)
+2. You land on the **Franchisee Dashboard → Overview tab**
+3. See branch revenue, sales count, and current month royalty summary
+4. Click the **Requests tab** — see any pending stock requests from staff
+5. Approve or reject a request with adjusted quantities
+
+---
+
+### 👥 Test 8 — Staff Management & Deactivation
+
+1. Branch Owner → **My Staff tab**
+2. If no manager exists, click **"Appoint Manager"** → fill the form → a manager account is created and force-resets password on first login
+3. You see a table of all staff with: Name, Email, Status badge, Actions
+4. Active staff rows show a green **"Active"** badge and a red **"Deactivate"** button
+5. Click **"Deactivate"** on a staff member → confirm → the Name and Email cells dim but the row stays readable; the badge changes to gray "Inactive" and the button changes to green **"Reactivate"**
+6. Click **"Reactivate"** → the row returns to full brightness, badge goes green again
+7. Note: the branch owner's own row shows `—` in the Actions column — owners cannot deactivate themselves
+
+**Verify the deactivated account is blocked:**
+8. Copy the email of a deactivated staff member
+9. Log out → attempt to log in as that user
+10. You receive: `"Account is inactive. Contact administrator."` — access is denied at the server level
+
+---
+
+### 👔 Test 9 — Manager Dashboard
+
+1. Log in as a Manager (created in Test 8)
+2. On first login: forced password reset page — enter and confirm a new password
+3. You land on the **Manager Dashboard → Overview tab** with branch metrics
+4. **Inventory tab:**
+   - See all stock items for this branch with current quantities
+   - Items below reorder level show a low-stock banner at the top of the page
+   - Click **"Record Delivery"** → enter stock item, quantity, and notes → inventory updates
+5. **Requests tab:**
+   - See all pending purchase requests from staff
+   - Approve or reject, optionally adjusting the quantity
+6. **Sales tab:**
+   - Click **"Record Sale"** → select product, quantity, price, payment mode (Cash / Card / UPI)
+   - The new sale appears in the sales history table with the correct date/time and payment mode
+7. **Staff tab:** View all branch staff with their details
+
+---
+
+### 🛒 Test 10 — Staff Dashboard
+
+1. Log in as a Staff member
+2. You land on the **Staff Dashboard → Inventory tab**
+3. See current stock levels; items below reorder threshold highlight in red
+4. If any items are low, a dismissible banner appears at the top of every tab
+5. Click **"Request Stock"** → select item, enter quantity and reason → submit
+6. Switch to the **Sales tab** → click **"Record Sale"** → fill in product, qty, price, payment mode
+7. Log in as Manager and confirm the request appears in the Requests tab
+
+---
+
+### 🏪 Test 11 — Franchisee Reports
+
+1. Log in as Branch Owner → **Reports tab**
+2. Select month/year → **"Generate Report"**
+3. See branch-level: revenue, transactions, royalty owed
+4. Download CSV
+
+---
+
+## 6. Running the Test Suite
+
+```bash
+cd backend
+
+# Make sure venv is active
+venv\Scripts\activate    # Windows
+
+python -m pytest tests/ -v
+```
+
+Expected result:
+```
+test_auth.py::test_login_success              PASSED
+test_auth.py::test_inactive_user_blocked      PASSED
+test_models.py::test_reference_data_seeded    PASSED
+test_models.py::test_hierarchy_creation       PASSED
+test_inventory.py::test_list_stock_items      PASSED
+...
+10 passed, 12 warnings in 3.xx s
+```
+
+---
+
+## 7. Common Issues & Fixes
+
+### Port 5000 already in use (Backend)
+
+**Windows:**
 ```powershell
 Stop-Process -Id (Get-NetTCPConnection -LocalPort 5000).OwningProcess -Force
 ```
-**Fix (Mac/Linux):**
+
+**Mac / Linux:**
 ```bash
 lsof -ti:5000 | xargs kill -9
 ```
 
-### **Issue 2: "Port 3000 already in use" (Frontend)**
-**Fix (Windows):**
+---
+
+### Port 3000 already in use (Frontend)
+
+**Windows:**
 ```powershell
 Stop-Process -Id (Get-NetTCPConnection -LocalPort 3000).OwningProcess -Force
 ```
-**Fix (Mac/Linux):**
+
+**Mac / Linux:**
 ```bash
 lsof -ti:3000 | xargs kill -9
 ```
 
-### **Issue 3: Database seems corrupted / Forgot Passwords**
-**Fix - Hard Reset Database:**
+---
+
+### Database seems wrong / want a clean slate
+
 ```bash
 cd backend
-rm relay.db   # On Windows: del relay.db
-python run.py # Auto-creates fresh database with admin password 'admin123'
+del relay.db           # Windows
+# rm relay.db          (Mac/Linux)
+python run.py          # Re-creates and re-seeds everything
 ```
 
-### **Issue 4: "Module not found" errors**
-**Fix - Reinstall Dependencies:**
-- Backend: `pip install -r requirements.txt`
-- Frontend: `npm install`
+Default admin password resets to `admin123`.
 
 ---
 
-## 🎉 You're All Set!
+### "Module not found" errors
 
-Your Relay Franchise Management System is fully verified, refactored, and ready to impress stakeholders.
+Backend:
+```bash
+cd backend
+venv\Scripts\activate
+pip install -r requirements.txt
+```
 
-**Enjoy your polished prototype! 🚀**
+Frontend:
+```bash
+cd frontend
+npm install
+```
+
+---
+
+### Frontend shows blank page or auth errors after backend restart
+
+The JWT secret resets between runs in development. Log out and log back in — this clears the stale token.
+
+---
+
+### Deactivated user still seems to have access
+
+The token check happens server-side on every request. If a logged-in session was open when the account was deactivated, the next API call will return `403 — Account is inactive` and the frontend will auto-logout. No manual action needed.
+
+---
+
+## 🎉 You're Ready
+
+Every feature is live, every test passes, and the system is ready to demo.
+
+**Relay — Phase 15 Complete | March 2026**

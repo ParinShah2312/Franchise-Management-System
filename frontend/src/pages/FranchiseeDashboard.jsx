@@ -21,6 +21,7 @@ export default function FranchiseeDashboard() {
     metrics, sales, requests, staff,
     updateRequestStatus, appointManager,
     loading, error, pendingRequestsCount, loadData,
+    deactivateUser, activateUser,
     branchSummary, branchSummaryLoading,
     report, reportLoading, reportError,
     selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
@@ -39,7 +40,7 @@ export default function FranchiseeDashboard() {
       case 'requests':
         return <FranchiseeRequests requests={requests} updateRequestStatus={updateRequestStatus} onRefresh={loadData} setToast={setToast} />;
       case 'staff':
-        return <FranchiseeStaff staff={staff} appointManager={appointManager} setToast={setToast} />;
+        return <FranchiseeStaff staff={staff} appointManager={appointManager} setToast={setToast} onDeactivate={deactivateUser} onActivate={activateUser} />;
       case 'reports':
         return (
           <FranchiseeReports

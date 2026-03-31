@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { sanitizePhone } from '../../utils';
 
-export default function FranchiseeStaff({ staff, appointManager, setToast }) {
+export default function FranchiseeStaff({ staff, appointManager, setToast, onDeactivate, onActivate }) {
     const [showManagerModal, setShowManagerModal] = useState(false);
     const [managerSubmitting, setManagerSubmitting] = useState(false);
     const [managerForm, setManagerForm] = useState({
@@ -54,17 +54,90 @@ export default function FranchiseeStaff({ staff, appointManager, setToast }) {
                         <h4 className="text-sm font-medium text-gray-700">Support Staff</h4>
                         <span className="text-xs text-gray-500">{staff.team.length} staff members</span>
                     </div>
-                    <div className="divide-y divide-gray-100">
-                        {staff.team.length === 0 ? (
-                            <p className="px-4 py-6 text-sm text-gray-500">No staff members linked to this branch.</p>
-                        ) : (
-                            staff.team.map((member) => (
-                                <div key={member.user_id} className="px-4 py-3">
-                                    <p className="text-sm font-medium text-gray-800">{member.name}</p>
-                                    <p className="text-sm text-gray-600">{member.email}</p>
-                                </div>
-                            ))
-                        )}
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-100">
+                            <thead className="bg-gray-50/50">
+                                <tr>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {staff.team.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={4} className="px-4 py-6 text-sm text-gray-500 text-center">
+                                            No staff members linked to this branch.
+                                        </td>
+                                    </tr>
+                                ) : (
+                                    staff.team.map((member) => (
+                                        <tr
+                                            key={member.user_id}
+                                            className={member.is_active === false ? 'bg-gray-50' : ''}
+                                        >
+                                            <td className={`px-4 py-3 text-sm font-medium text-gray-800${member.is_active === false ? ' opacity-50' : ''}`}>{member.name}</td>
+                                            <td className={`px-4 py-3 text-sm text-gray-600${member.is_active === false ? ' opacity-50' : ''}`}>{member.email}</td>
+                                            <td className={`px-4 py-3 text-sm${member.is_active === false ? ' opacity-50' : ''}`}>
+                                                <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
+                                                    member.is_active !== false
+                                                        ? 'bg-green-100 text-green-700'
+                                                        : 'bg-gray-100 text-gray-500'
+                                                }`}>
+                                                    {member.is_active !== false ? 'Active' : 'Inactive'}
+                                                </span>
+                                            </td>
+                                            <td className="px-4 py-3 text-right">
+                                                {member.role !== 'BRANCH_OWNER' ? (
+                                                    member.is_active !== false ? (
+                                                        <button
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                const confirmed = window.confirm(
+                                                                    `Deactivate ${member.name}? They will no longer be able to log in.`
+                                                                );
+                                                                if (!confirmed) return;
+                                                                try {
+                                                                    await onDeactivate(member.user_id);
+                                                                    setToast({ message: `${member.name} has been deactivated.`, variant: 'success' });
+                                                                } catch (err) {
+                                                                    setToast({ message: err.message || 'Failed to deactivate user.', variant: 'error' });
+                                                                }
+                                                            }}
+                                                            className="px-3 py-1 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
+                                                        >
+                                                            Deactivate
+                                                        </button>
+                                                    ) : (
+                                                        <button
+                                                            type="button"
+                                                            onClick={async () => {
+                                                                const confirmed = window.confirm(
+                                                                    `Reactivate ${member.name}? They will be able to log in again.`
+                                                                );
+                                                                if (!confirmed) return;
+                                                                try {
+                                                                    await onActivate(member.user_id);
+                                                                    setToast({ message: `${member.name} has been reactivated.`, variant: 'success' });
+                                                                } catch (err) {
+                                                                    setToast({ message: err.message || 'Failed to reactivate user.', variant: 'error' });
+                                                                }
+                                                            }}
+                                                            className="px-3 py-1 text-xs font-semibold text-green-600 border border-green-200 rounded-lg hover:bg-green-50"
+                                                        >
+                                                            Reactivate
+                                                        </button>
+                                                    )
+                                                ) : (
+                                                    <span className="text-gray-400 text-xs">—</span>
+                                                )}
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
                     </div>
                 </div>
             </div>

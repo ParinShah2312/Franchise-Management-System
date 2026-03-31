@@ -79,6 +79,7 @@ def list_branch_staff() -> tuple[list[dict[str, object]], int]:
                 "email": branch.manager.email,
                 "phone": branch.manager.phone,
                 "role": "MANAGER",
+                "is_active": branch.manager.is_active,
             }
         )
 
@@ -90,6 +91,7 @@ def list_branch_staff() -> tuple[list[dict[str, object]], int]:
                 "email": branch.branch_owner.email,
                 "phone": branch.branch_owner.phone,
                 "role": "BRANCH_OWNER",
+                "is_active": branch.branch_owner.is_active,
             }
         )
 
@@ -104,6 +106,7 @@ def list_branch_staff() -> tuple[list[dict[str, object]], int]:
                 "email": assignment.user.email,
                 "phone": assignment.user.phone,
                 "role": role_name,
+                "is_active": assignment.user.is_active,
             }
         )
 
