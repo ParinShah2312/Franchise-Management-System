@@ -54,7 +54,7 @@ def _ensure_supporting_rows() -> dict[str, object]:
 
 
 @application_bp.route("/applications", methods=["GET"])
-@token_required({"SYSTEM_ADMIN", "FRANCHISOR"})
+@token_required({"FRANCHISOR"})
 def list_pending_applications() -> tuple[list[dict[str, object]], int]:
     """Return all pending franchise applications the caller can access."""
 
@@ -126,7 +126,7 @@ def options_pending_applications():
 
 # Changed to PUT to match standard REST conventions for updates
 @application_bp.route("/applications/<int:application_id>/approve", methods=["PUT"])
-@token_required({"SYSTEM_ADMIN"})
+@token_required({"FRANCHISOR"})
 def approve_application(application_id: int) -> tuple[dict[str, object], int]:
     """Approve a pending franchise application and bootstrap a branch."""
 
@@ -142,6 +142,15 @@ def approve_application(application_id: int) -> tuple[dict[str, object], int]:
 
     if not application:
         return jsonify({"error": "Application not found."}), HTTPStatus.NOT_FOUND
+
+    # Ensure the franchisor can only approve applications for their own franchises
+    current_user = getattr(g, "current_user", None)
+    franchisor_id = getattr(current_user, "franchisor_id", None)
+    if franchisor_id and application.franchise and \
+            application.franchise.franchisor_id != franchisor_id:
+        return jsonify(
+            {"error": "You do not have permission to approve this application."}
+        ), HTTPStatus.FORBIDDEN
 
     if not application.branch_owner_user:
         return jsonify(
@@ -221,7 +230,7 @@ def approve_application(application_id: int) -> tuple[dict[str, object], int]:
 
 
 @application_bp.route("/applications/<int:application_id>/reject", methods=["PUT"])
-@token_required({"SYSTEM_ADMIN", "FRANCHISOR"})
+@token_required({"FRANCHISOR"})
 def reject_application(application_id: int) -> tuple[dict[str, object], int]:
     """Reject a pending franchise application with optional notes."""
 

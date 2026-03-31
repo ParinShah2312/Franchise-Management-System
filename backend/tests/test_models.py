@@ -1,3 +1,4 @@
+from app.extensions import db
 from app.models import Franchisor, Franchise, Role, User, Branch
 
 
@@ -59,8 +60,8 @@ def test_franchise_branch_hierarchy(db_session):
 
     assert branch.branch_id is not None
 
-    # Test relationships
-    fetched_franchise = db_session.query(Franchise).get(franchise.franchise_id)
+    # Test relationships — use db.session.get instead of Query.get
+    fetched_franchise = db.session.get(Franchise, franchise.franchise_id)
     assert len(fetched_franchise.branches) == 1
     assert fetched_franchise.branches[0].name == "Main Branch"
 

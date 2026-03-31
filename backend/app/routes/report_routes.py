@@ -2,10 +2,12 @@
 
 from __future__ import annotations
 
-from datetime import date
+from datetime import date, datetime, timezone
 from http import HTTPStatus
 
 from flask import Blueprint, jsonify, request, g
+from ..extensions import db
+from ..models import Report, ReportData
 from ..services.report_service import get_authorized_branch_ids, build_report_summary
 from ..utils.security import token_required
 
@@ -36,8 +38,6 @@ def _period_bounds(year: int, month: int) -> tuple[date, date]:
     return start_date, end_date
 
 
-
-
 def _filter_branch_ids(
     requested_branch_id: int | None,
 ) -> tuple[list[int], tuple[dict[str, object], int] | None]:
@@ -60,12 +60,8 @@ def _filter_branch_ids(
     )
 
 
-
-
-
-
 @report_bp.route("/summary", methods=["GET"])
-@token_required({"SYSTEM_ADMIN", "FRANCHISOR", "BRANCH_OWNER", "MANAGER"})
+@token_required({"FRANCHISOR", "BRANCH_OWNER", "MANAGER"})
 def report_summary() -> tuple[dict[str, object], int]:
     try:
         month, year = _month_year()
@@ -74,34 +70,94 @@ def report_summary() -> tuple[dict[str, object], int]:
 
     start_date, end_date = _period_bounds(year, month)
 
-    _role = getattr(g, 'current_role', None)
-    role_name = getattr(getattr(_role, 'role', None), 'name', None)
+    _role = getattr(g, "current_role", None)
+    role_name = getattr(getattr(_role, "role", None), "name", None)
+    current_user = getattr(g, "current_user", None)
 
+    # ── Build summary data ──────────────────────────────────────────────────
     if role_name == "FRANCHISOR":
         from ..models import Branch, Franchise
-        franchisor = getattr(g, 'current_user', None)
-        if not franchisor:
+        if not current_user:
             return jsonify({"error": "Unauthorized."}), HTTPStatus.UNAUTHORIZED
         franchise = Franchise.query.filter_by(
-            franchisor_id=franchisor.franchisor_id
+            franchisor_id=current_user.franchisor_id
         ).first()
         if not franchise:
             return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
         branch_ids = [
-            b.branch_id for b in Branch.query.filter_by(
-                franchise_id=franchise.franchise_id
-            ).all()
+            b.branch_id
+            for b in Branch.query.filter_by(franchise_id=franchise.franchise_id).all()
         ]
-        franchise_id = franchise.franchise_id
-        return jsonify(
-            build_report_summary(
-                branch_ids, month, year, start_date, end_date,
-                include_royalty=True, franchise_id=franchise_id,
-            )
-        ), HTTPStatus.OK
+        summary_data = build_report_summary(
+            branch_ids, month, year, start_date, end_date,
+            include_royalty=True, franchise_id=franchise.franchise_id,
+        )
+        franchisor_id = current_user.franchisor_id
+        generated_by_user_id = None
+        report_type = "MASTER"
+        report_branch_id = None
     else:
         branch_id_param = request.args.get("branch_id", type=int)
         branch_ids, error = _filter_branch_ids(branch_id_param)
         if error:
             return error
-        return jsonify(build_report_summary(branch_ids, month, year, start_date, end_date)), HTTPStatus.OK
+        summary_data = build_report_summary(
+            branch_ids, month, year, start_date, end_date
+        )
+        # Resolve franchisor_id through the branch's franchise
+        from ..models import Branch, Franchise
+        franchisor_id = None
+        report_branch_id = branch_ids[0] if len(branch_ids) == 1 else None
+        if report_branch_id:
+            branch = db.session.get(Branch, report_branch_id)
+            if branch:
+                franchise = db.session.get(Franchise, branch.franchise_id)
+                if franchise:
+                    franchisor_id = franchise.franchisor_id
+        generated_by_user_id = getattr(current_user, "user_id", None)
+        report_type = "BRANCH" if report_branch_id else "MASTER"
+
+    # ── Persist report record ───────────────────────────────────────────────
+    report_id = None
+    if franchisor_id is not None:
+        try:
+            report_record = Report(
+                generated_by_user_id=generated_by_user_id,
+                franchisor_id=franchisor_id,
+                branch_id=report_branch_id,
+                report_type=report_type,
+                period_start=start_date,
+                period_end=end_date,
+                created_at=datetime.now(timezone.utc),
+            )
+            db.session.add(report_record)
+            db.session.flush()
+
+            # Store key summary metrics as report_data rows
+            data_entries = {
+                "total_sales": str(summary_data.get("total_sales", 0)),
+                "total_expenses": str(summary_data.get("total_expenses", 0)),
+                "profit_loss": str(summary_data.get("profit_loss", 0)),
+                "royalty_configured": str(summary_data.get("royalty_configured", False)),
+                "branch_count": str(len(summary_data.get("branches", []))),
+            }
+            for key, value in data_entries.items():
+                db.session.add(ReportData(
+                    report_id=report_record.report_id,
+                    data_key=key,
+                    data_value=value,
+                ))
+
+            db.session.commit()
+            report_id = report_record.report_id
+        except Exception as exc:
+            db.session.rollback()
+            # Persistence failure must not break the report response
+            import logging
+            logging.getLogger(__name__).warning(
+                "Failed to persist report record: %s", exc
+            )
+
+    # ── Return summary with report_id ───────────────────────────────────────
+    response_data = {"report_id": report_id, **summary_data}
+    return jsonify(response_data), HTTPStatus.OK

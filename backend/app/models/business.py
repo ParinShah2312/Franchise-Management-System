@@ -66,8 +66,8 @@ class Report(db.Model):
         primary_key=True,
         autoincrement=True,
     )
-    generated_by_user_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("users.user_id"), nullable=False
+    generated_by_user_id: Mapped[int | None] = mapped_column(
+        BigInteger, ForeignKey("users.user_id"), nullable=True
     )
     franchisor_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("franchisors.franchisor_id"), nullable=False

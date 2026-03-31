@@ -166,7 +166,7 @@ def get_branch_metrics() -> tuple[dict[str, object], int]:
 
 
 @dashboard_bp.route("/metrics", methods=["GET"])
-@token_required({"SYSTEM_ADMIN"})
+@token_required({"FRANCHISOR"})
 def get_dashboard_metrics() -> tuple[dict[str, object], int]:
     """Aggregate high-level business metrics for the admin dashboard."""
 
@@ -210,7 +210,7 @@ def get_dashboard_metrics() -> tuple[dict[str, object], int]:
 
 
 @dashboard_bp.route("/recent-sales", methods=["GET"])
-@token_required({"SYSTEM_ADMIN"})
+@token_required({"FRANCHISOR"})
 def get_recent_sales() -> tuple[list[dict[str, object]], int]:
     """Return the latest sales across all franchises for admin visibility."""
 

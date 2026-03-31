@@ -18,6 +18,7 @@ from types import SimpleNamespace
 from flask import current_app, g, jsonify, request
 from sqlalchemy.orm import joinedload
 
+from ..extensions import db
 from ..models import Franchisor, User, UserRole
 
 
@@ -154,7 +155,7 @@ def _load_principal_from_token(token: str | None):
 
     # Path A: Franchisor (Brand Owner)
     if user_type == "franchisor":
-        principal = Franchisor.query.get(user_id)
+        principal = db.session.get(Franchisor, user_id)
         if not principal:
             return None, None, None, None
 
@@ -168,9 +169,10 @@ def _load_principal_from_token(token: str | None):
         return principal, role_stub, "FRANCHISOR", user_type
 
     # Path B: User (Owner, Manager, Staff)
-    user = User.query.options(
-        joinedload(User.user_roles).joinedload(UserRole.role)
-    ).get(user_id)
+    user = db.session.get(
+        User, user_id,
+        options=[joinedload(User.user_roles).joinedload(UserRole.role)]
+    )
     if not user:
         return None, None, None, None
 
@@ -225,11 +227,7 @@ def token_required(allowed_roles: Iterable[str] | None = None):
 
             # Role Permission Check
             if allowed_set:
-                # Special case: 'SYSTEM_ADMIN' in old code is now 'FRANCHISOR'
-                # If allowed_roles has 'SYSTEM_ADMIN' but user is 'FRANCHISOR', allow it.
                 is_allowed = role_name in allowed_set
-                if "SYSTEM_ADMIN" in allowed_set and role_name == "FRANCHISOR":
-                    is_allowed = True
 
                 if not is_allowed:
                     return (

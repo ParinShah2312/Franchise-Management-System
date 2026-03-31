@@ -37,13 +37,6 @@ def _ensure_branch_scope(branch_id: int | None) -> int | tuple[dict[str, object]
     except PermissionError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
 
-    if role.role.name == "SYSTEM_ADMIN":
-        if branch_id is None:
-            return jsonify(
-                {"error": "branch_id is required for this operation."}
-            ), HTTPStatus.BAD_REQUEST
-        return branch_id
-
     if role.scope_type == "BRANCH":
         return role.scope_id
 
@@ -52,7 +45,7 @@ def _ensure_branch_scope(branch_id: int | None) -> int | tuple[dict[str, object]
             return jsonify(
                 {"error": "branch_id is required for this operation."}
             ), HTTPStatus.BAD_REQUEST
-        branch = Branch.query.get(branch_id)
+        branch = db.session.get(Branch, branch_id)
         if not branch or branch.franchise_id != role.scope_id:
             return jsonify(
                 {"error": "Branch not accessible for this franchise scope."}
@@ -134,7 +127,10 @@ def create_sale() -> tuple[dict[str, object], int]:
     if isinstance(branch_id_result, tuple):
         return branch_id_result
 
-    branch = Branch.query.options(joinedload(Branch.franchise)).get(branch_id_result)
+    branch = db.session.get(
+        Branch, branch_id_result,
+        options=[joinedload(Branch.franchise)]
+    )
     if not branch:
         return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
 
@@ -178,7 +174,7 @@ def create_sale() -> tuple[dict[str, object], int]:
                 {"error": "Each item requires a product_id."}
             ), HTTPStatus.BAD_REQUEST
 
-        product = Product.query.get(product_id)
+        product = db.session.get(Product, product_id)
         if not product or product.franchise_id != branch.franchise_id:
             return jsonify(
                 {"error": f"Product {product_id} is not available for this branch."}
@@ -251,14 +247,15 @@ def create_sale() -> tuple[dict[str, object], int]:
         )
         db.session.rollback()
 
-    sale = Sale.query.options(joinedload(Sale.items).joinedload(SaleItem.product)).get(
-        sale.sale_id
+    sale = db.session.get(
+        Sale, sale.sale_id,
+        options=[joinedload(Sale.items).joinedload(SaleItem.product)]
     )
     return jsonify(_serialize_sale(sale)), HTTPStatus.CREATED
 
 
 @sales_bp.route("", methods=["GET"])
-@token_required({"SYSTEM_ADMIN", "BRANCH_OWNER", "MANAGER", "STAFF"})
+@token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
 def list_sales() -> tuple[list[dict[str, object]], int]:
     branch_id_param = request.args.get("branch_id", type=int)
     if branch_id_param is not None:
@@ -279,14 +276,10 @@ def list_sales() -> tuple[list[dict[str, object]], int]:
         joinedload(Sale.items).joinedload(SaleItem.product)
     ).order_by(Sale.sale_datetime.desc())
 
-    if role.role.name == "SYSTEM_ADMIN":
-        if branch_id_param:
-            query = query.filter(Sale.branch_id == branch_id_param)
-    else:
-        branch_result = _ensure_branch_scope(branch_id_param)
-        if isinstance(branch_result, tuple):
-            return branch_result
-        query = query.filter(Sale.branch_id == branch_result)
+    branch_result = _ensure_branch_scope(branch_id_param)
+    if isinstance(branch_result, tuple):
+        return branch_result
+    query = query.filter(Sale.branch_id == branch_result)
 
     records = query.all()
     return jsonify([_serialize_sale(record) for record in records]), HTTPStatus.OK
@@ -300,7 +293,7 @@ def list_products() -> tuple[list[dict[str, object]], int]:
     if isinstance(branch_result, tuple):
         return branch_result
 
-    branch = Branch.query.get(branch_result)
+    branch = db.session.get(Branch, branch_result)
     if not branch:
         return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
 

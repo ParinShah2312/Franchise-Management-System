@@ -277,7 +277,7 @@ Relay/
 
 | Role | Email | Password |
 |---|---|---|
-| Franchisor | `admin@relay.com` | `admin123` |
+| Franchisor | `admin@system.com` | `admin123` |
 | Branch Owner | *(created via application approval)* | *(set during registration)* |
 | Manager | *(created by branch owner)* | *(set during creation, reset on first login)* |
 | Staff | *(created via staff registration)* | *(set during registration)* |

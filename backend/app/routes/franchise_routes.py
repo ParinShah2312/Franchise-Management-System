@@ -57,7 +57,7 @@ def list_active_branches() -> tuple[list[dict[str, object]], int]:
 
 
 @franchise_bp.route("/<int:franchise_id>/menu", methods=["POST"])
-@token_required({"FRANCHISOR", "SYSTEM_ADMIN"})
+@token_required({"FRANCHISOR"})
 def upload_franchise_menu(franchise_id: int) -> tuple[dict[str, object], int]:
     franchise = Franchise.query.get(franchise_id)
     if not franchise:
@@ -126,7 +126,7 @@ def upload_franchise_menu(franchise_id: int) -> tuple[dict[str, object], int]:
 
 
 @franchise_bp.route("/network", methods=["GET"])
-@token_required({"SYSTEM_ADMIN", "FRANCHISOR"})
+@token_required({"FRANCHISOR"})
 def list_franchise_network() -> tuple[list[dict[str, object]], int]:
     """Return a hierarchical view of franchises and their branches."""
 

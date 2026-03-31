@@ -120,10 +120,10 @@ These accounts are auto-seeded the very first time `python run.py` runs:
 
 | Role | Email | Password | Access |
 |---|---|---|---|
-| **Franchisor** | `admin@relay.com` | `admin123` | Full admin dashboard |
-| **Branch Owner** | *(register via application form)* | *(your choice)* | Franchisee dashboard |
-| **Manager** | *(created by branch owner)* | *(temporary, reset on first login)* | Manager dashboard |
-| **Staff** | *(register via staff registration)* | *(your choice)* | Staff dashboard |
+| **Franchisor** | `admin@system.com` | `admin123` | Full admin dashboard |
+| **Branch Owner** | `rahul@gmail.com` | `rahul123` | Franchisee dashboard |
+| **Manager** | `mcd.manager@mcd.com` | `manager123` | Manager dashboard |
+| **Staff** | `relay.staff@relay.com` | `staff123` | Staff dashboard |
 
 > **Tip:** To reset everything and start fresh, delete `backend/relay.db` and restart `python run.py`. All seed data regenerates automatically.
 
@@ -138,7 +138,7 @@ Work through these tests in order to see every feature in the system.
 ### 🔐 Test 1 — Franchisor Login & Overview Dashboard
 
 1. Go to `http://localhost:3000`
-2. Log in: `admin@relay.com` / `admin123`
+2. Log in: `admin@system.com` / `admin123`
 3. You land on the **Franchisor Dashboard → Overview tab**
 4. You should see metrics cards: Total Revenue, Active Branches, Total Franchises, Pending Applications
 5. Click **Refresh Data** — metrics reload from the live API

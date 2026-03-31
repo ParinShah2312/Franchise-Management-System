@@ -48,7 +48,7 @@ def _allowed_branch_id(
         return jsonify({"error": "branch_id is required."}), HTTPStatus.BAD_REQUEST
 
     if role.scope_type == "FRANCHISE":
-        branch = Branch.query.get(branch_id)
+        branch = db.session.get(Branch, branch_id)
         if not branch or branch.franchise_id != role.scope_id:
             return jsonify(
                 {"error": "Branch not accessible for this franchise scope."}
@@ -122,13 +122,14 @@ def create_transaction() -> tuple[dict[str, object], int]:
     if not stock_item_id:
         return jsonify({"error": "stock_item_id is required."}), HTTPStatus.BAD_REQUEST
 
-    stock_item = StockItem.query.options(joinedload(StockItem.franchise)).get(
-        stock_item_id
+    stock_item = db.session.get(
+        StockItem, stock_item_id,
+        options=[joinedload(StockItem.franchise)]
     )
     if not stock_item:
         return jsonify({"error": "Stock item not found."}), HTTPStatus.BAD_REQUEST
 
-    branch = Branch.query.get(result)
+    branch = db.session.get(Branch, result)
     if not branch or branch.franchise_id != stock_item.franchise_id:
         return jsonify(
             {"error": "Stock item does not belong to this branch's franchise."}
@@ -172,9 +173,10 @@ def create_transaction() -> tuple[dict[str, object], int]:
 
     db.session.commit()
 
-    refreshed_record = BranchInventory.query.options(
-        joinedload(BranchInventory.stock_item).joinedload(StockItem.unit)
-    ).get(inventory_record.branch_inventory_id)
+    refreshed_record = db.session.get(
+        BranchInventory, inventory_record.branch_inventory_id,
+        options=[joinedload(BranchInventory.stock_item).joinedload(StockItem.unit)]
+    )
 
     if not refreshed_record:
         refreshed_record = inventory_record
@@ -218,11 +220,11 @@ def record_stock_delivery() -> tuple[dict[str, object], int]:
             {"error": "quantity must be greater than zero."}
         ), HTTPStatus.BAD_REQUEST
 
-    branch = Branch.query.get(result)
+    branch = db.session.get(Branch, result)
     if not branch:
         return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
 
-    stock_item = StockItem.query.get(stock_item_id)
+    stock_item = db.session.get(StockItem, stock_item_id)
     if not stock_item or stock_item.franchise_id != branch.franchise_id:
         return jsonify(
             {"error": "Stock item is not available for this branch."}
@@ -244,9 +246,10 @@ def record_stock_delivery() -> tuple[dict[str, object], int]:
 
     db.session.commit()
 
-    refreshed_record = BranchInventory.query.options(
-        joinedload(BranchInventory.stock_item).joinedload(StockItem.unit)
-    ).get(inventory_record.branch_inventory_id)
+    refreshed_record = db.session.get(
+        BranchInventory, inventory_record.branch_inventory_id,
+        options=[joinedload(BranchInventory.stock_item).joinedload(StockItem.unit)]
+    )
 
     if not refreshed_record:
         refreshed_record = inventory_record
@@ -270,7 +273,7 @@ def list_stock_items() -> tuple[list[dict[str, object]], int]:
     if not role or role.scope_type != "BRANCH":
         return jsonify({"error": "Branch-scoped role required."}), HTTPStatus.FORBIDDEN
 
-    branch = Branch.query.get(role.scope_id)
+    branch = db.session.get(Branch, role.scope_id)
     if not branch:
         return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
 
@@ -329,11 +332,11 @@ def create_branch_inventory() -> tuple[dict[str, object], int]:
             {"error": "quantity cannot be negative."}
         ), HTTPStatus.BAD_REQUEST
 
-    branch = Branch.query.get(result)
+    branch = db.session.get(Branch, result)
     if not branch:
         return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
 
-    stock_item = StockItem.query.get(stock_item_id)
+    stock_item = db.session.get(StockItem, stock_item_id)
     if not stock_item or stock_item.franchise_id != branch.franchise_id:
         return jsonify(
             {"error": "Stock item is not available for this branch."}
@@ -413,7 +416,7 @@ def create_stock_item() -> tuple[dict[str, object], int]:
     except (TypeError, ValueError):
         return jsonify({"error": "unit_id must be numeric."}), HTTPStatus.BAD_REQUEST
 
-    unit = Unit.query.get(unit_id)
+    unit = db.session.get(Unit, unit_id)
     if not unit:
         return jsonify({"error": "Invalid unit reference."}), HTTPStatus.BAD_REQUEST
 
