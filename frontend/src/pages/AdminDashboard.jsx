@@ -10,6 +10,7 @@ import {
   AdminApplications,
   AdminCatalog,
   AdminRoyalty,
+  AdminReports,
 } from '../components/admin';
 
 const TABS = [
@@ -18,6 +19,7 @@ const TABS = [
   { key: 'applications', label: 'Applications' },
   { key: 'catalog', label: 'Catalog' },
   { key: 'royalty', label: 'Royalty' },
+  { key: 'reports', label: 'Reports' },
 ];
 
 export default function AdminDashboard() {
@@ -42,6 +44,9 @@ export default function AdminDashboard() {
     fetchDashboard,
     config, configLoading, configured, saveConfig, saving, saveError,
     summary, summaryLoading, summaryError, fetchSummary,
+    report, reportLoading, reportError,
+    selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
+    generateReport, downloadCSV,
   } = useAdminDashboard();
 
   const renderTabContent = () => {
@@ -81,6 +86,19 @@ export default function AdminDashboard() {
         summaryLoading={summaryLoading}
         summaryError={summaryError}
         fetchSummary={fetchSummary}
+      />
+    );
+    if (activeTab === 'reports') return (
+      <AdminReports
+        report={report}
+        reportLoading={reportLoading}
+        reportError={reportError}
+        selectedMonth={selectedMonth}
+        selectedYear={selectedYear}
+        onMonthChange={setSelectedMonth}
+        onYearChange={setSelectedYear}
+        onGenerate={generateReport}
+        onDownloadCSV={downloadCSV}
       />
     );
     return <AdminApplications applications={applications} onOpenApplication={openApplication} />;

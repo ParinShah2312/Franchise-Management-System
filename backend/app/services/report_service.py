@@ -132,6 +132,8 @@ def build_report_summary(
     year: int,
     start_date: date,
     end_date: date,
+    include_royalty: bool = False,
+    franchise_id: int | None = None,
 ) -> dict:
     """
     Build a complete report summary dict for the given branches and period.
@@ -142,14 +144,49 @@ def build_report_summary(
         year: Report year
         start_date: Inclusive start date of the period
         end_date: Exclusive end date of the period
+        include_royalty: When True, merge royalty split data into each branch entry
+        franchise_id: Required when include_royalty=True
 
     Returns:
         Dict with keys: month, year, branch_ids, total_sales,
-        total_expenses, profit_loss, branches
+        total_expenses, profit_loss, royalty_configured, branches
     """
     total_sales = get_sales_total(branch_ids, start_date, end_date)
     total_expenses = Decimal("0")  # Expense tracking not yet implemented
     profit = total_sales - total_expenses
+
+    branches = get_branch_sales_breakdown(branch_ids, start_date, end_date)
+    royalty_configured = False
+
+    if include_royalty and franchise_id is not None:
+        from .royalty_service import get_royalty_summary  # local import to avoid circular
+
+        royalty_rows = get_royalty_summary(franchise_id, month, year)
+        royalty_by_branch: dict[int, dict] = {
+            row["branch_id"]: row for row in royalty_rows
+        }
+
+        enriched_branches = []
+        for branch in branches:
+            rdata = royalty_by_branch.get(branch["branch_id"])
+            if rdata and rdata.get("royalty_config_id") is not None:
+                enriched_branches.append({
+                    **branch,
+                    "franchisor_earned": rdata["franchisor_earned"],
+                    "branch_owner_earned": rdata["branch_owner_earned"],
+                    "franchisor_cut_pct": rdata["franchisor_cut_pct"],
+                    "royalty_configured": True,
+                })
+                royalty_configured = True
+            else:
+                enriched_branches.append({
+                    **branch,
+                    "franchisor_earned": 0.0,
+                    "branch_owner_earned": 0.0,
+                    "franchisor_cut_pct": 0.0,
+                    "royalty_configured": False,
+                })
+        branches = enriched_branches
 
     return {
         "month": month,
@@ -158,5 +195,6 @@ def build_report_summary(
         "total_sales": float(total_sales),
         "total_expenses": float(total_expenses),
         "profit_loss": float(profit),
-        "branches": get_branch_sales_breakdown(branch_ids, start_date, end_date),
+        "royalty_configured": royalty_configured,
+        "branches": branches,
     }

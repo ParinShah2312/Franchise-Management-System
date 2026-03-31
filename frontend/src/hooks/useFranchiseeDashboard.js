@@ -4,6 +4,7 @@ import { useSales } from './useSales';
 import { useRequests } from './useRequests';
 import { useFranchiseStaff } from './useFranchiseStaff';
 import { useRoyalty } from './useRoyalty';
+import { useReport } from './useReport';
 
 export function useFranchiseeDashboard(branchId) {
   const { metrics, loading: metricsLoading, error: metricsError, refreshMetrics } = useFranchiseMetrics(branchId);
@@ -17,6 +18,12 @@ export function useFranchiseeDashboard(branchId) {
     branchSummaryError,
     fetchBranchSummary,
   } = useRoyalty();
+
+  const {
+    report, reportLoading, reportError,
+    selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
+    generateReport, downloadCSV,
+  } = useReport();
 
   // Fetch branch royalty summary automatically when branchId is ready
   useEffect(() => {
@@ -47,5 +54,9 @@ export function useFranchiseeDashboard(branchId) {
     staff, staffLoading, staffError, appointManager, refreshStaff,
     loading, error, pendingRequestsCount, loadData,
     branchSummary, branchSummaryLoading, branchSummaryError, fetchBranchSummary,
+    // Reports
+    report, reportLoading, reportError,
+    selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
+    generateReport, downloadCSV,
   };
 }

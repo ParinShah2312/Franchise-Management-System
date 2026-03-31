@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { api } from '../api';
 import { useCatalog } from './useCatalog';
 import { useRoyalty } from './useRoyalty';
+import { useReport } from './useReport';
 
 export function useAdminDashboard() {
   const [activeTab, setActiveTab] = useState('overview');
@@ -27,6 +28,12 @@ export function useAdminDashboard() {
     summary, summaryLoading, summaryError, fetchSummary,
     saveConfig, saving, saveError,
   } = useRoyalty();
+
+  const {
+    report, reportLoading, reportError,
+    selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
+    generateReport, downloadCSV,
+  } = useReport();
 
   const [modalApplication, setModalApplication] = useState(null);
   const [actionState, setActionState] = useState({ id: null, type: null });
@@ -214,5 +221,9 @@ export function useAdminDashboard() {
     config, configLoading, configured, refreshConfig,
     summary, summaryLoading, summaryError, fetchSummary,
     saveConfig, saving, saveError,
+    // Reports
+    report, reportLoading, reportError,
+    selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
+    generateReport, downloadCSV,
   };
 }

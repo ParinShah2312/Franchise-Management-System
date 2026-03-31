@@ -8,6 +8,7 @@ import Tabs from '../components/ui/Tabs';
 import FranchiseeOverview from '../components/franchisee/FranchiseeOverview';
 import FranchiseeRequests from '../components/franchisee/FranchiseeRequests';
 import FranchiseeStaff from '../components/franchisee/FranchiseeStaff';
+import FranchiseeReports from '../components/franchisee/FranchiseeReports';
 
 export default function FranchiseeDashboard() {
   const { user, getBranchId, logout } = useAuth();
@@ -21,12 +22,16 @@ export default function FranchiseeDashboard() {
     updateRequestStatus, appointManager,
     loading, error, pendingRequestsCount, loadData,
     branchSummary, branchSummaryLoading,
+    report, reportLoading, reportError,
+    selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
+    generateReport, downloadCSV,
   } = useFranchiseeDashboard(branchId);
 
   const TABS = [
     { key: 'overview', label: 'Overview' },
     { key: 'requests', label: 'Stock Requests', badge: pendingRequestsCount > 0 ? pendingRequestsCount : null },
     { key: 'staff', label: 'My Staff' },
+    { key: 'reports', label: 'Reports' },
   ];
 
   const renderContent = () => {
@@ -35,6 +40,20 @@ export default function FranchiseeDashboard() {
         return <FranchiseeRequests requests={requests} updateRequestStatus={updateRequestStatus} onRefresh={loadData} setToast={setToast} />;
       case 'staff':
         return <FranchiseeStaff staff={staff} appointManager={appointManager} setToast={setToast} />;
+      case 'reports':
+        return (
+          <FranchiseeReports
+            report={report}
+            reportLoading={reportLoading}
+            reportError={reportError}
+            selectedMonth={selectedMonth}
+            selectedYear={selectedYear}
+            onMonthChange={setSelectedMonth}
+            onYearChange={setSelectedYear}
+            onGenerate={generateReport}
+            onDownloadCSV={downloadCSV}
+          />
+        );
       case 'overview':
       default:
         return <FranchiseeOverview metrics={metrics} sales={sales} onRefresh={loadData} branchSummary={branchSummary} branchSummaryLoading={branchSummaryLoading} />;

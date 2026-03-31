@@ -65,7 +65,7 @@ def _filter_branch_ids(
 
 
 @report_bp.route("/summary", methods=["GET"])
-@token_required({"SYSTEM_ADMIN", "BRANCH_OWNER", "MANAGER"})
+@token_required({"SYSTEM_ADMIN", "FRANCHISOR", "BRANCH_OWNER", "MANAGER"})
 def report_summary() -> tuple[dict[str, object], int]:
     try:
         month, year = _month_year()
@@ -74,9 +74,34 @@ def report_summary() -> tuple[dict[str, object], int]:
 
     start_date, end_date = _period_bounds(year, month)
 
-    branch_id_param = request.args.get("branch_id", type=int)
-    branch_ids, error = _filter_branch_ids(branch_id_param)
-    if error:
-        return error
+    _role = getattr(g, 'current_role', None)
+    role_name = getattr(getattr(_role, 'role', None), 'name', None)
 
-    return jsonify(build_report_summary(branch_ids, month, year, start_date, end_date)), HTTPStatus.OK
+    if role_name == "FRANCHISOR":
+        from ..models import Branch, Franchise
+        franchisor = getattr(g, 'current_user', None)
+        if not franchisor:
+            return jsonify({"error": "Unauthorized."}), HTTPStatus.UNAUTHORIZED
+        franchise = Franchise.query.filter_by(
+            franchisor_id=franchisor.franchisor_id
+        ).first()
+        if not franchise:
+            return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
+        branch_ids = [
+            b.branch_id for b in Branch.query.filter_by(
+                franchise_id=franchise.franchise_id
+            ).all()
+        ]
+        franchise_id = franchise.franchise_id
+        return jsonify(
+            build_report_summary(
+                branch_ids, month, year, start_date, end_date,
+                include_royalty=True, franchise_id=franchise_id,
+            )
+        ), HTTPStatus.OK
+    else:
+        branch_id_param = request.args.get("branch_id", type=int)
+        branch_ids, error = _filter_branch_ids(branch_id_param)
+        if error:
+            return error
+        return jsonify(build_report_summary(branch_ids, month, year, start_date, end_date)), HTTPStatus.OK

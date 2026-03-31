@@ -5,6 +5,7 @@ export { default as AdminNetwork } from './AdminNetwork';
 export { default as AdminApplications } from './AdminApplications';
 export { default as AdminCatalog } from './AdminCatalog';
 export { default as AdminRoyalty } from './AdminRoyalty';
+export { default as AdminReports } from './AdminReports';
 export { default as CatalogStockItems } from './CatalogStockItems';
 export { default as CatalogProductRecipes } from './CatalogProductRecipes';
 export { default as CatalogAddStockItemModal } from './CatalogAddStockItemModal';
