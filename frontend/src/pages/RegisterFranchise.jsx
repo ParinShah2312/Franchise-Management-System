@@ -16,7 +16,8 @@ const initialState = {
   name: '',
   phone: '',
   franchise_id: '',
-  proposed_location: '',
+  state: '',
+  city: '',
   investment_capacity: '',
   business_experience: '',
   reason: '',
@@ -83,6 +84,14 @@ export default function RegisterFranchise() {
     setFormState((prev) => ({ ...prev, phone: sanitizePhone(event.target.value) }));
   };
 
+  const handleStateChange = (event) => {
+    setFormState((prev) => ({ ...prev, state: event.target.value, city: '' }));
+  };
+
+  const handleCityChange = (event) => {
+    setFormState((prev) => ({ ...prev, city: event.target.value }));
+  };
+
   const handleFileChange = (event) => {
     const file = event.target.files?.[0] || null;
     setApplicationFile(file);
@@ -117,8 +126,8 @@ export default function RegisterFranchise() {
       errors.franchise_id = 'Please choose a valid brand option.';
     }
 
-    if (!formState.proposed_location.trim()) {
-      errors.proposed_location = 'Proposed location is required.';
+    if (!formState.state || !formState.city) {
+      errors.proposed_location = 'Please select both a state and city.';
     }
 
     if (!applicationFile) {
@@ -164,7 +173,7 @@ export default function RegisterFranchise() {
       submission.append('name', formState.name.trim());
       submission.append('phone', formState.phone.trim());
       submission.append('franchise_id', String(formState.franchise_id));
-      submission.append('proposed_location', formState.proposed_location.trim());
+      submission.append('proposed_location', `${formState.city}, ${formState.state}`);
       submission.append('investment_capacity', formState.investment_capacity.trim());
       submission.append('business_experience', formState.business_experience.trim());
       submission.append('reason', formState.reason.trim());
@@ -225,13 +234,16 @@ export default function RegisterFranchise() {
 
           <FranchiseDetailsSection
             franchiseId={formState.franchise_id}
-            proposedLocation={formState.proposed_location}
+            state={formState.state}
+            city={formState.city}
             brandOptions={brandOptions}
             loadingBrands={loadingBrands}
             brandsError={brandsError}
             applicationFile={applicationFile}
             formErrors={formErrors}
             onChange={handleChange}
+            onStateChange={handleStateChange}
+            onCityChange={handleCityChange}
             onFileChange={handleFileChange}
             fileInputRef={fileInputRef}
           />
@@ -242,6 +254,7 @@ export default function RegisterFranchise() {
             reason={formState.reason}
             formErrors={formErrors}
             onChange={handleChange}
+            selectedBrandName={brandOptions.find(b => String(b.id) === String(formState.franchise_id))?.name || null}
           />
 
           {error ? (

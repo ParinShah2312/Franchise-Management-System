@@ -41,5 +41,9 @@ export function useStaff(branchId) {
         await fetchStaff();
     };
 
-    return { staff, loading, error, addStaff, refreshStaff: fetchStaff, deactivateUser, activateUser };
+    const forceResetUser = async (userId) => {
+        await api.put(`/users/${userId}/force-reset`);
+    };
+
+    return { staff, loading, error, addStaff, refreshStaff: fetchStaff, deactivateUser, activateUser, forceResetUser };
 }

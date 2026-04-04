@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { formatDateTime, formatNumber } from '../../utils';
+import { formatDateTime, formatNumber, formatINR } from '../../utils';
 
 export default function FranchiseeRequests({ requests, updateRequestStatus, onRefresh, setToast }) {
     const [requestAction, setRequestAction] = useState({ id: null, type: null });
@@ -63,11 +63,28 @@ export default function FranchiseeRequests({ requests, updateRequestStatus, onRe
                                         {formatDateTime(request.created_at) || '—'}
                                     </td>
                                     <td className="px-6 py-4 text-sm text-gray-500">
-                                        {request.items.map((item) => (
-                                            <div key={item.request_item_id}>
-                                                {item.stock_item_name || 'Item'} – {formatNumber(item.requested_quantity)}
-                                            </div>
-                                        ))}
+                                        <div className="space-y-1">
+                                            {request.items.map((item) => {
+                                                const lineTotal = item.estimated_unit_cost != null
+                                                    ? item.requested_quantity * item.estimated_unit_cost
+                                                    : null;
+                                                return (
+                                                    <div key={item.request_item_id} className="text-xs text-gray-600">
+                                                        <span className="font-medium">{item.stock_item_name || 'Item'}</span>
+                                                        {' · '}
+                                                        <span>{formatNumber(item.requested_quantity)} {item.unit_name || 'units'}</span>
+                                                        {item.estimated_unit_cost != null && (
+                                                            <>
+                                                                {' · '}
+                                                                <span>{formatINR(item.estimated_unit_cost)}/unit</span>
+                                                                {' · '}
+                                                                <span className="font-medium text-gray-800">{formatINR(lineTotal)}</span>
+                                                            </>
+                                                        )}
+                                                    </div>
+                                                );
+                                            })}
+                                        </div>
                                     </td>
                                     <td className="px-6 py-4 text-sm font-medium">
                                         {request.status}

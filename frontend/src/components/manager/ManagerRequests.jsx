@@ -16,6 +16,13 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
 
     const handleCreateRequest = async (event) => {
         event.preventDefault();
+        
+        if (requestForm.estimated_unit_cost === '') {
+            setRequestSubmitting(false);
+            setToast({ message: 'Unit cost is required.', variant: 'error' });
+            return;
+        }
+
         setRequestSubmitting(true);
 
         try {
@@ -167,11 +174,12 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
 
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="manager_request_cost">
-                                    Estimated Unit Cost
+                                    Unit Cost (₹)*
                                 </label>
                                 <input
                                     id="manager_request_cost"
                                     type="number"
+                                    required
                                     min={0}
                                     step="0.01"
                                     value={requestForm.estimated_unit_cost}
@@ -179,7 +187,7 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
                                         setRequestForm((prev) => ({ ...prev, estimated_unit_cost: event.target.value }))
                                     }
                                     className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-                                    placeholder="Optional"
+                                    placeholder="e.g. 25.00"
                                 />
                             </div>
 

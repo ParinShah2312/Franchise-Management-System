@@ -79,6 +79,7 @@ def _serialize_request(request_obj: StockPurchaseRequest) -> dict[str, object]:
                 "request_item_id": item.request_item_id,
                 "stock_item_id": item.stock_item_id,
                 "stock_item_name": item.stock_item.name if item.stock_item else None,
+                "unit_name": item.stock_item.unit.unit_name if item.stock_item and item.stock_item.unit else None,
                 "requested_quantity": float(item.requested_quantity),
                 "estimated_unit_cost": float(item.estimated_unit_cost)
                 if item.estimated_unit_cost is not None
@@ -194,7 +195,7 @@ def create_request() -> tuple[dict[str, object], int]:
     request_record = StockPurchaseRequest.query.options(
         joinedload(StockPurchaseRequest.items).joinedload(
             StockPurchaseRequestItem.stock_item
-        ),
+        ).joinedload(StockItem.unit),
         joinedload(StockPurchaseRequest.status),
     ).get(request_record.request_id)
 
@@ -238,7 +239,7 @@ def list_requests() -> tuple[list[dict[str, object]], int]:
         StockPurchaseRequest.query.options(
             joinedload(StockPurchaseRequest.items).joinedload(
                 StockPurchaseRequestItem.stock_item
-            ),
+            ).joinedload(StockItem.unit),
             joinedload(StockPurchaseRequest.status),
         )
         .filter(StockPurchaseRequest.branch_id == branch_id)
@@ -316,7 +317,7 @@ def approve_request(request_id: int) -> tuple[dict[str, object], int]:
     record = StockPurchaseRequest.query.options(
         joinedload(StockPurchaseRequest.items).joinedload(
             StockPurchaseRequestItem.stock_item
-        ),
+        ).joinedload(StockItem.unit),
         joinedload(StockPurchaseRequest.status),
     ).get(record.request_id)
 
@@ -359,7 +360,7 @@ def reject_request(request_id: int) -> tuple[dict[str, object], int]:
     record = StockPurchaseRequest.query.options(
         joinedload(StockPurchaseRequest.items).joinedload(
             StockPurchaseRequestItem.stock_item
-        ),
+        ).joinedload(StockItem.unit),
         joinedload(StockPurchaseRequest.status),
     ).get(record.request_id)
 

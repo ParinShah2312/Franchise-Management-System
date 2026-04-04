@@ -8,7 +8,7 @@ const initialStaffForm = {
     password: '',
 };
 
-export default function ManagerStaff({ staff, addStaff, setToast }) {
+export default function ManagerStaff({ staff, addStaff, setToast, onForceReset }) {
     const [showAddStaffModal, setShowAddStaffModal] = useState(false);
     const [staffForm, setStaffForm] = useState(initialStaffForm);
     const [staffErrors, setStaffErrors] = useState({});
@@ -44,10 +44,13 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
         }
     };
 
+    const branchOwner = staff.find((member) => member.role === 'BRANCH_OWNER');
+    const team = staff.filter((member) => member.role !== 'BRANCH_OWNER' && member.role !== 'MANAGER');
+
     return (
         <div>
-            <div className="bg-white border border-gray-200 rounded-xl">
-                <div className="flex items-center justify-between px-6 py-4 border-b border-gray-100">
+            <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
+                <div className="flex items-center justify-between">
                     <div>
                         <h3 className="text-lg font-semibold text-gray-800">My Staff</h3>
                         <p className="text-sm text-gray-500">Team members assigned to your branch.</p>
@@ -64,35 +67,80 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
                         Add Staff
                     </button>
                 </div>
-                <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
-                            <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Phone</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                            </tr>
-                        </thead>
-                        <tbody className="bg-white divide-y divide-gray-100">
-                            {staff.length === 0 ? (
+
+                <div className="border border-gray-200 rounded-lg">
+                    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50">
+                        <h4 className="text-sm font-medium text-gray-700">Branch Owner</h4>
+                    </div>
+                    <div className="px-4 py-4">
+                        {branchOwner ? (
+                            <div>
+                                <p className="text-sm font-semibold text-gray-800">{branchOwner.name}</p>
+                                <p className="text-sm text-gray-600">{branchOwner.email}</p>
+                                <p className="text-sm text-gray-500">{branchOwner.phone || '—'}</p>
+                            </div>
+                        ) : (
+                            <p className="text-sm text-gray-500">Owner information not available.</p>
+                        )}
+                    </div>
+                </div>
+
+                <div className="border border-gray-200 rounded-lg">
+                    <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
+                        <h4 className="text-sm font-medium text-gray-700">Support Staff</h4>
+                        <span className="text-xs text-gray-500">{team.length} staff members</span>
+                    </div>
+                    <div className="overflow-x-auto">
+                        <table className="min-w-full divide-y divide-gray-100">
+                            <thead className="bg-gray-50/50">
                                 <tr>
-                                    <td colSpan={4} className="px-4 py-8 text-center text-gray-500 text-sm">
-                                        No staff members added yet.
-                                    </td>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Phone</th>
+                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
-                            ) : (
-                                staff.map((member) => (
-                                    <tr key={member.id}>
-                                        <td className="px-4 py-3 text-sm text-gray-800">{member.name}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-600">{member.email}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-500">{member.phone || '—'}</td>
-                                        <td className="px-4 py-3 text-sm font-medium text-gray-700">{formatRole(member.role || 'STAFF')}</td>
+                            </thead>
+                            <tbody className="bg-white divide-y divide-gray-100">
+                                {team.length === 0 ? (
+                                    <tr>
+                                        <td colSpan={5} className="px-4 py-6 text-center text-gray-500 text-sm">
+                                            No staff members added yet.
+                                        </td>
                                     </tr>
-                                ))
-                            )}
-                        </tbody>
-                    </table>
+                                ) : (
+                                    team.map((member) => (
+                                        <tr key={member.id}>
+                                            <td className="px-4 py-3 text-sm font-medium text-gray-800">{member.name}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-600">{member.email}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-500">{member.phone || '—'}</td>
+                                            <td className="px-4 py-3 text-sm font-medium text-gray-700">{formatRole(member.role || 'STAFF')}</td>
+                                            <td className="px-4 py-3 text-right">
+                                                <button
+                                                    type="button"
+                                                    onClick={async () => {
+                                                        const confirmed = window.confirm(
+                                                            `Force ${member.name} to reset their password on next login?`
+                                                        );
+                                                        if (!confirmed) return;
+                                                        try {
+                                                            await onForceReset(member.id);
+                                                            setToast({ message: `${member.name} will be prompted to reset their password on next login.`, variant: 'success' });
+                                                        } catch (err) {
+                                                            setToast({ message: err.message || 'Failed to set reset flag.', variant: 'error' });
+                                                        }
+                                                    }}
+                                                    className="px-3 py-1 text-xs font-semibold text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50"
+                                                >
+                                                    Reset Password
+                                                </button>
+                                            </td>
+                                        </tr>
+                                    ))
+                                )}
+                            </tbody>
+                        </table>
+                    </div>
                 </div>
             </div>
 

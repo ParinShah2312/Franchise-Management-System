@@ -4,6 +4,7 @@ export default function BusinessInfoSection({
   reason,
   formErrors,
   onChange,
+  selectedBrandName,
 }) {
   return (
     <section>
@@ -50,7 +51,7 @@ export default function BusinessInfoSection({
         </div>
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="reason_for_franchise">
-            Why do you want to open a Relay franchise?*
+            {selectedBrandName ? `Why do you want to open a ${selectedBrandName} franchise?*` : 'Why do you want to open this franchise?*'}
           </label>
           <textarea
             id="reason"

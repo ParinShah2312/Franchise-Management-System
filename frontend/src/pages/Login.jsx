@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
+import Modal from '../components/ui/Modal';
 
 export default function Login() {
   const navigate = useNavigate();
@@ -10,6 +11,7 @@ export default function Login() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
+  const [showForgotModal, setShowForgotModal] = useState(false);
 
   const handleChange = (event) => {
     const { name, value } = event.target;
@@ -34,7 +36,7 @@ export default function Login() {
       if (role === 'FRANCHISOR') {
         navigate('/admin', { replace: true });
       } else if (role === 'BRANCH_OWNER') {
-        navigate('/dashboard', { replace: true });
+        navigate('/franchisee', { replace: true });
       } else if (role === 'MANAGER') {
         navigate('/manager', { replace: true });
       } else if (role === 'STAFF') {
@@ -154,6 +156,15 @@ export default function Login() {
                     {showPassword ? 'Hide' : 'Show'}
                   </button>
                 </div>
+                <div className="flex justify-end mt-1">
+                  <button
+                    type="button"
+                    onClick={() => setShowForgotModal(true)}
+                    className="text-xs text-primary hover:text-primary-hover font-medium"
+                  >
+                    Forgot password?
+                  </button>
+                </div>
               </div>
 
               {error ? (
@@ -176,6 +187,32 @@ export default function Login() {
           </div>
         </div>
       </section>
+
+      <Modal
+        isOpen={showForgotModal}
+        onClose={() => setShowForgotModal(false)}
+        title="Forgot your password?"
+      >
+        <div className="space-y-3 text-sm text-gray-600">
+          <p>
+            To reset your password, please contact your branch owner or administrator.
+            They can trigger a password reset from the staff management panel in their dashboard.
+          </p>
+          <p>
+            If you are the franchisor, please contact Relay support at{' '}
+            <span className="font-semibold text-primary">hello@relayhq.com</span>.
+          </p>
+          <div className="pt-2 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setShowForgotModal(false)}
+              className="btn-primary px-5 py-2 text-sm"
+            >
+              Got it
+            </button>
+          </div>
+        </div>
+      </Modal>
     </div>
   );
 }

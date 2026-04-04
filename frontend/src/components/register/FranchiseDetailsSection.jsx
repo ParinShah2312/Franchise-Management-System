@@ -1,11 +1,16 @@
+import { INDIAN_LOCATIONS } from '../../utils';
+
 export default function FranchiseDetailsSection({
   franchiseId,
-  proposedLocation,
+  state,
+  city,
   brandOptions,
   loadingBrands,
   brandsError,
   formErrors,
   onChange,
+  onStateChange,
+  onCityChange,
   onFileChange,
   fileInputRef,
 }) {
@@ -39,26 +44,51 @@ export default function FranchiseDetailsSection({
           ) : null}
         </div>
         <div>
-          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="proposed_location">
-            Proposed Location (City, State)*
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="state">
+            State*
           </label>
-          <input
-            id="proposed_location"
-            name="proposed_location"
-            type="text"
+          <select
+            id="state"
+            name="state"
             required
             className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
-            placeholder="Austin, TX"
-            value={proposedLocation}
-            onChange={onChange}
-          />
+            value={state}
+            onChange={onStateChange}
+          >
+            <option value="">Select a state</option>
+            {Object.keys(INDIAN_LOCATIONS).sort().map((s) => (
+              <option key={s} value={s}>{s}</option>
+            ))}
+          </select>
           {formErrors.proposed_location ? (
+            <p className="mt-1 text-xs text-red-600">{formErrors.proposed_location}</p>
+          ) : null}
+        </div>
+        <div>
+          <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="city">
+            City*
+          </label>
+          <select
+            id="city"
+            name="city"
+            required
+            disabled={!state}
+            className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 disabled:bg-gray-100 disabled:cursor-not-allowed"
+            value={city}
+            onChange={onCityChange}
+          >
+            <option value="">Select a city</option>
+            {(INDIAN_LOCATIONS[state] || []).map((c) => (
+              <option key={c} value={c}>{c}</option>
+            ))}
+          </select>
+          {formErrors.proposed_location && state ? (
             <p className="mt-1 text-xs text-red-600">{formErrors.proposed_location}</p>
           ) : null}
         </div>
         <div className="md:col-span-2">
           <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="application_file">
-            Application Document (PDF/JPG/PNG)*
+            Identity Document (Aadhaar Card / Business Registration Certificate)*
           </label>
           <input
             id="application_file"

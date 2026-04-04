@@ -26,7 +26,7 @@ from ..utils.security import token_required
 
 
 
-dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
+dashboard_bp = Blueprint("franchisee", __name__, url_prefix="/api/franchisee")
 
 
 @dashboard_bp.route("/franchisor/metrics", methods=["GET"])

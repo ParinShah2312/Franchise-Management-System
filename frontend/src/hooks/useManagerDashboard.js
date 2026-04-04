@@ -6,7 +6,7 @@ import { useRequests } from './useRequests';
 import { getTodayString } from '../utils';
 
 export function useManagerDashboard(branchId) {
-  const { staff, loading: staffLoading, error: staffError, addStaff, refreshStaff } = useStaff(branchId);
+  const { staff, loading: staffLoading, error: staffError, addStaff, refreshStaff, forceResetUser } = useStaff(branchId);
   const { inventoryItems, stockItems, loading: invLoading, error: invError, addInventory, recordDelivery, refreshInventory } = useInventory(branchId);
   const { sales, products, loading: salesLoading, error: salesError, logSale, refreshSales } = useSales(branchId);
   const { requests, loading: reqLoading, error: reqError, createRequest, refreshRequests } = useRequests(branchId);
@@ -49,7 +49,7 @@ export function useManagerDashboard(branchId) {
   }, [sales]);
 
   return {
-    staff, staffLoading, staffError, addStaff, refreshStaff,
+    staff, staffLoading, staffError, addStaff, refreshStaff, forceResetUser,
     inventoryItems, stockItems, invLoading, invError, addInventory, recordDelivery, refreshInventory,
     sales, products, salesLoading, salesError, logSale, refreshSales,
     requests, reqLoading, reqError, createRequest, refreshRequests,

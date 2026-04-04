@@ -21,7 +21,7 @@ export default function ManagerDashboard() {
   const [toast, setToast] = useState(null);
 
   const {
-    staff, addStaff, refreshStaff,
+    staff, addStaff, refreshStaff, forceResetUser,
     inventoryItems, stockItems, addInventory, recordDelivery, refreshInventory,
     sales, products, logSale, refreshSales,
     requests, createRequest, refreshRequests,
@@ -39,7 +39,7 @@ export default function ManagerDashboard() {
   const renderContent = () => {
     switch (activeTab) {
       case 'staff':
-        return <ManagerStaff staff={staff} addStaff={addStaff} setToast={setToast} />;
+        return <ManagerStaff staff={staff} addStaff={addStaff} setToast={setToast} onForceReset={forceResetUser} />;
       case 'inventory':
         return <ManagerInventory inventoryItems={inventoryItems} stockItems={stockItems} addInventory={addInventory} recordDelivery={recordDelivery} refreshInventory={refreshInventory} setToast={setToast} />;
       case 'sales':

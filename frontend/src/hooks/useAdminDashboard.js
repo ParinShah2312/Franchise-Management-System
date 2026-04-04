@@ -49,7 +49,7 @@ export function useAdminDashboard() {
     setError('');
     try {
       const [metricsResponse, networkResponse, applicationsResponse] = await Promise.all([
-        api.get('/dashboard/franchisor/metrics'),
+        api.get('/franchisee/franchisor/metrics'),
         api.get('/franchises/network'),
         api.get('/franchises/applications'),
       ]);

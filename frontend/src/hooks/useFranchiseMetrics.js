@@ -11,7 +11,7 @@ export function useFranchiseMetrics(branchId) {
         setLoading(true);
         setError(null);
         try {
-            const metricsUrl = `/dashboard/branch/metrics${branchId ? `?branch_id=${branchId}` : ''}`;
+            const metricsUrl = `/franchisee/branch/metrics${branchId ? `?branch_id=${branchId}` : ''}`;
             const response = await api.get(metricsUrl);
             setMetrics(response || {});
         } catch (err) {

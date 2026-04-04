@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { sanitizePhone, formatRole } from '../../utils';
 
-export default function FranchiseeStaff({ staff, appointManager, setToast, onDeactivate, onActivate }) {
+export default function FranchiseeStaff({ staff, appointManager, setToast, onDeactivate, onActivate, onForceReset }) {
     const [showManagerModal, setShowManagerModal] = useState(false);
     const [managerSubmitting, setManagerSubmitting] = useState(false);
     const [managerForm, setManagerForm] = useState({
@@ -39,9 +39,30 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                     </div>
                     <div className="px-4 py-4">
                         {staff.manager ? (
-                            <div>
-                                <p className="text-sm font-semibold text-gray-800">{staff.manager.name}</p>
-                                <p className="text-sm text-gray-600">{staff.manager.email}</p>
+                            <div className="flex justify-between items-start">
+                                <div>
+                                    <p className="text-sm font-semibold text-gray-800">{staff.manager.name}</p>
+                                    <p className="text-sm text-gray-600">{staff.manager.email}</p>
+                                    <p className="text-sm text-gray-500">{staff.manager.phone || '—'}</p>
+                                </div>
+                                <button
+                                    type="button"
+                                    onClick={async () => {
+                                        const confirmed = window.confirm(
+                                            `Force ${staff.manager.name} to reset their password on next login?`
+                                        );
+                                        if (!confirmed) return;
+                                        try {
+                                            await onForceReset(staff.manager.user_id || staff.manager.id);
+                                            setToast({ message: `${staff.manager.name} will be prompted to reset their password on next login.`, variant: 'success' });
+                                        } catch (err) {
+                                            setToast({ message: err.message || 'Failed to set reset flag.', variant: 'error' });
+                                        }
+                                    }}
+                                    className="px-3 py-1 text-xs font-semibold text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50"
+                                >
+                                    Reset Password
+                                </button>
                             </div>
                         ) : (
                             <p className="text-sm text-gray-500">No manager assigned yet. Appoint one to oversee operations.</p>
@@ -90,7 +111,8 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                                             </td>
                                             <td className="px-4 py-3 text-right">
                                                 {member.role !== 'BRANCH_OWNER' ? (
-                                                    member.is_active !== false ? (
+                                                    <div className="flex justify-end items-center">
+                                                    {member.is_active !== false ? (
                                                         <button
                                                             type="button"
                                                             onClick={async () => {
@@ -128,7 +150,26 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                                                         >
                                                             Reactivate
                                                         </button>
-                                                    )
+                                                    )}
+                                                    <button
+                                                        type="button"
+                                                        onClick={async () => {
+                                                            const confirmed = window.confirm(
+                                                                `Force ${member.name} to reset their password on next login?`
+                                                            );
+                                                            if (!confirmed) return;
+                                                            try {
+                                                                await onForceReset(member.user_id);
+                                                                setToast({ message: `${member.name} will be prompted to reset their password on next login.`, variant: 'success' });
+                                                            } catch (err) {
+                                                                setToast({ message: err.message || 'Failed to set reset flag.', variant: 'error' });
+                                                            }
+                                                        }}
+                                                        className="px-3 py-1 text-xs font-semibold text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50 ml-2"
+                                                    >
+                                                        Reset Password
+                                                    </button>
+                                                    </div>
                                                 ) : (
                                                     <span className="text-gray-400 text-xs">—</span>
                                                 )}

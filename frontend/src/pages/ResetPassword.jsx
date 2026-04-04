@@ -48,7 +48,7 @@ export default function ResetPassword() {
 
       updateUser({ mustResetPassword: false });
 
-      const redirectPath = ROLE_REDIRECTS[(user?.role || '').toUpperCase()] || '/dashboard';
+      const redirectPath = ROLE_REDIRECTS[(user?.role || '').toUpperCase()] || '/franchisee';
       navigate(redirectPath, { replace: true });
     } catch (error) {
       setToast({ message: error.message || 'Unable to reset password.', variant: 'error' });

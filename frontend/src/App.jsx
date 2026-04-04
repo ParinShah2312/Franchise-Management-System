@@ -50,9 +50,9 @@ export default function App() {
               }
             />
             <Route
-              path="/dashboard"
+              path="/franchisee"
               element={
-                <ProtectedRoute allowedRoles={['BRANCH_OWNER', 'MANAGER']}>
+                <ProtectedRoute allowedRoles={['BRANCH_OWNER']}>
                   <FranchiseeDashboard />
                 </ProtectedRoute>
               }
