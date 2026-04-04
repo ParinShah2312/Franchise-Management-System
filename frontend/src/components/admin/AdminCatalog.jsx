@@ -198,28 +198,6 @@ export default function AdminCatalog({
   return (
     <div className="space-y-8 pb-10">
       
-      {/* Stock Items Section */}
-      <CatalogStockItems
-        stockItems={stockItems}
-        loading={stockItemsLoading}
-        onAddStockItem={() => setShowAddStockItemModal(true)}
-        onViewIngredients={handleExpandStockItem}
-        expandedItemId={expandedStockItemId}
-        ingredientsByItem={ingredientsByItem}
-      />
-
-      {/* Product Recipes Section */}
-      <CatalogProductRecipes
-        products={products}
-        loading={productsLoading}
-        onViewRecipe={handleExpandProduct}
-        expandedProductId={expandedProductId}
-        recipesByProduct={recipesByProduct}
-        stockItems={stockItems}
-        onAddIngredient={handleAddIngredient}
-        onRemoveIngredient={handleRemoveIngredient}
-      />
-
       {/* Product Categories Section */}
       <CatalogCategories
         categories={categories}
@@ -235,6 +213,28 @@ export default function AdminCatalog({
         onAddProduct={() => setShowAddProductModal(true)}
         onEditProduct={(p) => setEditingProduct(p)}
         onToggleActive={handleToggleActive}
+      />
+
+      {/* Product Recipes Section */}
+      <CatalogProductRecipes
+        products={products}
+        loading={productsLoading}
+        onViewRecipe={handleExpandProduct}
+        expandedProductId={expandedProductId}
+        recipesByProduct={recipesByProduct}
+        stockItems={stockItems}
+        onAddIngredient={handleAddIngredient}
+        onRemoveIngredient={handleRemoveIngredient}
+      />
+
+      {/* Stock Items Section */}
+      <CatalogStockItems
+        stockItems={stockItems}
+        loading={stockItemsLoading}
+        onAddStockItem={() => setShowAddStockItemModal(true)}
+        onViewIngredients={handleExpandStockItem}
+        expandedItemId={expandedStockItemId}
+        ingredientsByItem={ingredientsByItem}
       />
 
       <CatalogAddCategoryModal

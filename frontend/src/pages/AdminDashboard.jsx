@@ -13,14 +13,7 @@ import {
   AdminReports,
 } from '../components/admin';
 
-const TABS = [
-  { key: 'overview', label: 'Overview' },
-  { key: 'network', label: 'Network' },
-  { key: 'applications', label: 'Applications' },
-  { key: 'catalog', label: 'Catalog' },
-  { key: 'royalty', label: 'Royalty' },
-  { key: 'reports', label: 'Reports' },
-];
+
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -49,6 +42,21 @@ export default function AdminDashboard() {
     selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
     generateReport, downloadCSV,
   } = useAdminDashboard();
+
+  const pendingApplicationsCount = applications.length;
+
+  const TABS = [
+    { key: 'overview', label: 'Overview' },
+    { key: 'network', label: 'Network' },
+    {
+      key: 'applications',
+      label: 'Applications',
+      badge: pendingApplicationsCount > 0 ? pendingApplicationsCount : null,
+    },
+    { key: 'catalog', label: 'Catalog' },
+    { key: 'royalty', label: 'Royalty' },
+    { key: 'reports', label: 'Reports' },
+  ];
 
   const renderTabContent = () => {
     if (loading) return <div className="flex justify-center py-20"><p className="text-gray-500">Loading dashboard…</p></div>;

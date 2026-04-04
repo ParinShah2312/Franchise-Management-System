@@ -11,6 +11,7 @@ from ..models import (
     Franchise, FranchiseApplication, Role, UserRole,
 )
 from ..utils.security import token_required
+from ..utils.db_helpers import serialize_dt
 
 application_bp = Blueprint("applications", __name__, url_prefix="/api/franchises")
 
@@ -110,9 +111,7 @@ def list_pending_applications() -> tuple[list[dict[str, object]], int]:
                 "status": application.status.status_name
                 if application.status
                 else None,
-                "submitted_at": application.created_at.isoformat()
-                if application.created_at
-                else None,
+                "submitted_at": serialize_dt(application.created_at),
             }
         )
 

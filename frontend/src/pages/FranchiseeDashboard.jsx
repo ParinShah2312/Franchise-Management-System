@@ -66,7 +66,7 @@ export default function FranchiseeDashboard() {
       <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Franchisee Dashboard</h1>
-          <p className="text-gray-500 text-sm">Welcome back, {user?.email || 'branch owner'}</p>
+          <p className="text-gray-500 text-sm">Welcome back, {user?.name || user?.email || 'branch owner'}</p>
         </div>
         <div className="flex items-center space-x-3">
           {showRefreshButton ? (

@@ -38,7 +38,16 @@ export function formatINRDecimal(value) {
 export function formatDateTime(value) {
   if (!value) return '—';
   const date = value instanceof Date ? value : new Date(value);
-  return isNaN(date.getTime()) ? '—' : date.toLocaleString();
+  if (isNaN(date.getTime())) return '—';
+  return date.toLocaleString('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    hour: '2-digit',
+    minute: '2-digit',
+    hour12: true,
+    timeZone: 'Asia/Kolkata',
+  });
 }
 
 /**
@@ -50,7 +59,12 @@ export function formatDate(isoDate) {
   if (!isoDate) return '—';
   const date = isoDate instanceof Date ? isoDate : new Date(isoDate);
   if (isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat('en-US', { dateStyle: 'medium' }).format(date);
+  return new Intl.DateTimeFormat('en-IN', {
+    day: '2-digit',
+    month: 'short',
+    year: 'numeric',
+    timeZone: 'Asia/Kolkata',
+  }).format(date);
 }
 
 /**
@@ -58,7 +72,11 @@ export function formatDate(isoDate) {
  * @returns {string}
  */
 export function getTodayString() {
-  return new Date().toISOString().slice(0, 10);
+  const now = new Date();
+  const yyyy = now.getFullYear();
+  const mm = String(now.getMonth() + 1).padStart(2, '0');
+  const dd = String(now.getDate()).padStart(2, '0');
+  return `${yyyy}-${mm}-${dd}`;
 }
 
 /**
@@ -80,4 +98,21 @@ export function formatNumber(value) {
   if (value === null || value === undefined) return '0';
   const num = Number(value);
   return num.toLocaleString('en-IN');
+}
+
+/**
+ * Convert a raw role string to a human-readable display name.
+ * @param {string} role
+ * @returns {string}
+ */
+export function formatRole(role) {
+  const map = {
+    BRANCH_OWNER: 'Branch Owner',
+    MANAGER: 'Manager',
+    STAFF: 'Staff',
+    FRANCHISOR: 'Franchisor',
+    PENDING_APPLICANT: 'Pending Applicant',
+  };
+  if (!role) return '—';
+  return map[role.toUpperCase()] || role;
 }

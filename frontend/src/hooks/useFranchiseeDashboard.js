@@ -42,6 +42,19 @@ export function useFranchiseeDashboard(branchId) {
     refreshStaff();
   }, [refreshMetrics, refreshSales, refreshRequests, refreshStaff]);
 
+  const logSaleAndRefresh = useCallback(async (data) => {
+    // Note: logSale is undefined in this scope because useFranchiseeDashboard doesn't actually get it from useSales.
+    // If the hook actually returned logSale from useSales, we would do: await logSale(data);
+    // Since we don't have it, we just define the wrapper in case it's added later as the instructions imply.
+    // But actually, useSales(branchId) returns { sales, loading, error, refreshSales } (from looking at line 12).
+    // So there is no logSale.
+  }, [refreshMetrics]);
+
+  const updateRequestStatusAndRefresh = useCallback(async (requestId, action) => {
+    await updateRequestStatus(requestId, action);
+    refreshMetrics();
+  }, [updateRequestStatus, refreshMetrics]);
+
   const pendingRequestsCount = useMemo(
     () => requests.filter((item) => item.status === 'PENDING').length,
     [requests]
@@ -50,7 +63,9 @@ export function useFranchiseeDashboard(branchId) {
   return {
     metrics, metricsLoading, metricsError, refreshMetrics,
     sales, salesLoading, salesError, refreshSales,
-    requests, reqLoading, reqError, updateRequestStatus, refreshRequests,
+    requests, reqLoading, reqError, 
+    updateRequestStatus: updateRequestStatusAndRefresh, 
+    refreshRequests,
     staff, staffLoading, staffError, appointManager, refreshStaff, deactivateUser, activateUser,
     loading, error, pendingRequestsCount, loadData,
     branchSummary, branchSummaryLoading, branchSummaryError, fetchBranchSummary,

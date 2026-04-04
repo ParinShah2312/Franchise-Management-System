@@ -33,8 +33,11 @@ function handleResponse(response, data, isJson) {
   const message = (isJson && (data.error || data.message)) || null;
 
   if (response.status === 401) {
-    _onUnauthorized?.();
-    throw new Error('Session expired. Please log in again.');
+    const msg = (isJson && (data.error || data.message)) || 'Session expired. Please log in again.';
+    if (authToken) {
+      _onUnauthorized?.();
+    }
+    throw new Error(msg);
   }
 
   if (response.status === 403) {

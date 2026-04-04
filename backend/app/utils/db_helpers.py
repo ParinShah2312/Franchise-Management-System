@@ -63,3 +63,20 @@ def month_bounds(today: date) -> tuple[date, date]:
     else:
         end = date(today.year, today.month + 1, 1)
     return start, end
+
+
+def serialize_dt(dt: object) -> str | None:
+    """
+    Serialize a datetime to an ISO 8601 string.
+    If the datetime is timezone-naive (as returned by SQLite), append +00:00 so
+    that browsers correctly interpret it as UTC rather than local time.
+    Returns None if dt is None.
+    """
+    from datetime import datetime, timezone as _tz
+    if dt is None:
+        return None
+    if not isinstance(dt, datetime):
+        return str(dt)
+    if dt.tzinfo is None:
+        dt = dt.replace(tzinfo=_tz.utc)
+    return dt.isoformat()

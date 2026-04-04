@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { isValidPhone, sanitizePhone } from '../../utils';
+import { isValidPhone, sanitizePhone, formatRole } from '../../utils';
 
 const initialStaffForm = {
     name: '',
@@ -87,7 +87,7 @@ export default function ManagerStaff({ staff, addStaff, setToast }) {
                                         <td className="px-4 py-3 text-sm text-gray-800">{member.name}</td>
                                         <td className="px-4 py-3 text-sm text-gray-600">{member.email}</td>
                                         <td className="px-4 py-3 text-sm text-gray-500">{member.phone || '—'}</td>
-                                        <td className="px-4 py-3 text-sm font-medium text-gray-700">{member.role || 'STAFF'}</td>
+                                        <td className="px-4 py-3 text-sm font-medium text-gray-700">{formatRole(member.role || 'STAFF')}</td>
                                     </tr>
                                 ))
                             )}

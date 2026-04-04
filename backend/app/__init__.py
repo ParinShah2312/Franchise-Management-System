@@ -30,9 +30,11 @@ def create_app(
             "Set the SECRET_KEY environment variable."
         )
 
+    _backend_dir = os.path.dirname(app.root_path)
+    _default_db_uri = f"sqlite:///{os.path.join(_backend_dir, 'relay.db')}"
     default_config: dict[str, Any] = {
         "SECRET_KEY": flask_secret,
-        "SQLALCHEMY_DATABASE_URI": os.environ.get("DATABASE_URI", "sqlite:///relay.db"),
+        "SQLALCHEMY_DATABASE_URI": os.environ.get("DATABASE_URI", _default_db_uri),
         "SQLALCHEMY_TRACK_MODIFICATIONS": False,
         "MAX_CONTENT_LENGTH": 5 * 1024 * 1024,  # 5 MB upload limit
     }

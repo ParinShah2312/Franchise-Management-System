@@ -86,29 +86,9 @@ export default function ResetPassword() {
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute inset-y-0 right-4 flex items-center text-blue-600 hover:text-blue-700"
-                aria-pressed={showPassword}
+                className="absolute inset-y-0 right-4 flex items-center text-sm font-semibold text-primary hover:text-primary-hover"
               >
-                <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  className="h-5 w-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 11.25a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                  />
-                </svg>
+                {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
           </div>
@@ -132,29 +112,9 @@ export default function ResetPassword() {
               <button
                 type="button"
                 onClick={() => setShowPassword((prev) => !prev)}
-                className="absolute inset-y-0 right-4 flex items-center text-blue-600 hover:text-blue-700"
-                aria-pressed={showPassword}
+                className="absolute inset-y-0 right-4 flex items-center text-sm font-semibold text-primary hover:text-primary-hover"
               >
-                <span className="sr-only">{showPassword ? 'Hide password' : 'Show password'}</span>
-                <svg
-                  xmlns="http://www.w3.org/2000/svg"
-                  viewBox="0 0 24 24"
-                  fill="none"
-                  stroke="currentColor"
-                  strokeWidth="1.5"
-                  className="h-5 w-5"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M15 11.25a3 3 0 11-6 0 3 3 0 016 0z"
-                  />
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"
-                  />
-                </svg>
+                {showPassword ? 'Hide' : 'Show'}
               </button>
             </div>
           </div>

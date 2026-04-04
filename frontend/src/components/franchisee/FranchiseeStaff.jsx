@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { sanitizePhone } from '../../utils';
+import { sanitizePhone, formatRole } from '../../utils';
 
 export default function FranchiseeStaff({ staff, appointManager, setToast, onDeactivate, onActivate }) {
     const [showManagerModal, setShowManagerModal] = useState(false);

@@ -19,6 +19,7 @@ from ..models import (
 )
 from ..services.inventory_service import apply_inventory_transaction, get_transaction_type_id
 from ..utils.security import token_required
+from ..utils.db_helpers import serialize_dt
 
 
 request_bp = Blueprint("requests", __name__, url_prefix="/api/requests")
@@ -70,12 +71,8 @@ def _serialize_request(request_obj: StockPurchaseRequest) -> dict[str, object]:
         "status": request_obj.status.status_name if request_obj.status else None,
         "requested_by_user_id": request_obj.requested_by_user_id,
         "approved_by_user_id": request_obj.approved_by_user_id,
-        "created_at": request_obj.created_at.isoformat()
-        if request_obj.created_at
-        else None,
-        "approved_at": request_obj.approved_at.isoformat()
-        if request_obj.approved_at
-        else None,
+        "created_at": serialize_dt(request_obj.created_at),
+        "approved_at": serialize_dt(request_obj.approved_at),
         "note": request_obj.note,
         "items": [
             {

@@ -16,6 +16,7 @@ from ..services.royalty_service import (
     get_royalty_summary,
 )
 from ..utils.security import token_required
+from ..utils.db_helpers import serialize_dt
 
 
 royalty_bp = Blueprint("royalty", __name__, url_prefix="/api/royalty")
@@ -39,7 +40,7 @@ def _serialize_config(config: RoyaltyConfig) -> dict:
         "franchisor_cut_pct": float(config.franchisor_cut_pct),
         "branch_owner_cut_pct": float(config.branch_owner_cut_pct),
         "effective_from": config.effective_from.isoformat(),
-        "created_at": config.created_at.isoformat() if config.created_at else None,
+        "created_at": serialize_dt(config.created_at),
     }
 
 

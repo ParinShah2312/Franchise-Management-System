@@ -6,7 +6,7 @@ from datetime import date
 from http import HTTPStatus
 
 from flask import Blueprint, jsonify
-from ..utils.db_helpers import floatify, month_bounds
+from ..utils.db_helpers import floatify, month_bounds, serialize_dt
 from sqlalchemy import func
 
 from ..extensions import db
@@ -235,7 +235,7 @@ def get_recent_sales() -> tuple[list[dict[str, object]], int]:
     sales_data: list[dict[str, object]] = []
     for row in results:
         sale_datetime = (
-            row.sale_datetime.isoformat()
+            serialize_dt(row.sale_datetime)
             if hasattr(row.sale_datetime, "isoformat")
             else str(row.sale_datetime)
         )

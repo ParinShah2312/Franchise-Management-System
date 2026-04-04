@@ -12,6 +12,7 @@ from ..models import (
 from ..utils.security import (
     generate_token, hash_password, token_required, verify_password, _select_primary_role
 )
+from ..utils.db_helpers import serialize_dt
 from .registration_routes import _ensure_franchise_for_franchisor, _resolve_branch_for_staff
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
@@ -155,9 +156,7 @@ def get_branch_profile() -> tuple[dict[str, object], int]:
                 "phone": assignment.user.phone if assignment.user else None,
                 "is_active": assignment.user.is_active if assignment.user else None,
                 "role": "STAFF",
-                "joined_at": assignment.created_at.isoformat()
-                if assignment.created_at
-                else None,
+                "joined_at": serialize_dt(assignment.created_at),
             }
             for assignment in staff_assignments
             if assignment.user is not None

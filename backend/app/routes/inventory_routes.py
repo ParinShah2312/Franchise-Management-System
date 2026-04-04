@@ -23,6 +23,7 @@ from ..services.inventory_service import (
     get_transaction_type_id,
 )
 from ..utils.security import token_required
+from ..utils.db_helpers import serialize_dt
 
 
 inventory_bp = Blueprint("inventory", __name__, url_prefix="/api/inventory")
@@ -75,7 +76,7 @@ def _serialize_inventory(record: BranchInventory) -> dict[str, object]:
         "reorder_level": float(record.reorder_level)
         if record.reorder_level is not None
         else None,
-        "updated_at": record.updated_at.isoformat() if record.updated_at else None,
+        "updated_at": serialize_dt(record.updated_at),
     }
 
 @inventory_bp.route("", methods=["GET"])
