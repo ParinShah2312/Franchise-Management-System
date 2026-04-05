@@ -14,6 +14,7 @@ from app.models import (
     BranchInventory,
     BranchStaff,
     BranchStatus,
+    Expense,
     Franchise,
     FranchiseApplication,
     Franchisor,
@@ -744,9 +745,51 @@ def seed_database() -> None:
         print("[step11] 15 stock purchase requests seeded.\n")
 
         # ==============================================================
-        # 12. Pending Franchise Application
+        # 12. Historical Expenses (3 months × 5 branches)
         # ==============================================================
-        print("[step12] Creating pending franchise application...")
+        print("[step12] Generating historical expenses...")
+
+        expense_id = 1
+        expense_categories = [
+            'Rent', 'Utilities', 'Salaries', 'Supplies', 'Maintenance',
+            'Marketing', 'Insurance', 'Transport', 'Other'
+        ]
+
+        total_expenses = 0
+        for branch_idx, branch in enumerate(branches):
+            manager = managers[branch_idx]
+            
+            for month_offset in range(1, 4):
+                base_day = now - timedelta(days=30 * month_offset)
+                num_expenses = 5  # 5 expenses per month
+                
+                for exp_num in range(num_expenses):
+                    days_back = exp_num * 5
+                    exp_dt = base_day - timedelta(days=days_back)
+                    
+                    category = expense_categories[exp_num % len(expense_categories)]
+                    amount = Decimal(str(1000 + (exp_num * 500) + (branch_idx * 100)))
+
+                    expense = Expense(
+                        expense_id=expense_id,
+                        branch_id=branch.branch_id,
+                        logged_by_user_id=manager.user_id,
+                        expense_date=exp_dt,
+                        category=category,
+                        description=f"Monthly {category}",
+                        amount=amount
+                    )
+                    db.session.add(expense)
+                    expense_id += 1
+                    total_expenses += 1
+            
+        db.session.commit()
+        print(f"[step12] {total_expenses} historical expenses seeded.\n")
+
+        # ==============================================================
+        # 13. Pending Franchise Application
+        # ==============================================================
+        print("[step13] Creating pending franchise application...")
 
         applicant = User(
             user_id=uid, name="Rajan Kapoor", email="applicant@demo.com",
@@ -766,7 +809,7 @@ def seed_database() -> None:
         )
         db.session.add(app_entry)
         db.session.commit()
-        print("[step12] Pending franchise application created.\n")
+        print("[step13] Pending franchise application created.\n")
 
         # ==============================================================
         # Summary
