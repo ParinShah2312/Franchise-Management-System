@@ -134,7 +134,7 @@ These accounts are auto-seeded the very first time `python run.py` runs:
 
 > **Note:** Other manager accounts follow the pattern `mgr.{branchslug}@{brand}.com` / `manager123`. Other staff accounts follow `staff{N}.{branchslug}@{brand}.com` / `staff123`. Managers and staff are prompted to reset their password on first login.
 
-> **Tip:** To reset everything and start fresh, delete `backend/instance/relay.db` and restart `python run.py`. All seed data regenerates automatically.
+> **Tip:** To reset everything and start fresh, delete `backend/relay.db` and restart `python run.py`. All seed data regenerates automatically.
 
 ---
 

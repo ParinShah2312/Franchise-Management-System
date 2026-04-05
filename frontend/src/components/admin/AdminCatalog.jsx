@@ -27,6 +27,7 @@ export default function AdminCatalog({
   createProduct,
   updateProduct,
   refreshProducts,
+  fetchStockItemProducts,
 }) {
   const [showAddStockItemModal, setShowAddStockItemModal] = useState(false);
   const [addStockItemSubmitting, setAddStockItemSubmitting] = useState(false);
@@ -109,40 +110,25 @@ export default function AdminCatalog({
     }
   };
 
-  const handleExpandStockItem = useCallback((stockItemId) => {
+  const handleExpandStockItem = useCallback(async (stockItemId) => {
     if (expandedStockItemId === stockItemId) {
       setExpandedStockItemId(null);
       return;
     }
     
-    // Compute ingredientsByItem locally since it's just a reverse lookup
-    // BUT we need all recipes to know which products use this stock item.
-    // The prompt says: "When a stock item row is expanded, call fetchIngredients for all products... or simply display a note that this view shows which products use the ingredient (can be a simple lookup from recipesByProduct)."
-    // Let's rely on recipesByProduct cache. If a product isn't expanded yet, its recipe might not be loaded. 
-    // To be perfectly accurate without massive N+1 queries, we will just use the available data in recipesByProduct.
-    // For a robust implementation, the backend would have a reverse lookup endpoint.
-    
     setExpandedStockItemId(stockItemId);
 
-    const productsUsingIt = [];
-    products.forEach((prod) => {
-      const recipe = recipesByProduct[prod.product_id];
-      if (recipe) {
-        const usage = recipe.find(r => r.stock_item_id === stockItemId);
-        if (usage) {
-          productsUsingIt.push({
-             product_name: prod.name,
-             quantity_required: usage.quantity_required
-          });
-        }
-      }
-    });
-
-    setIngredientsByItem(prev => ({
-       ...prev,
-       [stockItemId]: productsUsingIt
-    }));
-  }, [expandedStockItemId, products, recipesByProduct]);
+    try {
+        const productsUsingIt = await fetchStockItemProducts(stockItemId);
+        setIngredientsByItem(prev => ({
+           ...prev,
+           [stockItemId]: productsUsingIt
+        }));
+    } catch (err) {
+        console.error('Failed to load products for this item:', err);
+        setToast({ message: 'Failed to load products for this item.', variant: 'error' });
+    }
+  }, [expandedStockItemId, fetchStockItemProducts]);
 
   const loadRecipe = async (productId) => {
     try {

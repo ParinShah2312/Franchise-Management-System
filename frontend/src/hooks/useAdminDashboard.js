@@ -20,7 +20,7 @@ export function useAdminDashboard() {
     categories, categoriesLoading, categoriesError, refreshCategories,
     products, productsLoading, refreshProducts,
     createStockItem, createCategory, createProduct, updateProduct,
-    fetchIngredients, addIngredient, removeIngredient,
+    fetchIngredients, addIngredient, removeIngredient, fetchStockItemProducts,
   } = useCatalog();
 
   const {
@@ -201,7 +201,7 @@ export function useAdminDashboard() {
     createCategory, createProduct, updateProduct,
     stockItems, stockItemsLoading, stockItemsError, refreshStockItems,
     units, unitsLoading,
-    createStockItem, fetchIngredients, addIngredient, removeIngredient,
+    createStockItem, fetchIngredients, addIngredient, removeIngredient, fetchStockItemProducts,
     activeTab, setActiveTab,
     modalApplication, setModalApplication,
     actionState,

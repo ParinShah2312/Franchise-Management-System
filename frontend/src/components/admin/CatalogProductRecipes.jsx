@@ -67,6 +67,7 @@ export default function CatalogProductRecipes({
           <Table headers={['Product', 'Price', 'Ingredients', '']}>
             {products.map((product) => {
               const recipe = recipesByProduct[product.product_id];
+              const isLoadingRecipe = typeof recipe === 'undefined';
               const isExpanded = expandedProductId === product.product_id;
               
               const availableStockItems = stockItems.filter(
@@ -83,7 +84,7 @@ export default function CatalogProductRecipes({
                       {formatINR(product.base_price)}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {product.ingredient_count ?? '0'} item(s)
+                      {product.ingredient_count ?? (recipe ? recipe.length : '0')} item(s)
                     </td>
                     <td className="px-6 py-4 text-right text-sm">
                       <button
@@ -107,7 +108,9 @@ export default function CatalogProductRecipes({
                         <div className="rounded-md border border-gray-200 bg-white p-4">
                           <h4 className="mb-3 text-sm font-bold text-gray-700">Ingredients for {product.name}</h4>
                           
-                          {(!recipe || recipe.length === 0) ? (
+                          {isLoadingRecipe ? (
+                            <p className="text-sm text-gray-500 mb-4">Loading recipe...</p>
+                          ) : recipe.length === 0 ? (
                             <p className="text-sm text-gray-500 mb-4">No ingredients linked yet.</p>
                           ) : (
                             <div className="mb-4 divide-y divide-gray-100">

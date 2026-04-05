@@ -378,3 +378,34 @@ def remove_product_ingredient(product_id: int, ingredient_id: int) -> tuple[dict
     db.session.commit()
 
     return jsonify({"message": "Ingredient removed."}), HTTPStatus.OK
+
+
+@catalog_bp.route("/stock-items/<int:stock_item_id>/products", methods=["GET"])
+@token_required({"FRANCHISOR"})
+def get_stock_item_products(stock_item_id: int) -> tuple[list[dict[str, object]], int]:
+    franchisor = getattr(g, "current_user", None)
+    
+    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
+    if not franchise:
+        return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
+
+    stock_item = StockItem.query.get(stock_item_id)
+    if not stock_item or stock_item.franchise_id != franchise.franchise_id:
+        return jsonify({"error": "Stock item not found or unauthorized."}), HTTPStatus.FORBIDDEN
+
+    ingredients = (
+        ProductIngredient.query.options(joinedload(ProductIngredient.product))
+        .filter_by(stock_item_id=stock_item_id)
+        .all()
+    )
+
+    payload = [
+        {
+            "product_id": ingredient.product_id,
+            "product_name": ingredient.product.name,
+            "quantity_required": float(ingredient.quantity_required)
+        }
+        for ingredient in ingredients
+    ]
+
+    return jsonify(payload), HTTPStatus.OK

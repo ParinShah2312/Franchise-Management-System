@@ -34,7 +34,8 @@ export default function CatalogStockItems({
         <div className="overflow-hidden rounded-lg border border-border bg-white shadow-sm">
           <Table headers={['Name', 'Unit', 'Description', 'Used In', '']}>
             {stockItems.map((item) => {
-              const usedInProducts = ingredientsByItem[item.stock_item_id] || [];
+              const usedInProducts = ingredientsByItem[item.stock_item_id];
+              const isLoadingProducts = typeof usedInProducts === 'undefined';
               const isExpanded = expandedItemId === item.stock_item_id;
 
               return (
@@ -50,7 +51,7 @@ export default function CatalogStockItems({
                       {item.description || '—'}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
-                      {item.used_in_count ?? usedInProducts.length} product(s)
+                      {item.used_in_count ?? (usedInProducts ? usedInProducts.length : 0)} product(s)
                     </td>
                     <td className="px-6 py-4 text-right text-sm">
                       <button
@@ -68,7 +69,9 @@ export default function CatalogStockItems({
                       <td colSpan={5} className="px-6 py-4">
                         <div className="rounded-md border border-gray-200 bg-white p-4">
                           <h4 className="mb-2 text-sm font-bold text-gray-700">Products using {item.name}</h4>
-                          {usedInProducts.length === 0 ? (
+                          {isLoadingProducts ? (
+                            <p className="text-sm text-gray-500">Loading products...</p>
+                          ) : usedInProducts.length === 0 ? (
                             <p className="text-sm text-gray-500">Not used in any products currently.</p>
                           ) : (
                             <ul className="space-y-2">

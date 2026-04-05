@@ -34,6 +34,7 @@ export default function AdminDashboard() {
     stockItems, stockItemsLoading, stockItemsError,
     units, unitsLoading,
     createStockItem, fetchIngredients, addIngredient, removeIngredient,
+    fetchStockItemProducts,
     fetchDashboard,
     toggleBranchStatus,
     config, configLoading, configured, saveConfig, saving, saveError,
@@ -75,6 +76,7 @@ export default function AdminDashboard() {
         fetchIngredients={fetchIngredients}
         addIngredient={addIngredient}
         removeIngredient={removeIngredient}
+        fetchStockItemProducts={fetchStockItemProducts}
         categories={categories}
         categoriesLoading={categoriesLoading}
         createCategory={createCategory}

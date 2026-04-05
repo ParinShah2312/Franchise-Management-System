@@ -21,7 +21,8 @@ def create_app(
 
     load_dotenv()
 
-    app = Flask(__name__)
+    _backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+    app = Flask(__name__, instance_path=_backend_dir, instance_relative_config=True)
 
     flask_secret = os.environ.get("SECRET_KEY", "dev-flask-secret")
     if flask_secret == "dev-flask-secret" and not app.debug:
@@ -30,8 +31,7 @@ def create_app(
             "Set the SECRET_KEY environment variable."
         )
 
-    _backend_dir = os.path.dirname(app.root_path)
-    _default_db_uri = f"sqlite:///{os.path.join(_backend_dir, 'relay.db')}"
+    _default_db_uri = "sqlite:///relay.db"
     default_config: dict[str, Any] = {
         "SECRET_KEY": flask_secret,
         "SQLALCHEMY_DATABASE_URI": os.environ.get("DATABASE_URI", _default_db_uri),

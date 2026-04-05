@@ -112,6 +112,11 @@ export function useCatalog() {
     await refreshStockItems();
   };
 
+  const fetchStockItemProducts = async (stockItemId) => {
+    const data = await api.get(`/catalog/stock-items/${stockItemId}/products`);
+    return Array.isArray(data) ? data : [];
+  };
+
   return {
     stockItems,
     stockItemsLoading,
@@ -133,5 +138,6 @@ export function useCatalog() {
     fetchIngredients,
     addIngredient,
     removeIngredient,
+    fetchStockItemProducts,
   };
 }
