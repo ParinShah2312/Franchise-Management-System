@@ -3,12 +3,13 @@
 from __future__ import annotations
 
 from datetime import datetime, timezone
+from decimal import Decimal
 from typing import Optional
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import (
-    BigInteger, Boolean, DateTime, Integer, String, Text,
+    BigInteger, Boolean, DateTime, Integer, Numeric, String, Text,
 )
 
 from ..extensions import db
@@ -138,6 +139,8 @@ class BranchStaff(db.Model):
     user_id: Mapped[int] = mapped_column(
         ForeignKey("users.user_id", ondelete="CASCADE"), nullable=False
     )
+    position: Mapped[str | None] = mapped_column(String(100), nullable=True)
+    salary: Mapped[Decimal | None] = mapped_column(Numeric(10, 2), nullable=True)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
     )

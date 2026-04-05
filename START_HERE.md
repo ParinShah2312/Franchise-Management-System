@@ -120,12 +120,21 @@ These accounts are auto-seeded the very first time `python run.py` runs:
 
 | Role | Email | Password | Access |
 |---|---|---|---|
-| **Franchisor** | `admin@system.com` | `admin123` | Full admin dashboard |
-| **Branch Owner** | `rahul@gmail.com` | `rahul123` | Franchisee dashboard |
-| **Manager** | `mcd.manager@mcd.com` | `manager123` | Manager dashboard |
-| **Staff** | `relay.staff@relay.com` | `staff123` | Staff dashboard |
+| **Franchisor (McDonald's)** | `admin@mcd.com` | `admin123` | Full admin dashboard — 3 branches |
+| **Franchisor (Ajay's Café)** | `admin@ajays.com` | `admin123` | Full admin dashboard — 2 branches |
+| **Branch Owner (MCD Alkapuri)** | `rahul@mcd-alkapuri.com` | `owner123` | Franchisee dashboard |
+| **Branch Owner (MCD Vesu)** | `priya@mcd-vesu.com` | `owner123` | Franchisee dashboard |
+| **Branch Owner (MCD Bandra)** | `arjun@mcd-bandra.com` | `owner123` | Franchisee dashboard |
+| **Branch Owner (Ajay's Navrangpura)** | `sneha@ajays-navrangpura.com` | `owner123` | Franchisee dashboard |
+| **Branch Owner (Ajay's Koramangala)** | `vikram@ajays-koramangala.com` | `owner123` | Franchisee dashboard |
+| **Manager (MCD Alkapuri)** | `mgr.alkapuri@mcd.com` | `manager123` | Manager dashboard |
+| **Manager (Ajay's Navrangpura)** | `mgr.navrangpura@ajays.com` | `manager123` | Manager dashboard |
+| **Staff (MCD Alkapuri)** | `staff1.alkapuri@mcd.com` | `staff123` | Staff dashboard |
+| **Staff (Ajay's Navrangpura)** | `staff1.navrangpura@ajays.com` | `staff123` | Staff dashboard |
 
-> **Tip:** To reset everything and start fresh, delete `backend/relay.db` and restart `python run.py`. All seed data regenerates automatically.
+> **Note:** Other manager accounts follow the pattern `mgr.{branchslug}@{brand}.com` / `manager123`. Other staff accounts follow `staff{N}.{branchslug}@{brand}.com` / `staff123`. Managers and staff are prompted to reset their password on first login.
+
+> **Tip:** To reset everything and start fresh, delete `backend/instance/relay.db` and restart `python run.py`. All seed data regenerates automatically.
 
 ---
 

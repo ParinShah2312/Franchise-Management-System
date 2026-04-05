@@ -277,10 +277,12 @@ Relay/
 
 | Role | Email | Password |
 |---|---|---|
-| Franchisor | `admin@system.com` | `admin123` |
-| Branch Owner | *(created via application approval)* | *(set during registration)* |
-| Manager | *(created by branch owner)* | *(set during creation, reset on first login)* |
-| Staff | *(created via staff registration)* | *(set during registration)* |
+| Franchisor (McDonald's) | `admin@mcd.com` | `admin123` |
+| Franchisor (Ajay's Café) | `admin@ajays.com` | `admin123` |
+| Branch Owner (MCD Alkapuri) | `rahul@mcd-alkapuri.com` | `owner123` |
+| Branch Owner (Ajay's Navrangpura) | `sneha@ajays-navrangpura.com` | `owner123` |
+| Manager (MCD Alkapuri) | `mgr.alkapuri@mcd.com` | `manager123` |
+| Staff (MCD Alkapuri) | `staff1.alkapuri@mcd.com` | `staff123` |
 
 ---
 
