@@ -9,6 +9,7 @@ import FranchiseeOverview from '../components/franchisee/FranchiseeOverview';
 import FranchiseeRequests from '../components/franchisee/FranchiseeRequests';
 import FranchiseeStaff from '../components/franchisee/FranchiseeStaff';
 import FranchiseeReports from '../components/franchisee/FranchiseeReports';
+import FranchiseeExpenses from '../components/franchisee/FranchiseeExpenses';
 
 export default function FranchiseeDashboard() {
   const { user, getBranchId, logout } = useAuth();
@@ -20,6 +21,7 @@ export default function FranchiseeDashboard() {
   const {
     metrics, sales, requests, staff,
     updateRequestStatus, appointManager,
+    expenses, deleteExpense, refreshExpenses,
     loading, error, pendingRequestsCount, loadData,
     deactivateUser, activateUser, forceResetUser,
     branchSummary, branchSummaryLoading,
@@ -32,6 +34,7 @@ export default function FranchiseeDashboard() {
     { key: 'overview', label: 'Overview' },
     { key: 'requests', label: 'Stock Requests', badge: pendingRequestsCount > 0 ? pendingRequestsCount : null },
     { key: 'staff', label: 'My Staff' },
+    { key: 'expenses', label: 'Expenses' },
     { key: 'reports', label: 'Reports' },
   ];
 
@@ -41,6 +44,8 @@ export default function FranchiseeDashboard() {
         return <FranchiseeRequests requests={requests} updateRequestStatus={updateRequestStatus} onRefresh={loadData} setToast={setToast} />;
       case 'staff':
         return <FranchiseeStaff staff={staff} appointManager={appointManager} setToast={setToast} onDeactivate={deactivateUser} onActivate={activateUser} onForceReset={forceResetUser} />;
+      case 'expenses':
+        return <FranchiseeExpenses expenses={expenses} deleteExpense={deleteExpense} onRefresh={refreshExpenses} setToast={setToast} />;
       case 'reports':
         return (
           <FranchiseeReports

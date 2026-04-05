@@ -14,7 +14,7 @@ from decimal import Decimal
 from sqlalchemy import func
 
 from ..extensions import db
-from ..models import Branch, Sale
+from ..models import Branch, Expense, Sale
 
 
 def get_sales_total(
@@ -95,6 +95,27 @@ def get_branch_sales_breakdown(
     ]
 
 
+def get_expenses_total(
+    branch_ids: list[int],
+    start_date: date,
+    end_date: date,
+) -> Decimal:
+    """
+    Return the total expenses amount across the given branches
+    for the period [start_date, end_date).
+    """
+    from sqlalchemy import func
+    query = db.session.query(
+        func.coalesce(func.sum(Expense.amount), 0)
+    ).filter(
+        Expense.expense_date >= start_date,
+        Expense.expense_date < end_date,
+    )
+    if branch_ids:
+        query = query.filter(Expense.branch_id.in_(branch_ids))
+    return Decimal(query.scalar() or 0)
+
+
 def get_authorized_branch_ids(role) -> set[int]:
     """
     Return the set of branch IDs accessible to the given user role.
@@ -152,7 +173,7 @@ def build_report_summary(
         total_expenses, profit_loss, royalty_configured, branches
     """
     total_sales = get_sales_total(branch_ids, start_date, end_date)
-    total_expenses = Decimal("0")  # Expense tracking not yet implemented
+    total_expenses = get_expenses_total(branch_ids, start_date, end_date)
     profit = total_sales - total_expenses
 
     branches = get_branch_sales_breakdown(branch_ids, start_date, end_date)

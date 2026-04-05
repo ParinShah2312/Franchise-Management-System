@@ -81,6 +81,7 @@ def register_blueprints(app: Flask) -> None:
     from .routes.catalog_routes import catalog_bp
     from .routes.royalty_routes import royalty_bp
     from .routes.user_routes import user_bp
+    from .routes.expense_routes import expense_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(registration_bp)
@@ -95,6 +96,7 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(dashboard_bp)
     app.register_blueprint(royalty_bp)
     app.register_blueprint(user_bp)
+    app.register_blueprint(expense_bp)
     CORS(app)
 
 

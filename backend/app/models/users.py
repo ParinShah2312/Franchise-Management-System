@@ -87,6 +87,11 @@ class User(TimestampMixin, db.Model):
         foreign_keys="FranchiseApplication.branch_owner_user_id",
         back_populates="branch_owner_user",
     )
+    expenses_logged: Mapped[list["Expense"]] = relationship(
+        "Expense",
+        foreign_keys="Expense.logged_by_user_id",
+        back_populates="logged_by_user",
+    )
 
 
 class Role(db.Model):

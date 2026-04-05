@@ -3,6 +3,7 @@ import { useStaff } from './useStaff';
 import { useInventory } from './useInventory';
 import { useSales } from './useSales';
 import { useRequests } from './useRequests';
+import { useExpenses } from './useExpenses';
 import { getTodayString } from '../utils';
 
 export function useManagerDashboard(branchId) {
@@ -10,16 +11,18 @@ export function useManagerDashboard(branchId) {
   const { inventoryItems, stockItems, loading: invLoading, error: invError, addInventory, recordDelivery, refreshInventory } = useInventory(branchId);
   const { sales, products, loading: salesLoading, error: salesError, logSale, refreshSales } = useSales(branchId);
   const { requests, loading: reqLoading, error: reqError, createRequest, refreshRequests } = useRequests(branchId);
+  const { expenses, loading: expLoading, error: expError, logExpense, deleteExpense, refreshExpenses } = useExpenses(branchId);
 
-  const loading = !branchId ? false : (staffLoading || invLoading || salesLoading || reqLoading);
-  const error = !branchId ? 'No branch is assigned to your account. Please contact your branch owner.' : (staffError || invError || salesError || reqError || '');
+  const loading = !branchId ? false : (staffLoading || invLoading || salesLoading || reqLoading || expLoading);
+  const error = !branchId ? 'No branch is assigned to your account. Please contact your branch owner.' : (staffError || invError || salesError || reqError || expError || '');
 
   const loadData = useCallback(() => {
     refreshStaff();
     refreshInventory();
     refreshSales();
     refreshRequests();
-  }, [refreshStaff, refreshInventory, refreshSales, refreshRequests]);
+    refreshExpenses();
+  }, [refreshStaff, refreshInventory, refreshSales, refreshRequests, refreshExpenses]);
 
   const pendingRequestsCount = useMemo(
     () => requests.filter((item) => item.status === 'PENDING').length,
@@ -53,6 +56,7 @@ export function useManagerDashboard(branchId) {
     inventoryItems, stockItems, invLoading, invError, addInventory, recordDelivery, refreshInventory,
     sales, products, salesLoading, salesError, logSale, refreshSales,
     requests, reqLoading, reqError, createRequest, refreshRequests,
+    expenses, expLoading, expError, logExpense, deleteExpense, refreshExpenses,
     loading, error, pendingRequestsCount, lowStockItems, lowStockItemsCount, todaySalesTotal, loadData,
   };
 }

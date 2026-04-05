@@ -257,3 +257,27 @@ class SaleRoyalty(db.Model):
 
     sale: Mapped["Sale"] = relationship("Sale", back_populates="royalty")
     royalty_config: Mapped["RoyaltyConfig"] = relationship("RoyaltyConfig")
+
+
+class Expense(TimestampMixin, db.Model):
+    __tablename__ = "expenses"
+    expense_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    branch_id: Mapped[int] = mapped_column(
+        ForeignKey("branches.branch_id", ondelete="CASCADE"), nullable=False
+    )
+    logged_by_user_id: Mapped[int | None] = mapped_column(
+        ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
+    )
+    expense_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    category: Mapped[str] = mapped_column(String(100), nullable=False)
+    description: Mapped[str | None] = mapped_column(Text, nullable=True)
+    amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
+
+    branch: Mapped["Branch"] = relationship("Branch", back_populates="expenses")
+    logged_by_user: Mapped[Optional["User"]] = relationship(
+        "User", back_populates="expenses_logged", foreign_keys=[logged_by_user_id]
+    )

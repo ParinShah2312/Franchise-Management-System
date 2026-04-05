@@ -5,12 +5,14 @@ import { useRequests } from './useRequests';
 import { useFranchiseStaff } from './useFranchiseStaff';
 import { useRoyalty } from './useRoyalty';
 import { useReport } from './useReport';
+import { useExpenses } from './useExpenses';
 
 export function useFranchiseeDashboard(branchId) {
   const { metrics, loading: metricsLoading, error: metricsError, refreshMetrics } = useFranchiseMetrics(branchId);
   const { sales, loading: salesLoading, error: salesError, refreshSales } = useSales(branchId);
   const { requests, loading: reqLoading, error: reqError, updateRequestStatus, refreshRequests } = useRequests(branchId);
   const { staff, loading: staffLoading, error: staffError, appointManager, refreshStaff, deactivateUser, activateUser, forceResetUser } = useFranchiseStaff(branchId);
+  const { expenses, loading: expLoading, error: expError, deleteExpense, refreshExpenses } = useExpenses(branchId);
 
   const {
     branchSummary,
@@ -32,15 +34,16 @@ export function useFranchiseeDashboard(branchId) {
     fetchBranchSummary(branchId, now.getMonth() + 1, now.getFullYear());
   }, [branchId, fetchBranchSummary]);
 
-  const loading = !branchId ? false : (metricsLoading || salesLoading || reqLoading || staffLoading);
-  const error = !branchId ? 'No branch is currently assigned to your account. Please contact support.' : (metricsError || salesError || reqError || staffError || '');
+  const loading = !branchId ? false : (metricsLoading || salesLoading || reqLoading || staffLoading || expLoading);
+  const error = !branchId ? 'No branch is currently assigned to your account. Please contact support.' : (metricsError || salesError || reqError || staffError || expError || '');
 
   const loadData = useCallback(() => {
     refreshMetrics();
     refreshSales();
     refreshRequests();
     refreshStaff();
-  }, [refreshMetrics, refreshSales, refreshRequests, refreshStaff]);
+    refreshExpenses();
+  }, [refreshMetrics, refreshSales, refreshRequests, refreshStaff, refreshExpenses]);
 
   const logSaleAndRefresh = useCallback(async (data) => {
     // Note: logSale is undefined in this scope because useFranchiseeDashboard doesn't actually get it from useSales.
@@ -66,6 +69,7 @@ export function useFranchiseeDashboard(branchId) {
     requests, reqLoading, reqError, 
     updateRequestStatus: updateRequestStatusAndRefresh, 
     refreshRequests,
+    expenses, expLoading, expError, deleteExpense, refreshExpenses,
     staff, staffLoading, staffError, appointManager, refreshStaff, deactivateUser, activateUser, forceResetUser,
     loading, error, pendingRequestsCount, loadData,
     branchSummary, branchSummaryLoading, branchSummaryError, fetchBranchSummary,

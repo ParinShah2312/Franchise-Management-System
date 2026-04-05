@@ -169,3 +169,6 @@ class Branch(TimestampMixin, db.Model):
         "InventoryTransaction", back_populates="branch", cascade="all, delete-orphan"
     )
     reports: Mapped[list["Report"]] = relationship("Report", back_populates="branch")
+    expenses: Mapped[list["Expense"]] = relationship(
+        "Expense", back_populates="branch", cascade="all, delete-orphan"
+    )

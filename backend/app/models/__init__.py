@@ -65,6 +65,7 @@ from .operations import (
     StockPurchaseRequestItem,
     RoyaltyConfig,
     SaleRoyalty,
+    Expense,
 )
 
 # Business processes
@@ -109,6 +110,7 @@ __all__ = [
     "StockPurchaseRequestItem",
     "RoyaltyConfig",
     "SaleRoyalty",
+    "Expense",
     # Business
     "FranchiseApplication",
     "Report",

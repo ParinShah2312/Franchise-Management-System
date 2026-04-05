@@ -62,7 +62,7 @@ export default function ManagerSales({ sales, products, logSale, refreshSales, s
         }
 
         const payload = {
-            sale_date: saleForm.sale_date,
+            sale_date: new Date(saleForm.sale_date).toISOString(),
             payment_mode: saleForm.payment_mode,
             items: sanitizedItems,
         };

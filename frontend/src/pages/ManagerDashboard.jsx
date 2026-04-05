@@ -11,6 +11,7 @@ import ManagerStaff from '../components/manager/ManagerStaff';
 import ManagerInventory from '../components/manager/ManagerInventory';
 import ManagerSales from '../components/manager/ManagerSales';
 import ManagerRequests from '../components/manager/ManagerRequests';
+import ManagerExpenses from '../components/manager/ManagerExpenses';
 
 export default function ManagerDashboard() {
   const { user, getBranchId, logout } = useAuth();
@@ -25,6 +26,7 @@ export default function ManagerDashboard() {
     inventoryItems, stockItems, addInventory, recordDelivery, refreshInventory,
     sales, products, logSale, refreshSales,
     requests, createRequest, refreshRequests,
+    expenses, logExpense, deleteExpense, refreshExpenses,
     loading, error, pendingRequestsCount, lowStockItems, lowStockItemsCount, todaySalesTotal, loadData,
   } = useManagerDashboard(branchId);
 
@@ -34,6 +36,7 @@ export default function ManagerDashboard() {
     { key: 'inventory', label: 'Inventory' },
     { key: 'sales', label: 'Sales' },
     { key: 'requests', label: 'Stock Requests', badge: pendingRequestsCount > 0 ? pendingRequestsCount : null },
+    { key: 'expenses', label: 'Expenses' },
   ];
 
   const renderContent = () => {
@@ -46,6 +49,8 @@ export default function ManagerDashboard() {
         return <ManagerSales sales={sales} products={products} logSale={logSale} refreshSales={refreshSales} setToast={setToast} />;
       case 'requests':
         return <ManagerRequests requests={requests} stockItems={stockItems} createRequest={createRequest} refreshRequests={refreshRequests} setToast={setToast} />;
+      case 'expenses':
+        return <ManagerExpenses expenses={expenses} logExpense={logExpense} deleteExpense={deleteExpense} onRefresh={refreshExpenses} setToast={setToast} />;
       case 'overview':
       default:
         return <ManagerOverview todaySalesTotal={todaySalesTotal} lowStockItemsCount={lowStockItemsCount} pendingRequestsCount={pendingRequestsCount} />;

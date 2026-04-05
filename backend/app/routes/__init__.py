@@ -15,4 +15,5 @@ Route files:
 - catalog_routes.py      → /api/catalog      (recipe management)
 - royalty_routes.py      → /api/royalty      (royalty configuration and summaries)
 - user_routes.py         → /api/users        (user activation and deactivation)
+- expense_routes.py      → /api/expenses     (expense logging and management)
 """
