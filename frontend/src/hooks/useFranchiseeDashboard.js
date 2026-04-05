@@ -24,7 +24,7 @@ export function useFranchiseeDashboard(branchId) {
   const {
     report, reportLoading, reportError,
     selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
-    generateReport, downloadCSV,
+    generateReport,
   } = useReport();
 
   // Fetch branch royalty summary automatically when branchId is ready
@@ -76,6 +76,6 @@ export function useFranchiseeDashboard(branchId) {
     // Reports
     report, reportLoading, reportError,
     selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
-    generateReport, downloadCSV,
+    generateReport,
   };
 }

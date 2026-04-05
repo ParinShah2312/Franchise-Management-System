@@ -116,6 +116,85 @@ def get_expenses_total(
     return Decimal(query.scalar() or 0)
 
 
+def get_branch_expense_breakdown(
+    branch_ids: list[int],
+    start_date: date,
+    end_date: date,
+) -> dict[int, list[dict]]:
+    """
+    Return a per-branch breakdown of expenses grouped by category.
+    """
+    if not branch_ids:
+        return {}
+
+    from sqlalchemy import func
+    rows = (
+        db.session.query(
+            Expense.branch_id,
+            Expense.category,
+            func.coalesce(func.sum(Expense.amount), 0).label("category_total"),
+        )
+        .filter(
+            Expense.branch_id.in_(branch_ids),
+            Expense.expense_date >= start_date,
+            Expense.expense_date < end_date,
+        )
+        .group_by(Expense.branch_id, Expense.category)
+        .all()
+    )
+
+    result = {b_id: [] for b_id in branch_ids}
+    for b_id, category, cat_total in rows:
+        result[b_id].append({
+            "category": category,
+            "amount": float(cat_total or 0)
+        })
+    return result
+
+
+def get_branch_product_sales_breakdown(
+    branch_ids: list[int],
+    start_date: date,
+    end_date: date,
+) -> dict[int, list[dict]]:
+    """
+    Return product sales grouping for branches.
+    """
+    if not branch_ids:
+        return {}
+    
+    from sqlalchemy import func
+    from ..models import Sale, SaleItem, Product
+    rows = (
+        db.session.query(
+            Sale.branch_id,
+            Product.name,
+            func.sum(SaleItem.quantity).label("total_quantity"),
+            func.sum(SaleItem.line_total).label("total_revenue"),
+        )
+        .join(SaleItem, Sale.sale_id == SaleItem.sale_id)
+        .join(Product, SaleItem.product_id == Product.product_id)
+        .filter(
+            Sale.branch_id.in_(branch_ids),
+            Sale.sale_datetime >= start_date,
+            Sale.sale_datetime < end_date,
+        )
+        .group_by(Sale.branch_id, Product.name)
+        .order_by(Sale.branch_id, func.sum(SaleItem.line_total).desc())
+        .all()
+    )
+    
+    result = {b_id: [] for b_id in branch_ids}
+    for b_id, p_name, qty, rev in rows:
+        result[b_id].append({
+            "product_name": p_name,
+            "quantity_sold": int(qty or 0),
+            "revenue": float(rev or 0)
+        })
+    return result
+
+
+
 def get_authorized_branch_ids(role) -> set[int]:
     """
     Return the set of branch IDs accessible to the given user role.
@@ -176,7 +255,17 @@ def build_report_summary(
     total_expenses = get_expenses_total(branch_ids, start_date, end_date)
     profit = total_sales - total_expenses
 
-    branches = get_branch_sales_breakdown(branch_ids, start_date, end_date)
+    raw_branches = get_branch_sales_breakdown(branch_ids, start_date, end_date)
+    expenses_breakdown = get_branch_expense_breakdown(branch_ids, start_date, end_date)
+    product_sales_breakdown = get_branch_product_sales_breakdown(branch_ids, start_date, end_date)
+    
+    branches = []
+    for branch in raw_branches:
+        branch_copy = branch.copy()
+        branch_copy["expenses"] = expenses_breakdown.get(branch["branch_id"], [])
+        branch_copy["product_sales"] = product_sales_breakdown.get(branch["branch_id"], [])
+        branches.append(branch_copy)
+
     royalty_configured = False
 
     if include_royalty and franchise_id is not None:

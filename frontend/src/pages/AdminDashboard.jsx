@@ -41,7 +41,7 @@ export default function AdminDashboard() {
     summary, summaryLoading, summaryError, fetchSummary,
     report, reportLoading, reportError,
     selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
-    generateReport, downloadCSV,
+    generateReport,
   } = useAdminDashboard();
 
   const pendingApplicationsCount = applications.length;
@@ -109,7 +109,7 @@ export default function AdminDashboard() {
         onMonthChange={setSelectedMonth}
         onYearChange={setSelectedYear}
         onGenerate={generateReport}
-        onDownloadCSV={downloadCSV}
+        generatedBy={user?.name || null}
       />
     );
     return <AdminApplications applications={applications} onOpenApplication={openApplication} />;

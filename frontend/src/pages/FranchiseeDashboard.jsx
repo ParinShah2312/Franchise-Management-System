@@ -27,7 +27,7 @@ export default function FranchiseeDashboard() {
     branchSummary, branchSummaryLoading,
     report, reportLoading, reportError,
     selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
-    generateReport, downloadCSV,
+    generateReport,
   } = useFranchiseeDashboard(branchId);
 
   const TABS = [
@@ -57,7 +57,7 @@ export default function FranchiseeDashboard() {
             onMonthChange={setSelectedMonth}
             onYearChange={setSelectedYear}
             onGenerate={generateReport}
-            onDownloadCSV={downloadCSV}
+            generatedBy={user?.name || null}
           />
         );
       case 'overview':

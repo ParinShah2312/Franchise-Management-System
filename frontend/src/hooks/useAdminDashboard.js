@@ -32,7 +32,7 @@ export function useAdminDashboard() {
   const {
     report, reportLoading, reportError,
     selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
-    generateReport, downloadCSV,
+    generateReport,
   } = useReport();
 
   const [modalApplication, setModalApplication] = useState(null);
@@ -230,6 +230,6 @@ export function useAdminDashboard() {
     // Reports
     report, reportLoading, reportError,
     selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
-    generateReport, downloadCSV,
+    generateReport,
   };
 }

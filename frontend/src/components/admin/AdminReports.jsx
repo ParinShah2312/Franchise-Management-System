@@ -9,7 +9,7 @@ export default function AdminReports({
   onMonthChange,
   onYearChange,
   onGenerate,
-  onDownloadCSV,
+  generatedBy,
 }) {
   return (
     <div className="space-y-6">
@@ -28,7 +28,7 @@ export default function AdminReports({
         onMonthChange={onMonthChange}
         onYearChange={onYearChange}
         onGenerate={onGenerate}
-        onDownloadCSV={onDownloadCSV}
+        generatedBy={generatedBy}
         showRoyalty={true}
       />
     </div>

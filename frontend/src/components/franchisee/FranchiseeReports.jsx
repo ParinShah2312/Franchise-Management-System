@@ -9,7 +9,7 @@ export default function FranchiseeReports({
   onMonthChange,
   onYearChange,
   onGenerate,
-  onDownloadCSV,
+  generatedBy,
 }) {
   return (
     <div className="space-y-6">
@@ -28,8 +28,9 @@ export default function FranchiseeReports({
         onMonthChange={onMonthChange}
         onYearChange={onYearChange}
         onGenerate={onGenerate}
-        onDownloadCSV={onDownloadCSV}
+        generatedBy={generatedBy}
         showRoyalty={false}
+        isFranchisee={true}
       />
     </div>
   );

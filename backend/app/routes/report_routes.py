@@ -88,10 +88,13 @@ def report_summary() -> tuple[dict[str, object], int]:
             b.branch_id
             for b in Branch.query.filter_by(franchise_id=franchise.franchise_id).all()
         ]
+        import calendar
+        month_name = calendar.month_name[month]
         summary_data = build_report_summary(
             branch_ids, month, year, start_date, end_date,
             include_royalty=True, franchise_id=franchise.franchise_id,
         )
+        report_title = f"{franchise.name} - Report - {month_name} {year}"
         franchisor_id = current_user.franchisor_id
         generated_by_user_id = None
         report_type = "MASTER"
@@ -106,7 +109,10 @@ def report_summary() -> tuple[dict[str, object], int]:
         )
         # Resolve franchisor_id through the branch's franchise
         from ..models import Branch, Franchise
+        import calendar
+        month_name = calendar.month_name[month]
         franchisor_id = None
+        report_title = f"Report - {month_name} {year}"
         report_branch_id = branch_ids[0] if len(branch_ids) == 1 else None
         if report_branch_id:
             branch = db.session.get(Branch, report_branch_id)
@@ -114,6 +120,7 @@ def report_summary() -> tuple[dict[str, object], int]:
                 franchise = db.session.get(Franchise, branch.franchise_id)
                 if franchise:
                     franchisor_id = franchise.franchisor_id
+                    report_title = f"{franchise.name} - {branch.name} - {month_name} {year}"
         generated_by_user_id = getattr(current_user, "user_id", None)
         report_type = "BRANCH" if report_branch_id else "MASTER"
 
@@ -159,5 +166,5 @@ def report_summary() -> tuple[dict[str, object], int]:
             )
 
     # ── Return summary with report_id ───────────────────────────────────────
-    response_data = {"report_id": report_id, **summary_data}
+    response_data = {"report_id": report_id, "filename": report_title, **summary_data}
     return jsonify(response_data), HTTPStatus.OK
