@@ -9,6 +9,8 @@ import LowStockBanner from '../components/ui/LowStockBanner';
 import StaffInventory from '../components/staff/StaffInventory';
 import StaffSales from '../components/staff/StaffSales';
 import { FaqAccordion } from '../components/shared';
+import SkeletonTable from '../components/ui/SkeletonTable';
+import ErrorState from '../components/ui/ErrorState';
 
 const STAFF_FAQ = [
   {
@@ -44,8 +46,8 @@ export default function StaffDashboard() {
   const [toast, setToast] = useState(null);
 
   const {
-    inventoryItems, stockItems, recordDelivery, refreshInventory,
-    sales, products, logSale, refreshSales,
+    inventoryItems, stockItems, recordDelivery, refreshInventory, invLoading,
+    sales, products, logSale, refreshSales, salesLoading,
     loading, error, lowStockItems, loadData,
   } = useStaffDashboard(branchId);
 
@@ -77,16 +79,14 @@ export default function StaffDashboard() {
       </header>
 
       <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        {error ? (
+        {error && (inventoryItems.length > 0 || sales.length > 0) ? (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>
         ) : null}
 
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <p className="text-gray-500">Loading dashboard…</p>
-          </div>
+        {error && inventoryItems.length === 0 && sales.length === 0 ? (
+          <ErrorState message={error} onRetry={loadData} />
         ) : (
-          <div className="space-y-8">
+          <div className="space-y-8 animate-fade-in">
             {!bannerDismissed && lowStockItems.length > 0 ? (
               <LowStockBanner
                 items={lowStockItems}
@@ -97,23 +97,31 @@ export default function StaffDashboard() {
 
             {activeTab === 'inventory' ? (
               <>
-                <StaffInventory
-                  inventoryItems={inventoryItems}
-                  stockItems={stockItems}
-                  recordDelivery={recordDelivery}
-                  onRefresh={refreshInventory}
-                  setToast={setToast}
-                />
+                {invLoading ? (
+                  <SkeletonTable rows={5} cols={4} />
+                ) : (
+                  <StaffInventory
+                    inventoryItems={inventoryItems}
+                    stockItems={stockItems}
+                    recordDelivery={recordDelivery}
+                    onRefresh={refreshInventory}
+                    setToast={setToast}
+                  />
+                )}
                 <FaqAccordion items={STAFF_FAQ} />
               </>
             ) : (
-              <StaffSales
-                sales={sales}
-                products={products}
-                logSale={logSale}
-                onRefresh={refreshSales}
-                setToast={setToast}
-              />
+              salesLoading ? (
+                <SkeletonTable rows={5} cols={3} />
+              ) : (
+                <StaffSales
+                  sales={sales}
+                  products={products}
+                  logSale={logSale}
+                  onRefresh={refreshSales}
+                  setToast={setToast}
+                />
+              )
             )}
           </div>
         )}

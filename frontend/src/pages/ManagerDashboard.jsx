@@ -13,6 +13,9 @@ import ManagerSales from '../components/manager/ManagerSales';
 import ManagerRequests from '../components/manager/ManagerRequests';
 import ManagerExpenses from '../components/manager/ManagerExpenses';
 import { FaqAccordion } from '../components/shared';
+import DashboardSkeleton from '../components/ui/DashboardSkeleton';
+import SkeletonTable from '../components/ui/SkeletonTable';
+import ErrorState from '../components/ui/ErrorState';
 
 const MANAGER_FAQ = [
   {
@@ -68,19 +71,27 @@ export default function ManagerDashboard() {
   ];
 
   const renderContent = () => {
+    if (error && staff.length === 0 && inventoryItems.length === 0) return <ErrorState message={error} onRetry={loadData} />;
+
     switch (activeTab) {
       case 'staff':
+        if (loading) return <SkeletonTable rows={4} cols={5} />;
         return <ManagerStaff staff={staff} addStaff={addStaff} setToast={setToast} onForceReset={forceResetUser} />;
       case 'inventory':
+        if (loading) return <SkeletonTable rows={6} cols={4} />;
         return <ManagerInventory inventoryItems={inventoryItems} stockItems={stockItems} addInventory={addInventory} recordDelivery={recordDelivery} refreshInventory={refreshInventory} setToast={setToast} />;
       case 'sales':
+        if (loading) return <SkeletonTable rows={5} cols={3} />;
         return <ManagerSales sales={sales} products={products} logSale={logSale} refreshSales={refreshSales} setToast={setToast} />;
       case 'requests':
+        if (loading) return <SkeletonTable rows={4} cols={3} />;
         return <ManagerRequests requests={requests} stockItems={stockItems} createRequest={createRequest} refreshRequests={refreshRequests} setToast={setToast} />;
       case 'expenses':
+        if (loading) return <SkeletonTable rows={5} cols={4} />;
         return <ManagerExpenses expenses={expenses} logExpense={logExpense} deleteExpense={deleteExpense} onRefresh={refreshExpenses} setToast={setToast} />;
       case 'overview':
       default:
+        if (loading) return <DashboardSkeleton statCount={3} showTable={false} />;
         return (
           <>
             <ManagerOverview todaySalesTotal={todaySalesTotal} lowStockItemsCount={lowStockItemsCount} pendingRequestsCount={pendingRequestsCount} />
@@ -124,26 +135,20 @@ export default function ManagerDashboard() {
       {renderHeader()}
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        {error ? (
+        {error && (staff.length > 0 || inventoryItems.length > 0) ? (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>
         ) : null}
 
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <p className="text-gray-500">Loading branch data…</p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            {!bannerDismissed && lowStockItems.length > 0 ? (
-              <LowStockBanner
-                items={lowStockItems}
-                onDismiss={() => setBannerDismissed(true)}
-              />
-            ) : null}
-            <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
-            {renderContent()}
-          </div>
-        )}
+        <div className="space-y-8 animate-fade-in">
+          {!bannerDismissed && lowStockItems.length > 0 ? (
+            <LowStockBanner
+              items={lowStockItems}
+              onDismiss={() => setBannerDismissed(true)}
+            />
+          ) : null}
+          <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
+          {renderContent()}
+        </div>
       </main>
 
       {toast ? (

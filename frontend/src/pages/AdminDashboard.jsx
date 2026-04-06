@@ -13,6 +13,9 @@ import {
   AdminReports,
 } from '../components/admin';
 import { FaqAccordion } from '../components/shared';
+import DashboardSkeleton from '../components/ui/DashboardSkeleton';
+import SkeletonTable from '../components/ui/SkeletonTable';
+import ErrorState from '../components/ui/ErrorState';
 
 const ADMIN_FAQ = [
   {
@@ -86,8 +89,9 @@ export default function AdminDashboard() {
   ];
 
   const renderTabContent = () => {
-    if (loading) return <div className="flex justify-center py-20"><p className="text-gray-500">Loading dashboard…</p></div>;
     if (activeTab === 'overview') {
+      if (error && !metrics) return <ErrorState message={error} onRetry={fetchDashboard} />;
+      if (loading) return <DashboardSkeleton statCount={3} showTable={false} />;
       return (
         <>
           <AdminOverview metrics={metrics} primaryFranchise={primaryFranchise} menuUploading={menuUploading} onMenuButtonClick={handleMenuButtonClick} onMenuFileChange={handleMenuFileChange} fileInputRef={fileInputRef} onNavigateToApplications={() => setActiveTab('applications')} />
@@ -95,8 +99,13 @@ export default function AdminDashboard() {
         </>
       );
     }
-    if (activeTab === 'network') return <AdminNetwork flattenedBranches={flattenedBranches} onToggleStatus={toggleBranchStatus} />;
-    if (activeTab === 'catalog') return (
+    if (activeTab === 'network') {
+      if (loading) return <SkeletonTable rows={6} cols={6} />;
+      return <AdminNetwork flattenedBranches={flattenedBranches} onToggleStatus={toggleBranchStatus} />;
+    }
+    if (activeTab === 'catalog') {
+      if (loading) return <DashboardSkeleton statCount={2} showTable={true} />;
+      return (
       <AdminCatalog
         stockItems={stockItems}
         stockItemsLoading={stockItemsLoading}
@@ -118,21 +127,27 @@ export default function AdminDashboard() {
         refreshProducts={refreshProducts}
       />
     );
-    if (activeTab === 'royalty') return (
-      <AdminRoyalty
-        config={config}
-        configLoading={configLoading}
-        configured={configured}
-        saveConfig={saveConfig}
-        saving={saving}
-        saveError={saveError}
-        summary={summary}
-        summaryLoading={summaryLoading}
-        summaryError={summaryError}
-        fetchSummary={fetchSummary}
-      />
-    );
-    if (activeTab === 'reports') return (
+    }
+    if (activeTab === 'royalty') {
+      if (loading) return <DashboardSkeleton statCount={2} showTable={true} />;
+      return (
+        <AdminRoyalty
+          config={config}
+          configLoading={configLoading}
+          configured={configured}
+          saveConfig={saveConfig}
+          saving={saving}
+          saveError={saveError}
+          summary={summary}
+          summaryLoading={summaryLoading}
+          summaryError={summaryError}
+          fetchSummary={fetchSummary}
+        />
+      );
+    }
+    if (activeTab === 'reports') {
+      if (loading) return <DashboardSkeleton statCount={2} showTable={true} />;
+      return (
       <AdminReports
         report={report}
         reportLoading={reportLoading}
@@ -145,6 +160,8 @@ export default function AdminDashboard() {
         generatedBy={user?.name || null}
       />
     );
+    }
+    if (loading) return <SkeletonTable rows={4} cols={5} />;
     return <AdminApplications applications={applications} onOpenApplication={openApplication} />;
   };
 
@@ -177,9 +194,9 @@ export default function AdminDashboard() {
         </div>
       </header>
       <main className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
-        {error && <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
+        {error && metrics && <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
         <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
-        <div className="space-y-8">{renderTabContent()}</div>
+        <div className="space-y-8 animate-fade-in">{renderTabContent()}</div>
       </main>
 
       <ApplicationModal application={modalApplication} onClose={closeModal} onApprove={handleApprove} onReject={openRejectionModal} actionState={actionState} />

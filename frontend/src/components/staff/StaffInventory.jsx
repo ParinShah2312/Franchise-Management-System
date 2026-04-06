@@ -11,6 +11,7 @@ export default function StaffInventory({ inventoryItems, stockItems, recordDeliv
     const [showDeliveryModal, setShowDeliveryModal] = useState(false);
     const [deliverySubmitting, setDeliverySubmitting] = useState(false);
     const [deliveryForm, setDeliveryForm] = useState(initialDeliveryForm);
+    const [updatingItemId, setUpdatingItemId] = useState(null);
 
     const lowStockItems = useMemo(
         () =>
@@ -47,6 +48,7 @@ export default function StaffInventory({ inventoryItems, stockItems, recordDeliv
             return;
         }
 
+        setUpdatingItemId(payload.stock_item_id);
         setDeliverySubmitting(true);
 
         try {
@@ -57,6 +59,7 @@ export default function StaffInventory({ inventoryItems, stockItems, recordDeliv
             setToast({ message: err.message || 'Failed to record delivery.', variant: 'error' });
         } finally {
             setDeliverySubmitting(false);
+            setUpdatingItemId(null);
         }
     };
 
@@ -126,7 +129,7 @@ export default function StaffInventory({ inventoryItems, stockItems, recordDeliv
                                     return (
                                         <tr
                                             key={item.branch_inventory_id || `${item.branch_id}-${item.stock_item_id}`}
-                                            className={isLow ? 'bg-amber-50' : ''}
+                                            className={`${isLow ? 'bg-amber-50' : ''} ${updatingItemId === Number(item.stock_item_id || item.id) ? 'animate-pulse bg-gray-100' : 'hover:bg-gray-50/50 transition-colors'}`}
                                         >
                                             <td className="px-4 py-3 text-sm font-medium text-gray-800">
                                                 {item.stock_item_name || item.item_name || '—'}

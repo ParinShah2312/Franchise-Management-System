@@ -89,7 +89,14 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
             setShowInventoryModal(false);
             setToast({ message: 'Inventory item added successfully!', variant: 'success' });
         } catch (err) {
-            setToast({ message: err.message || 'Failed to add inventory item.', variant: 'error' });
+            if (err.message && err.message.toLowerCase().includes('already exists')) {
+                setToast({
+                    message: 'This item already exists in inventory. Use "Record Delivery" to add quantity instead.',
+                    variant: 'warning',
+                });
+            } else {
+                setToast({ message: err.message || 'Failed to add inventory item.', variant: 'error' });
+            }
         } finally {
             setInventorySubmitting(false);
         }

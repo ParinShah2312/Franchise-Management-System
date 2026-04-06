@@ -3,8 +3,14 @@ import { formatDateTime, formatNumber, formatINR } from '../../utils';
 
 export default function FranchiseeRequests({ requests, updateRequestStatus, onRefresh, setToast }) {
     const [requestAction, setRequestAction] = useState({ id: null, type: null });
+    const [optimisticStatuses, setOptimisticStatuses] = useState({});
 
     const handleRequestAction = async (requestId, action) => {
+        // Optimistically update the UI immediately
+        setOptimisticStatuses(prev => ({
+            ...prev,
+            [requestId]: action === 'approve' ? 'APPROVED' : 'REJECTED',
+        }));
         setRequestAction({ id: requestId, type: action });
         try {
             await updateRequestStatus(requestId, action);
@@ -13,6 +19,12 @@ export default function FranchiseeRequests({ requests, updateRequestStatus, onRe
                 variant: 'success',
             });
         } catch (err) {
+            // Revert on failure
+            setOptimisticStatuses(prev => {
+                const next = { ...prev };
+                delete next[requestId];
+                return next;
+            });
             setToast({ message: err.message || 'Failed to update request.', variant: 'error' });
         } finally {
             setRequestAction({ id: null, type: null });
@@ -57,7 +69,9 @@ export default function FranchiseeRequests({ requests, updateRequestStatus, onRe
                                 </td>
                             </tr>
                         ) : (
-                            requests.map((request) => (
+                            requests.map((request) => {
+                                const displayedStatus = optimisticStatuses[request.request_id] ?? request.status;
+                                return (
                                 <tr key={request.request_id} className="hover:bg-gray-50/50 transition-colors">
                                     <td className="px-6 py-4 text-sm text-gray-700">
                                         {formatDateTime(request.created_at) || '—'}
@@ -87,10 +101,10 @@ export default function FranchiseeRequests({ requests, updateRequestStatus, onRe
                                         </div>
                                     </td>
                                     <td className="px-6 py-4 text-sm font-medium">
-                                        {request.status}
+                                        {displayedStatus}
                                     </td>
                                     <td className="px-6 py-4 text-right text-sm">
-                                        {request.status === 'PENDING' ? (
+                                        {displayedStatus === 'PENDING' ? (
                                             <div className="flex justify-end gap-2">
                                                 <button
                                                     type="button"
@@ -118,7 +132,8 @@ export default function FranchiseeRequests({ requests, updateRequestStatus, onRe
                                         )}
                                     </td>
                                 </tr>
-                            ))
+                            );
+                        })
                         )}
                     </tbody>
                 </table>

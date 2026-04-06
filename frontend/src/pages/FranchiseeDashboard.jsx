@@ -11,6 +11,9 @@ import FranchiseeStaff from '../components/franchisee/FranchiseeStaff';
 import FranchiseeReports from '../components/franchisee/FranchiseeReports';
 import FranchiseeExpenses from '../components/franchisee/FranchiseeExpenses';
 import { FaqAccordion } from '../components/shared';
+import DashboardSkeleton from '../components/ui/DashboardSkeleton';
+import SkeletonTable from '../components/ui/SkeletonTable';
+import ErrorState from '../components/ui/ErrorState';
 
 const FRANCHISEE_FAQ = [
   {
@@ -67,14 +70,20 @@ export default function FranchiseeDashboard() {
   ];
 
   const renderContent = () => {
+    if (error && !metrics) return <ErrorState message={error} onRetry={loadData} />;
+    
     switch (activeTab) {
       case 'requests':
+        if (loading) return <SkeletonTable rows={4} cols={4} />;
         return <FranchiseeRequests requests={requests} updateRequestStatus={updateRequestStatus} onRefresh={loadData} setToast={setToast} />;
       case 'staff':
+        if (loading) return <DashboardSkeleton statCount={1} showTable={true} />;
         return <FranchiseeStaff staff={staff} appointManager={appointManager} setToast={setToast} onDeactivate={deactivateUser} onActivate={activateUser} onForceReset={forceResetUser} />;
       case 'expenses':
+        if (loading) return <SkeletonTable rows={5} cols={5} />;
         return <FranchiseeExpenses expenses={expenses} deleteExpense={deleteExpense} onRefresh={refreshExpenses} setToast={setToast} />;
       case 'reports':
+        if (loading) return <DashboardSkeleton statCount={3} showTable={false} />;
         return (
           <FranchiseeReports
             report={report}
@@ -90,6 +99,7 @@ export default function FranchiseeDashboard() {
         );
       case 'overview':
       default:
+        if (loading) return <DashboardSkeleton statCount={5} showTable={true} />;
         return (
           <>
             <FranchiseeOverview metrics={metrics} sales={sales} onRefresh={loadData} branchSummary={branchSummary} branchSummaryLoading={branchSummaryLoading} />
@@ -133,29 +143,16 @@ export default function FranchiseeDashboard() {
       {renderHeader(true)}
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
-        {error ? (
+        {error && metrics ? (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
             {error}
           </div>
         ) : null}
 
-        {loading ? (
-          <div className="flex justify-center py-20">
-            <p className="text-gray-500">Loading your franchise data…</p>
-          </div>
-        ) : !metrics || Object.keys(metrics).length === 0 ? (
-          <div className="bg-white border border-gray-200 rounded-xl p-8 text-center text-gray-500">
-            <h3 className="text-lg font-semibold text-gray-800 mb-2">Franchise information unavailable</h3>
-            <p className="text-sm">
-              We couldn’t find a franchise linked to your account. Please contact support for assistance.
-            </p>
-          </div>
-        ) : (
-          <div className="space-y-8">
-            <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
-            {renderContent()}
-          </div>
-        )}
+        <div className="space-y-8 animate-fade-in">
+          <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
+          {renderContent()}
+        </div>
       </main>
 
       {toast ? (
