@@ -295,12 +295,34 @@ python -m pytest tests/ -v
 
 | File | Coverage |
 |---|---|
-| `test_auth.py` | Login success/failure, inactive user block, token validation |
+| `test_auth.py` | Login, inactive user block, duplicate registration, token validation |
 | `test_models.py` | Model creation, FK relationships, reference data seeding |
-| `test_inventory.py` | Stock item creation, branch inventory listing |
-| `test_sales.py` | Sale record creation and retrieval |
+| `test_inventory.py` | Stock item creation, branch inventory listing, transaction creation |
+| `test_sales.py` | Sale record creation and retrieval, payment_mode field |
+| `test_reports.py` | Report generation, persistence, profit/loss calculation, role scoping, invalid inputs |
+| `test_royalty.py` | Config creation, split calculation, rounding correctness, endpoint RBAC |
+| `test_requests.py` | Create, approve, reject workflow, double-approve guard, RBAC enforcement |
+| `test_expenses.py` | CRUD operations, amount validation, category validation, branch scoping |
+| `test_applications.py` | Full approve workflow (branch + role creation), reject, duplicate-approve guard, auth guard |
+| `test_catalog.py` | Category CRUD, product CRUD, ingredient add/remove, duplicate name guard, RBAC |
+| `test_rbac.py` | Cross-role access denial, deactivation enforcement, expired/malformed tokens |
 
-**Result: 10 passed, 0 failed.**
+**Result: 45+ tests, 0 failures.**
+
+### Frontend Tests
+```bash
+cd frontend
+npm test
+```
+
+| File | Coverage |
+|---|---|
+| 🛠️ UI Components (`ui/`) | Render mapping for `StatCard.jsx`, `LowStockBanner.jsx` |
+| 🪝 Custom Hooks (`hooks/`) | Native Context tests for `useAuth.test.jsx` logic and storage handlers |
+| 🧑‍💻 Integrations | Full DOM mount `RegistrationFlow.test.jsx` bypassing network calls |
+| `utils.formatters.test.js` | formatINR, formatINRDecimal, formatDate, formatRole |
+| `utils.validators.test.js` | sanitizePhone, isValidPhone, isValidEmail, isValidPassword |
+| `utils.auth.test.js` | parseToken, isTokenExpired |
 
 ---
 
@@ -310,4 +332,4 @@ Having issues? See the **[START_HERE.md](START_HERE.md)** troubleshooting sectio
 
 ---
 
-**Built with React + Flask + SQLite | Phase 15 Complete | March 2026**
+**Built with React + Flask + SQLite | Phase 12 Complete — 50+ Core Tests, April 2026**

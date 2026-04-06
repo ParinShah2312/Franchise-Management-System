@@ -18,6 +18,13 @@ from app.models import (
     Unit,
 )
 from app.utils.security import hash_password
+from app.models import (
+    Expense, FranchiseApplication, RoyaltyConfig, SaleRoyalty,
+    StockPurchaseRequest, StockPurchaseRequestItem, Sale, SaleItem,
+    Product, ProductCategory, Report, ReportData
+)
+from decimal import Decimal
+from datetime import datetime, timezone, timedelta
 
 
 class TestConfig:
@@ -167,3 +174,71 @@ def _seed_reference_data():
         Unit(unit_id=3, unit_name="pcs"),
     ]
     db.session.add_all(statuses)
+
+
+@pytest.fixture(scope="function")
+def franchisor_auth_headers(client, db_session):
+    """Fixture that creates a franchisor and returns auth headers."""
+    from app.models import Franchisor
+    from app.utils.security import generate_token
+    franchisor = Franchisor(
+        organization_name="Test Franchisor Org",
+        contact_person="Test Contact",
+        email="franchisor_fixture@org.com",
+        phone="8800000001",
+        password_hash=hash_password("Password123!"),
+    )
+    db_session.add(franchisor)
+    db_session.flush()
+
+    franchise = Franchise(
+        franchisor_id=franchisor.franchisor_id,
+        name="Test Franchise Brand",
+    )
+    db_session.add(franchise)
+    db_session.commit()
+
+    token = generate_token(franchisor.franchisor_id, user_type="franchisor")
+    return {"Authorization": f"Bearer {token}"}, franchisor, franchise
+
+
+@pytest.fixture(scope="function")
+def setup_sale(setup_franchise_branch, db_session):
+    """Create a product, category, and a completed sale for a branch."""
+    f_id, b_id, branch_auth_headers = setup_franchise_branch
+
+    cat = ProductCategory(franchise_id=f_id, name="Test Category")
+    db_session.add(cat)
+    db_session.commit()
+
+    prod = Product(
+        franchise_id=f_id,
+        category_id=cat.category_id,
+        name="Test Product",
+        base_price=Decimal("100.00"),
+        is_active=True,
+    )
+    db_session.add(prod)
+    db_session.commit()
+
+    sale = Sale(
+        branch_id=b_id,
+        sale_datetime=datetime.now(timezone.utc),
+        total_amount=Decimal("200.00"),
+        status_id=1,
+        payment_mode="Cash",
+    )
+    db_session.add(sale)
+    db_session.flush()
+
+    sale_item = SaleItem(
+        sale_id=sale.sale_id,
+        product_id=prod.product_id,
+        quantity=2,
+        unit_price=Decimal("100.00"),
+        line_total=Decimal("200.00"),
+    )
+    db_session.add(sale_item)
+    db_session.commit()
+
+    return f_id, b_id, branch_auth_headers, sale, prod

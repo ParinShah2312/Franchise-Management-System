@@ -104,3 +104,73 @@ def test_report_summary_preserves_original_fields(client, db_session):
     # Original summary fields must still exist
     assert "report_id" in data
     assert "total_sales" in data
+
+
+def test_report_summary_branch_owner(client, setup_franchise_branch, db_session):
+    """Branch owner can generate a scoped report for their branch."""
+    f_id, b_id, branch_auth_headers = setup_franchise_branch
+    response = client.get(
+        f"/api/reports/summary?month=1&year=2026&branch_id={b_id}",
+        headers=branch_auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    assert "total_sales" in data
+    assert "total_expenses" in data
+    assert "profit_loss" in data
+    assert "branches" in data
+
+
+def test_report_summary_profit_loss_calculation(client, setup_franchise_branch, db_session):
+    """Profit/loss in the report equals total_sales minus total_expenses."""
+    f_id, b_id, branch_auth_headers = setup_franchise_branch
+    response = client.get(
+        f"/api/reports/summary?month=1&year=2026&branch_id={b_id}",
+        headers=branch_auth_headers,
+    )
+    assert response.status_code == 200
+    data = response.get_json()
+    expected_profit = round(data["total_sales"] - data["total_expenses"], 2)
+    assert round(data["profit_loss"], 2) == expected_profit
+
+
+def test_report_summary_invalid_month(client, setup_franchise_branch):
+    """Report endpoint rejects invalid month values."""
+    f_id, b_id, branch_auth_headers = setup_franchise_branch
+    response = client.get(
+        f"/api/reports/summary?month=13&year=2026&branch_id={b_id}",
+        headers=branch_auth_headers,
+    )
+    assert response.status_code == 400
+
+
+def test_report_forbidden_for_staff(client, setup_franchise_branch, db_session):
+    """Staff role cannot access report endpoints."""
+    from app.models import Role, UserRole, User
+    from app.utils.security import hash_password, generate_token
+
+    f_id, b_id, _ = setup_franchise_branch
+    staff_user = User(
+        name="Report Staff",
+        email="report_staff@branch.com",
+        phone="5500000099",
+        password_hash=hash_password("Password123!"),
+        is_active=True,
+    )
+    db_session.add(staff_user)
+    db_session.commit()
+    staff_role = db_session.query(Role).filter_by(name="STAFF").first()
+    db_session.add(UserRole(
+        user_id=staff_user.user_id,
+        role_id=staff_role.role_id,
+        scope_type="BRANCH",
+        scope_id=b_id,
+    ))
+    db_session.commit()
+    token = generate_token(staff_user.user_id, user_type="user")
+    headers = {"Authorization": f"Bearer {token}"}
+    response = client.get(
+        f"/api/reports/summary?month=1&year=2026&branch_id={b_id}",
+        headers=headers,
+    )
+    assert response.status_code == 403

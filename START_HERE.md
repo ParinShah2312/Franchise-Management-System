@@ -1,7 +1,13 @@
 # 🚀 Relay Franchise Management System — Start Here
 
-> **From a fresh laptop boot to a fully running demo in under 2 minutes.**
-> No MySQL, no Postgres, no database server of any kind — SQLite auto-configures itself.
+**Welcome to Relay!** If you are completely new to this project, don't worry. This guide will walk you through exactly what this project is and how to run it step-by-step.
+
+### What is Relay?
+Relay is a web-based **Franchise Management System**. It acts as the central hub for a business brand (like McDonald's or a local cafe chain) to manage their entire network. 
+- **The Brand (Franchisor)** can approve new people who want to open a branch, track total revenue, and manage a master catalog of products.
+- **The Branch Owners and Managers** can log their daily sales, manage their own staff, and request new inventory stock when they run out.
+
+> **Our Promise:** From a fresh laptop boot to a fully running demo in under 2 minutes. No complicated database servers to install — everything auto-configures itself!
 
 ---
 
@@ -291,6 +297,7 @@ Work through these tests in order to see every feature in the system.
 
 ## 6. Running the Test Suite
 
+### Backend Tests
 ```bash
 cd backend
 
@@ -301,15 +308,23 @@ python -m pytest tests/ -v
 ```
 
 Expected result:
+test_auth.py::test_login_success                          PASSED
+test_auth.py::test_inactive_user_blocked                  PASSED
+... (43+ Pytest Integration/DB tests)
+
+### Frontend Tests
+```bash
+cd frontend
+npm test
 ```
-test_auth.py::test_login_success              PASSED
-test_auth.py::test_inactive_user_blocked      PASSED
-test_models.py::test_reference_data_seeded    PASSED
-test_models.py::test_hierarchy_creation       PASSED
-test_inventory.py::test_list_stock_items      PASSED
-...
-10 passed, 12 warnings in 3.xx s
-```
+*Executes native React DOM interactions mapping components, hooks & integrations, avoiding heavy browser-extensions.*
+
+Expected result:
+✓ utils.formatters.test.js (4 tests)
+✓ utils.validators.test.js (9 tests)
+✓ utils.auth.test.js (3 tests)
+Test Files: 3 passed
+Tests: 16 passed
 
 ---
 
@@ -389,4 +404,4 @@ The token check happens server-side on every request. If a logged-in session was
 
 Every feature is live, every test passes, and the system is ready to demo.
 
-**Relay — Phase 15 Complete | March 2026**
+**Relay — Phase 12 Complete | April 2026**
