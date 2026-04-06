@@ -12,6 +12,7 @@ const YEAR_OPTIONS = [currentYear, currentYear - 1, currentYear - 2];
 
 import React, { useState } from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell } from 'recharts';
 import ReportPDF from './ReportPDF';
 
 export default function ReportCard({
@@ -156,6 +157,53 @@ export default function ReportCard({
               accent={report.profit_loss >= 0 ? 'success' : 'neutral'}
             />
           </div>
+
+          {/* Chart Section (Admin Only) */}
+          {!isFranchisee && report && report.branches && report.branches.length > 0 && (
+            <div>
+              <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-500 mt-8">
+                Sales by Branch
+              </h3>
+              <div className="bg-white border border-gray-100 rounded-xl p-4 shadow-sm">
+                <ResponsiveContainer width="100%" height={260}>
+                  <BarChart
+                    data={report.branches.map(b => ({
+                      name: b.branch_name.length > 18 ? b.branch_name.substring(0, 18) + '...' : b.branch_name,
+                      fullName: b.branch_name,
+                      sales: b.total_sales
+                    }))}
+                    margin={{ top: 10, right: 10, left: 20, bottom: 20 }}
+                  >
+                    <CartesianGrid strokeDasharray="3 3" stroke="#F3F4F6" vertical={false} />
+                    <XAxis 
+                      dataKey="name" 
+                      tick={{ fontSize: 11, fill: '#6B7280' }} 
+                      axisLine={{ stroke: '#E5E7EB' }}
+                      tickLine={false}
+                    />
+                    <YAxis 
+                      tickFormatter={(v) => '₹' + v.toLocaleString('en-IN')} 
+                      tick={{ fontSize: 10, fill: '#6B7280' }} 
+                      axisLine={false}
+                      tickLine={false}
+                    />
+                    <Tooltip 
+                      formatter={(value) => [formatINRDecimal(value), 'Total Sales']}
+                      labelFormatter={(label, payload) => payload?.[0]?.payload?.fullName || label}
+                      contentStyle={{ borderRadius: '8px', border: '1px solid #E5E7EB', boxShadow: '0 2px 4px rgba(0,0,0,0.05)' }}
+                    />
+                    <Bar dataKey="sales" radius={[4, 4, 0, 0]}>
+                      {
+                        report.branches.map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill="#2563EB" className="hover:fill-[#60A5FA] cursor-pointer transition-colors" />
+                        ))
+                      }
+                    </Bar>
+                  </BarChart>
+                </ResponsiveContainer>
+              </div>
+            </div>
+          )}
 
           {/* Branch Breakdown / Product Sales Breakdown */}
           {isFranchisee ? (
