@@ -18,7 +18,10 @@ describe('useAuth', () => {
 
   it('loads user from localStorage on mount', () => {
     const mockUser = { id: 1, name: 'Test User', email: 'test@example.com', role: 'FRANCHISOR', mustResetPassword: false };
-    const mockToken = 'mock-jwt-token';
+    // Build a valid JWT-shaped token with a future exp so isTokenExpired() returns false.
+    const futureExp = Math.floor(Date.now() / 1000) + 3600; // 1 hour from now
+    const payload = btoa(JSON.stringify({ sub: 1, exp: futureExp }));
+    const mockToken = `eyJhbGciOiJIUzI1NiJ9.${payload}.fake-signature`;
     const mockScope = { type: 'NETWORK' };
 
     localStorage.setItem('relay_user', JSON.stringify(mockUser));
