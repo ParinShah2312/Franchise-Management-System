@@ -1,44 +1,43 @@
-"""File upload helpers for route handlers."""
+"""File upload helpers — stores files as binary blobs in the database."""
 
 from __future__ import annotations
 
 import os
-from uuid import uuid4
-
-from flask import current_app
 from werkzeug.utils import secure_filename
+from werkzeug.datastructures import FileStorage
 
-
-# Default allowed extensions for document uploads
 DOCUMENT_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
-
-# Default allowed extensions for menu uploads  
 MENU_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
 
+MIME_MAP = {
+    ".pdf": "application/pdf",
+    ".png": "image/png",
+    ".jpg": "image/jpeg",
+    ".jpeg": "image/jpeg",
+}
 
-def save_uploaded_file(
-    upload,
+
+def save_file_to_db(
+    upload: FileStorage,
     allowed_extensions: set[str] | None = None,
-    upload_folder: str | None = None,
-) -> tuple[str, str]:
+) -> "FileBlob":
     """
-    Save an uploaded file to the upload folder with a UUID-prefixed filename.
+    Read an uploaded file and create a FileBlob ORM object.
+
+    Does NOT add to session or commit — caller is responsible.
 
     Args:
-        upload: The werkzeug FileStorage object from request.files
-        allowed_extensions: Set of allowed file extensions including the dot
-                            e.g. {".pdf", ".png"}. Defaults to DOCUMENT_EXTENSIONS.
-        upload_folder: Absolute path to save directory.
-                      Defaults to app config UPLOAD_FOLDER.
+        upload: werkzeug FileStorage from request.files
+        allowed_extensions: set of allowed extensions e.g. {".pdf", ".png"}
 
     Returns:
-        A tuple of (stored_absolute_path, relative_path)
-        where relative_path is suitable for storing in the database
-        e.g. "uploads/abc123_document.pdf"
+        Unsaved FileBlob instance
 
     Raises:
-        ValueError: If filename is invalid or extension is not allowed.
+        ValueError: if filename is invalid or extension not allowed
     """
+    from ..models import FileBlob
+
     if allowed_extensions is None:
         allowed_extensions = DOCUMENT_EXTENSIONS
 
@@ -51,14 +50,15 @@ def save_uploaded_file(
         allowed = ", ".join(sorted(allowed_extensions))
         raise ValueError(f"Unsupported file type. Allowed: {allowed}")
 
-    if upload_folder is None:
-        upload_folder = current_app.config.get("UPLOAD_FOLDER", "")
+    file_data = upload.read()
+    if not file_data:
+        raise ValueError("Uploaded file is empty.")
 
-    os.makedirs(upload_folder, exist_ok=True)
+    mime_type = MIME_MAP.get(extension, "application/octet-stream")
 
-    unique_filename = f"{uuid4().hex}_{filename}"
-    stored_path = os.path.join(upload_folder, unique_filename)
-    upload.save(stored_path)
-
-    relative_path = os.path.join("uploads", unique_filename).replace("\\", "/")
-    return stored_path, relative_path
+    return FileBlob(
+        original_filename=filename,
+        mime_type=mime_type,
+        file_data=file_data,
+        file_size=len(file_data),
+    )

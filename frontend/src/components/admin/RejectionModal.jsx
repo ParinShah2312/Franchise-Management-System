@@ -1,8 +1,10 @@
+import { createPortal } from 'react-dom';
+
 export default function RejectionModal({ isOpen, onClose, onSubmit, rejectionNote, setRejectionNote, isSubmitting, error }) {
   if (!isOpen) return null;
 
-  return (
-    <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
+  return createPortal(
+    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
       <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-6">
         <div className="flex items-center justify-between">
           <h2 className="text-lg font-semibold text-gray-900">Reject Application</h2>
@@ -52,6 +54,7 @@ export default function RejectionModal({ isOpen, onClose, onSubmit, rejectionNot
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 }

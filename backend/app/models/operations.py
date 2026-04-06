@@ -281,3 +281,19 @@ class Expense(TimestampMixin, db.Model):
     logged_by_user: Mapped[Optional["User"]] = relationship(
         "User", back_populates="expenses_logged", foreign_keys=[logged_by_user_id]
     )
+
+
+class FileBlob(db.Model):
+    __tablename__ = "file_blobs"
+    blob_id: Mapped[int] = mapped_column(
+        BigInteger().with_variant(Integer, "sqlite"),
+        primary_key=True,
+        autoincrement=True,
+    )
+    original_filename: Mapped[str] = mapped_column(String(255), nullable=False)
+    mime_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    file_data: Mapped[bytes] = mapped_column(db.LargeBinary, nullable=False)
+    file_size: Mapped[int] = mapped_column(db.Integer, nullable=False)
+    uploaded_at: Mapped[datetime] = mapped_column(
+        DateTime, default=lambda: datetime.now(timezone.utc), nullable=False
+    )

@@ -68,10 +68,15 @@ class Franchise(TimestampMixin, db.Model):
     )
     name: Mapped[str] = mapped_column(String(255), nullable=False)
     description: Mapped[str | None] = mapped_column(Text)
-    menu_file_path: Mapped[str | None] = mapped_column(String(255))
+    menu_blob_id: Mapped[int | None] = mapped_column(
+        ForeignKey("file_blobs.blob_id", ondelete="SET NULL"), nullable=True
+    )
 
     franchisor: Mapped["Franchisor"] = relationship(
         "Franchisor", back_populates="franchises"
+    )
+    menu_blob: Mapped[Optional["FileBlob"]] = relationship(
+        "FileBlob", foreign_keys=[menu_blob_id]
     )
     branches: Mapped[list["Branch"]] = relationship(
         "Branch", back_populates="franchise", cascade="all, delete-orphan"

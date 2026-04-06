@@ -16,4 +16,5 @@ Route files:
 - royalty_routes.py      → /api/royalty      (royalty configuration and summaries)
 - user_routes.py         → /api/users        (user activation and deactivation)
 - expense_routes.py      → /api/expenses     (expense logging and management)
+- file_routes.py         → /api/files        (blob file serving)
 """

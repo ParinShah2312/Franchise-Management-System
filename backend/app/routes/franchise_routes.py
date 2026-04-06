@@ -1,9 +1,8 @@
 """Public-facing franchise routes."""
 
 from __future__ import annotations
-import os
 from http import HTTPStatus
-from ..utils.file_helpers import save_uploaded_file, MENU_EXTENSIONS
+from ..utils.file_helpers import save_file_to_db, MENU_EXTENSIONS
 from flask import Blueprint, current_app, g, jsonify, request
 from sqlalchemy.orm import joinedload
 from ..extensions import db
@@ -82,43 +81,30 @@ def upload_franchise_menu(franchise_id: int) -> tuple[dict[str, object], int]:
         return jsonify({"error": "menu_file is required."}), HTTPStatus.BAD_REQUEST
 
     try:
-        stored_path, relative_path = save_uploaded_file(
-            upload, allowed_extensions=MENU_EXTENSIONS
-        )
+        blob = save_file_to_db(upload, allowed_extensions=MENU_EXTENSIONS)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
-    previous_menu_path = franchise.menu_file_path
-    franchise.menu_file_path = relative_path
+
+    db.session.add(blob)
+    db.session.flush()
+
+    franchise.menu_blob_id = blob.blob_id
 
     try:
         db.session.commit()
     except Exception as exc:  # pragma: no cover
         db.session.rollback()
-        if os.path.exists(stored_path):
-            os.remove(stored_path)
-        current_app.logger.exception("Failed to update franchise menu path: %s", exc)
+        current_app.logger.exception("Failed to update franchise menu: %s", exc)
         return (
             jsonify({"error": "Unable to update franchise menu."}),
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
-    if previous_menu_path:
-        old_full_path = os.path.join(
-            current_app.root_path, "static", previous_menu_path
-        )
-        try:
-            if os.path.exists(old_full_path):
-                os.remove(old_full_path)
-        except OSError:
-            current_app.logger.warning(
-                "Failed to remove previous menu file at %s", old_full_path
-            )
-
     return (
         jsonify(
             {
                 "message": "Menu uploaded successfully",
-                "file_path": f"/static/{relative_path}",
+                "file_url": f"/api/files/{blob.blob_id}",
             }
         ),
         HTTPStatus.CREATED,
@@ -181,8 +167,8 @@ def list_franchise_network() -> tuple[list[dict[str, object]], int]:
             {
                 "franchise_id": franchise.franchise_id,
                 "franchise_name": franchise.name,
-                "menu_file_url": f"/static/{franchise.menu_file_path}"
-                if franchise.menu_file_path
+                "menu_file_url": f"/api/files/{franchise.menu_blob_id}"
+                if franchise.menu_blob_id
                 else None,
                 "branches": branches_payload,
             }

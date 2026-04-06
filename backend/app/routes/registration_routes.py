@@ -1,10 +1,9 @@
 """Registration routes aligned with role-based permissions."""
 
 from __future__ import annotations
-import os
 from decimal import Decimal, InvalidOperation
 from ..utils.validators import validate_email, validate_phone, validate_password_strength, sanitize_phone, EMAIL_ERROR, PHONE_ERROR, PASSWORD_ERROR
-from ..utils.file_helpers import save_uploaded_file
+from ..utils.file_helpers import save_file_to_db
 from http import HTTPStatus
 from flask import Blueprint, current_app, g, jsonify, request
 from sqlalchemy.exc import IntegrityError
@@ -17,135 +16,14 @@ from ..utils.security import (
     hash_password, token_required,
 )
 
+from ..utils.branch_helpers import (
+    _get_role_by_name,
+    _require_owner_branch,
+    _resolve_branch_for_staff,
+    _ensure_franchise_for_franchisor,
+)
+
 registration_bp = Blueprint("registration", __name__, url_prefix="/api/auth")
-
-def _get_role_by_name(role_name: str) -> Role:
-    role = Role.query.filter_by(name=role_name).first()
-    if not role:
-        raise LookupError(f"Role '{role_name}' is not configured.")
-    return role
-
-
-def _require_owner_branch(
-    branch_id_param: int | None,
-) -> Branch | tuple[dict[str, object], int]:
-    role = getattr(g, "current_role", None)
-    current_user = getattr(g, "current_user", None)
-    if not role or role.scope_type != "BRANCH" or not current_user:
-        return jsonify(
-            {"error": "Branch-scoped owner role required."}
-        ), HTTPStatus.FORBIDDEN
-
-    branch_id = role.scope_id
-    if branch_id_param is not None:
-        if not isinstance(branch_id_param, int):
-            return jsonify(
-                {"error": "branch_id must be numeric."}
-            ), HTTPStatus.BAD_REQUEST
-        if branch_id_param != branch_id:
-            return jsonify(
-                {"error": "You are not authorized to manage this branch."}
-            ), HTTPStatus.FORBIDDEN
-
-    branch = Branch.query.get(branch_id)
-    if not branch:
-        return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
-
-    if branch.branch_owner_user_id != getattr(current_user, "user_id", None):
-        return jsonify(
-            {"error": "You are not the owner for this branch."}
-        ), HTTPStatus.FORBIDDEN
-
-    return branch
-
-
-def _resolve_branch_for_staff(
-    branch_id_raw: object | None,
-) -> Branch | tuple[dict[str, object], int]:
-    role = getattr(g, "current_role", None)
-    current_user = getattr(g, "current_user", None)
-    if not role or role.scope_type != "BRANCH" or not current_user:
-        return jsonify({"error": "Branch scope required."}), HTTPStatus.FORBIDDEN
-
-    branch_id = role.scope_id
-    role_name = getattr(role.role, "name", "") if getattr(role, "role", None) else ""
-
-    if role_name == "BRANCH_OWNER":
-        branch_id_param: int | None = None
-        if branch_id_raw is not None:
-            try:
-                branch_id_param = int(branch_id_raw)
-            except (TypeError, ValueError):
-                return jsonify(
-                    {"error": "branch_id must be numeric."}
-                ), HTTPStatus.BAD_REQUEST
-
-        branch = _require_owner_branch(branch_id_param)
-        if isinstance(branch, tuple):
-            return branch
-        if branch.status_id != 1:
-            return jsonify({"error": "Branch is not active."}), HTTPStatus.BAD_REQUEST
-        return branch
-
-    if role_name == "MANAGER":
-        if branch_id_raw is not None:
-            try:
-                explicit_branch_id = int(branch_id_raw)
-            except (TypeError, ValueError):
-                return jsonify(
-                    {"error": "branch_id must be numeric."}
-                ), HTTPStatus.BAD_REQUEST
-            if explicit_branch_id != branch_id:
-                return jsonify(
-                    {"error": "You are not authorized to manage this branch."}
-                ), HTTPStatus.FORBIDDEN
-
-        branch = Branch.query.get(branch_id)
-        if not branch:
-            return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
-        if branch.manager_user_id != getattr(current_user, "user_id", None):
-            return jsonify(
-                {"error": "You are not assigned as manager for this branch."}
-            ), HTTPStatus.FORBIDDEN
-        if branch.status_id != 1:
-            return jsonify({"error": "Branch is not active."}), HTTPStatus.BAD_REQUEST
-        return branch
-
-    return jsonify(
-        {"error": "Only branch owners or managers can manage staff."}
-    ), HTTPStatus.FORBIDDEN
-
-
-def _ensure_franchise_for_franchisor(franchisor: Franchisor) -> Franchise | None:
-    """Guarantee the franchisor has a primary franchise record."""
-
-    existing = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
-    if existing:
-        return existing
-
-    franchise_name = (
-        franchisor.organization_name or f"Franchise {franchisor.franchisor_id}"
-    )
-    description = f"Primary franchise for {franchise_name}."
-
-    franchise = Franchise(
-        franchisor_id=franchisor.franchisor_id,
-        name=franchise_name,
-        description=description,
-    )
-
-    db.session.add(franchise)
-    try:
-        db.session.commit()
-        return franchise
-    except IntegrityError as exc:
-        db.session.rollback()
-        current_app.logger.warning(
-            "Failed to auto-create franchise for franchisor %s: %s",
-            franchisor.franchisor_id,
-            getattr(exc, "orig", exc),
-        )
-        return Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
 
 
 @registration_bp.route("/register-franchisor", methods=["POST"])
@@ -302,9 +180,12 @@ def register_franchisee() -> tuple[dict[str, object], int]:
         return jsonify({"error": "Franchise not found."}), HTTPStatus.BAD_REQUEST
 
     try:
-        stored_path, relative_path = save_uploaded_file(application_file)
+        blob = save_file_to_db(application_file)
     except ValueError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
+
+    db.session.add(blob)
+    db.session.flush()
 
     try:
         investment_capacity = (
@@ -313,8 +194,7 @@ def register_franchisee() -> tuple[dict[str, object], int]:
             else Decimal("0")
         )
     except (InvalidOperation, TypeError):
-        if os.path.exists(stored_path):
-            os.remove(stored_path)
+        db.session.rollback()
         return jsonify(
             {"error": "Investment capacity must be numeric."}
         ), HTTPStatus.BAD_REQUEST
@@ -323,8 +203,7 @@ def register_franchisee() -> tuple[dict[str, object], int]:
     if not status:
         status = ApplicationStatus.query.get(1)
     if not status:
-        if os.path.exists(stored_path):
-            os.remove(stored_path)
+        db.session.rollback()
         return (
             jsonify({"error": "Application status configuration missing."}),
             HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -351,23 +230,19 @@ def register_franchisee() -> tuple[dict[str, object], int]:
             reason=reason_text,
             investment_capacity=investment_capacity,
             status_id=status.status_id,
-            document_path=relative_path,
+            document_blob_id=blob.blob_id,
         )
 
         db.session.add(application)
         db.session.commit()
     except IntegrityError:
         db.session.rollback()
-        if os.path.exists(stored_path):
-            os.remove(stored_path)
         return (
             jsonify({"error": "Unable to register franchisee due to duplicate data."}),
             HTTPStatus.CONFLICT,
         )
     except Exception as exc:  # pragma: no cover
         db.session.rollback()
-        if os.path.exists(stored_path):
-            os.remove(stored_path)
         current_app.logger.exception("Failed to register franchisee: %s", exc)
         return (
             jsonify({"error": "Unable to register franchisee."}),

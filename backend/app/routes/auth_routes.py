@@ -13,7 +13,7 @@ from ..utils.security import (
     generate_token, hash_password, token_required, verify_password, _select_primary_role
 )
 from ..utils.db_helpers import serialize_dt
-from .registration_routes import _ensure_franchise_for_franchisor, _resolve_branch_for_staff
+from ..utils.branch_helpers import _ensure_franchise_for_franchisor, _resolve_branch_for_staff
 
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 

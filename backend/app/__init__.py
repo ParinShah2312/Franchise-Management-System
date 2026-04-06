@@ -41,10 +41,6 @@ def create_app(
 
     app.config.from_mapping(default_config)
 
-    upload_folder = os.path.join(app.root_path, "static", "uploads")
-    os.makedirs(upload_folder, exist_ok=True)
-    app.config.setdefault("UPLOAD_FOLDER", upload_folder)
-
     if config_object:
         app.config.from_object(config_object)
 
@@ -82,6 +78,7 @@ def register_blueprints(app: Flask) -> None:
     from .routes.royalty_routes import royalty_bp
     from .routes.user_routes import user_bp
     from .routes.expense_routes import expense_bp
+    from .routes.file_routes import file_bp
 
     app.register_blueprint(auth_bp)
     app.register_blueprint(registration_bp)
@@ -97,6 +94,7 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(royalty_bp)
     app.register_blueprint(user_bp)
     app.register_blueprint(expense_bp)
+    app.register_blueprint(file_bp)
     CORS(app)
 
 

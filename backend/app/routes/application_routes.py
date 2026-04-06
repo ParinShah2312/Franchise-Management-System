@@ -105,8 +105,8 @@ def list_pending_applications() -> tuple[list[dict[str, object]], int]:
                 "investment_capacity": str(application.investment_capacity or "0"),
                 "business_experience": application.business_experience,
                 "reason": application.reason,
-                "document_url": f"/static/{application.document_path}"
-                if application.document_path
+                "document_url": f"/api/files/{application.document_blob_id}"
+                if application.document_blob_id
                 else None,
                 "status": application.status.status_name
                 if application.status

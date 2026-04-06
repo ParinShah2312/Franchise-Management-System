@@ -14,7 +14,7 @@ Domain organization:
                      ProductIngredient, BranchInventory
     operations.py -> Sale, SaleItem, InventoryTransaction,
                      StockPurchaseRequest, StockPurchaseRequestItem,
-                     RoyaltyConfig, SaleRoyalty
+                     RoyaltyConfig, SaleRoyalty, FileBlob
     business.py   -> FranchiseApplication, Report, ReportData
 """
 
@@ -66,6 +66,7 @@ from .operations import (
     RoyaltyConfig,
     SaleRoyalty,
     Expense,
+    FileBlob,
 )
 
 # Business processes
@@ -111,6 +112,7 @@ __all__ = [
     "RoyaltyConfig",
     "SaleRoyalty",
     "Expense",
+    "FileBlob",
     # Business
     "FranchiseApplication",
     "Report",

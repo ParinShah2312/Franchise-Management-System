@@ -41,7 +41,9 @@ class FranchiseApplication(TimestampMixin, db.Model):
         BigInteger, ForeignKey("franchisors.franchisor_id")
     )
     decision_notes: Mapped[str | None] = mapped_column(Text)
-    document_path: Mapped[str | None] = mapped_column(String(255))
+    document_blob_id: Mapped[int | None] = mapped_column(
+        ForeignKey("file_blobs.blob_id", ondelete="SET NULL"), nullable=True
+    )
 
     franchise: Mapped["Franchise"] = relationship(
         "Franchise", back_populates="franchise_applications"
@@ -56,6 +58,9 @@ class FranchiseApplication(TimestampMixin, db.Model):
     )
     decision_by_franchisor: Mapped[Optional["Franchisor"]] = relationship(
         "Franchisor", back_populates="franchise_applications_decided"
+    )
+    document_blob: Mapped[Optional["FileBlob"]] = relationship(
+        "FileBlob", foreign_keys=[document_blob_id]
     )
 
 
