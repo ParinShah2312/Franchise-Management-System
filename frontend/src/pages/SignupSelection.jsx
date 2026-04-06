@@ -4,6 +4,12 @@ export default function SignupSelection() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center p-6">
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl p-10">
+        <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors mb-6 -mt-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+            <path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 4.158a.75.75 0 11-1.06 1.06l-5.5-5.5a.75.75 0 010-1.06l5.5-5.5a.75.75 0 111.06 1.06L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" />
+          </svg>
+          Back to home
+        </Link>
         <div className="text-center mb-10">
           <h1 className="text-4xl font-bold text-gray-800 mb-2">Choose Your Path</h1>
           <p className="text-gray-500 max-w-2xl mx-auto">

@@ -8,6 +8,27 @@ import Tabs from '../components/ui/Tabs';
 import LowStockBanner from '../components/ui/LowStockBanner';
 import StaffInventory from '../components/staff/StaffInventory';
 import StaffSales from '../components/staff/StaffSales';
+import { FaqAccordion } from '../components/shared';
+
+const STAFF_FAQ = [
+  {
+    question: "How do I record a stock delivery?",
+    answer: "Go to the Inventory tab and click \"Record Delivery\". Select the stock item, enter the quantity received, and add an optional note. The inventory quantity updates immediately, and an audit record is created for the manager.",
+  },
+  {
+    question: "How do I log a sale?",
+    answer: "Go to the Sales tab and click \"Log Sale\". Select the products, choose the payment mode (Cash, Card, or UPI), and confirm. Ingredient inventory is automatically deducted based on product recipes.",
+  },
+  {
+    question: "What happens when a sale fails due to insufficient stock?",
+    answer: "If a product's required ingredients are below the needed quantity, the sale will be rejected with an insufficient stock error. Record a delivery to replenish the item before retrying the sale. You should notify your manager to submit a purchase request if you don't have stock on hand.",
+  },
+  {
+    question: "Why can't I edit or delete sales/deliveries?",
+    answer: "Support staff only have permission to create records. If you make a mistake, notify your branch manager or owner—they have the necessary permissions to delete or correct erroneous records.",
+  },
+];
+
 
 const TABS = [
   { key: 'inventory', label: 'Inventory' },
@@ -75,13 +96,16 @@ export default function StaffDashboard() {
             <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
 
             {activeTab === 'inventory' ? (
-              <StaffInventory
-                inventoryItems={inventoryItems}
-                stockItems={stockItems}
-                recordDelivery={recordDelivery}
-                onRefresh={refreshInventory}
-                setToast={setToast}
-              />
+              <>
+                <StaffInventory
+                  inventoryItems={inventoryItems}
+                  stockItems={stockItems}
+                  recordDelivery={recordDelivery}
+                  onRefresh={refreshInventory}
+                  setToast={setToast}
+                />
+                <FaqAccordion items={STAFF_FAQ} />
+              </>
             ) : (
               <StaffSales
                 sales={sales}

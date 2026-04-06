@@ -77,14 +77,17 @@ const features = [
 
 export default function Features() {
   return (
-    <div className="bg-background pb-24">
-      <section className="bg-white">
-        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl">Built to run modern franchise networks</h1>
-          <p className="mt-6 text-lg text-gray-600">
+    <div className="flex flex-col">
+      {/* Hero Section */}
+      <section className="bg-white py-20 lg:py-24 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 leading-tight">
+            Built to run modern franchise networks
+          </h1>
+          <p className="mt-6 text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
             Relay unifies daily operations, performance analytics, and team collaboration under one scalable platform.
           </p>
-          <div className="mt-8 flex justify-center gap-4">
+          <div className="mt-10 flex flex-wrap justify-center gap-4">
             <Link to="/register" className="btn-primary">
               Start your application
             </Link>
@@ -95,35 +98,44 @@ export default function Features() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-4 sm:px-6 mt-12">
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
-          {features.map((feature) => (
-            <article key={feature.title} className="card">
-              <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-primary">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5" className="h-6 w-6">
-                  {feature.icon}
-                </svg>
+      {/* Feature Grid */}
+      <section className="bg-gray-50 py-20 lg:py-24">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+            {features.map((feature) => (
+              <div key={feature.title} className="bg-white rounded-2xl p-8 shadow-sm border border-gray-100 flex flex-col items-start">
+                <div className="flex w-14 h-14 items-center justify-center rounded-full bg-blue-50 text-blue-600 mb-6 group-hover:scale-110 transition-transform">
+                  <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" className="w-7 h-7">
+                    {feature.icon}
+                  </svg>
+                </div>
+                <h3 className="text-xl font-bold text-gray-900 mb-3">{feature.title}</h3>
+                <p className="text-base text-gray-600 leading-relaxed">{feature.description}</p>
               </div>
-              <h2 className="mt-4 text-lg font-semibold text-gray-900">{feature.title}</h2>
-              <p className="mt-3 text-sm text-gray-600">{feature.description}</p>
-            </article>
-          ))}
+            ))}
+          </div>
         </div>
       </section>
 
-      <section className="mx-auto mt-24 max-w-5xl rounded-3xl bg-white px-6 py-16 text-center shadow-xl">
-        <h2 className="text-3xl font-semibold text-gray-900 sm:text-4xl">Future-proof your franchise network</h2>
-        <p className="mt-4 text-lg text-gray-600">
-          Relay evolves with your operations—from onboarding new branch owners to supporting managers and staff with
-          real-time insights.
-        </p>
-        <div className="mt-8 flex flex-wrap justify-center gap-4">
-          <Link to="/register" className="btn-primary">
-            Apply for access
-          </Link>
-          <Link to="/login" className="btn-outline">
-            Log in
-          </Link>
+      {/* CTA Banner section */}
+      <section className="bg-gray-50 pb-20 lg:pb-24">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6">
+          <div className="bg-white rounded-3xl p-10 sm:p-16 text-center shadow-2xl border border-gray-100">
+            <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">
+              Future-proof your franchise network
+            </h2>
+            <p className="mt-4 max-w-2xl mx-auto text-lg text-gray-600">
+              Relay evolves with your operations—from onboarding new branch owners to supporting managers and staff with real-time insights.
+            </p>
+            <div className="mt-10 flex flex-wrap justify-center gap-4">
+              <Link to="/register" className="btn-primary">
+                Apply for access
+              </Link>
+              <Link to="/login" className="btn-outline">
+                Log in
+              </Link>
+            </div>
+          </div>
         </div>
       </section>
     </div>

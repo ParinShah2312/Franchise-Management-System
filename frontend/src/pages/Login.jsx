@@ -55,6 +55,14 @@ export default function Login() {
 
   return (
     <div className="bg-background">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 pt-6 -mb-6">
+        <Link to="/" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+            <path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 4.158a.75.75 0 11-1.06 1.06l-5.5-5.5a.75.75 0 010-1.06l5.5-5.5a.75.75 0 111.06 1.06L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" />
+          </svg>
+          Back to home
+        </Link>
+      </div>
       <section className="mx-auto flex min-h-[calc(100vh-6rem)] max-w-6xl flex-col gap-12 px-6 py-16 lg:flex-row lg:items-center lg:justify-between">
         <div className="max-w-xl space-y-6">
           <span className="inline-flex items-center gap-2 rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">

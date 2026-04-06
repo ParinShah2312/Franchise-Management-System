@@ -23,26 +23,29 @@ export default function Contact() {
   };
 
   return (
-    <div className="bg-background pb-24">
-      <section className="bg-white">
-        <div className="mx-auto flex max-w-5xl flex-col gap-8 px-4 sm:px-6 py-12 sm:py-16 text-center">
-          <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl">Let&apos;s build your franchise success story</h1>
-          <p className="text-lg text-gray-600">
-            Share a few details and our team will reach out to walk you through Relay&apos;s capabilities for your
-            franchise or multi-location brand.
+    <div className="flex flex-col bg-gray-50 pb-20 lg:pb-24">
+      {/* Hero Section */}
+      <section className="bg-white py-20 lg:py-24 text-center">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+          <h1 className="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight text-gray-900 leading-tight">
+            Let&apos;s build your franchise success story
+          </h1>
+          <p className="mt-6 text-xl text-gray-600 leading-relaxed max-w-2xl mx-auto">
+            Share a few details and our team will reach out to walk you through Relay&apos;s capabilities for your franchise or multi-location brand.
           </p>
         </div>
       </section>
 
-      <section className="mx-auto max-w-4xl px-4 sm:px-6">
-        <div className="card p-8 lg:p-12">
+      {/* Form Card */}
+      <section className="max-w-3xl w-full mx-auto px-4 sm:px-6 -mt-8 relative z-10">
+        <div className="bg-white rounded-2xl p-8 sm:p-12 shadow-xl border border-gray-100">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
-              <label className="label" htmlFor="name">
+              <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="name">
                 Full name
               </label>
               <input
-                className="input-field"
+                className="w-full rounded-lg border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm"
                 id="name"
                 name="name"
                 type="text"
@@ -54,11 +57,11 @@ export default function Contact() {
             </div>
             <div className="grid gap-6 md:grid-cols-2">
               <div>
-                <label className="label" htmlFor="email">
+                <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="email">
                   Work email
                 </label>
                 <input
-                  className="input-field"
+                  className="w-full rounded-lg border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm"
                   id="email"
                   name="email"
                   type="email"
@@ -69,11 +72,11 @@ export default function Contact() {
                 />
               </div>
               <div>
-                <label className="label" htmlFor="company">
+                <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="company">
                   Company / Franchise name
                 </label>
                 <input
-                  className="input-field"
+                  className="w-full rounded-lg border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm"
                   id="company"
                   name="company"
                   type="text"
@@ -84,11 +87,11 @@ export default function Contact() {
               </div>
             </div>
             <div>
-              <label className="label" htmlFor="message">
+              <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="message">
                 How can we help?
               </label>
               <textarea
-                className="input-field min-h-[140px]"
+                className="w-full rounded-lg border-gray-200 bg-white px-4 py-3 text-sm text-gray-900 focus:border-blue-500 focus:outline-none focus:ring-1 focus:ring-blue-500 shadow-sm min-h-[140px]"
                 id="message"
                 name="message"
                 placeholder="Tell us about your franchise operations, goals, or challenges."
@@ -97,23 +100,28 @@ export default function Contact() {
                 required
               />
             </div>
-            <div className="flex flex-wrap items-center gap-4">
-              <button type="submit" className="btn-primary">
-                Submit
+            <div className="flex flex-col sm:flex-row items-center gap-4 pt-2">
+              <button type="submit" className="w-full sm:w-auto btn-primary">
+                Submit message
               </button>
-              {submitted ? <p className="text-sm text-green-600">Thanks! We&apos;ll be in touch shortly.</p> : null}
+              {submitted && (
+                <p className="text-sm font-medium text-emerald-600 bg-emerald-50 px-3 py-1.5 rounded-md">
+                  Thanks! We&apos;ll be in touch shortly.
+                </p>
+              )}
             </div>
           </form>
         </div>
       </section>
 
-      <section className="mx-auto mt-24 max-w-5xl rounded-3xl bg-white px-6 py-16 text-center shadow-xl">
-        <h2 className="text-3xl font-semibold text-gray-900 sm:text-4xl">Prefer to talk now?</h2>
-        <p className="mt-4 text-lg text-gray-600">
-          Email us at <span className="font-semibold text-primary">hello@relayhq.com</span> or call
-          <span className="font-semibold text-primary"> +1 (800) 555-0199</span> to connect with our franchise growth
-          specialists.
-        </p>
+      {/* Direct Contact Banner */}
+      <section className="max-w-5xl w-full mx-auto px-4 sm:px-6 mt-20">
+        <div className="bg-white rounded-3xl p-10 sm:p-12 text-center shadow-lg border border-gray-100">
+          <h2 className="text-3xl font-bold text-gray-900 sm:text-4xl">Prefer to talk now?</h2>
+          <p className="mt-6 text-lg text-gray-600 max-w-2xl mx-auto leading-relaxed">
+            Reach out directly. Email us at <span className="font-semibold text-blue-600">hello@relayhq.com</span> or call <span className="font-semibold text-blue-600">+1 (800) 555-0199</span> to connect with our franchise growth specialists.
+          </p>
+        </div>
       </section>
     </div>
   );

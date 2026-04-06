@@ -12,8 +12,34 @@ import {
   AdminRoyalty,
   AdminReports,
 } from '../components/admin';
+import { FaqAccordion } from '../components/shared';
 
-
+const ADMIN_FAQ = [
+  {
+    question: "How do I approve a franchise application?",
+    answer: "Go to the Applications tab. Click \"Review\" on any pending application to open the full detail modal. After reviewing the applicant's information and supporting document, click \"Approve\" to automatically create the branch and assign the branch owner role, or \"Reject\" to decline with a written reason.",
+  },
+  {
+    question: "How is royalty calculated?",
+    answer: "Go to the Royalty tab to configure your franchisor cut percentage. Every sale recorded at any branch automatically splits the revenue according to your configured percentage. View per-branch royalty breakdowns by month in the Royalty Summary section.",
+  },
+  {
+    question: "How do I upload a menu for my branches?",
+    answer: "On the Overview tab, find the Menu Management card and click \"Upload menu\". Select a PDF or image file (max 5MB). The menu will be accessible to all branches under your franchise via their dashboard.",
+  },
+  {
+    question: "How do I deactivate a branch?",
+    answer: "Go to the Network tab. Find the branch in the table and click \"Deactivate\". The branch status changes to INACTIVE immediately. You can reactivate it at any time using the Activate button in the same row.",
+  },
+  {
+    question: "How do I generate a financial report?",
+    answer: "Go to the Reports tab, select the month and year, and click \"Generate Report\". The report includes total sales, expenses, profit/loss, and per-branch royalty breakdown. Click \"Download PDF\" to export a professionally formatted report.",
+  },
+  {
+    question: "Can I manage multiple franchise brands?",
+    answer: "Each Relay account is tied to a single franchise brand. If you operate multiple brands, you'll need a separate Relay account for each. Contact support at hello@relayhq.com for enterprise multi-brand arrangements.",
+  },
+];
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
@@ -61,7 +87,14 @@ export default function AdminDashboard() {
 
   const renderTabContent = () => {
     if (loading) return <div className="flex justify-center py-20"><p className="text-gray-500">Loading dashboard…</p></div>;
-    if (activeTab === 'overview') return <AdminOverview metrics={metrics} primaryFranchise={primaryFranchise} menuUploading={menuUploading} onMenuButtonClick={handleMenuButtonClick} onMenuFileChange={handleMenuFileChange} fileInputRef={fileInputRef} onNavigateToApplications={() => setActiveTab('applications')} />;
+    if (activeTab === 'overview') {
+      return (
+        <>
+          <AdminOverview metrics={metrics} primaryFranchise={primaryFranchise} menuUploading={menuUploading} onMenuButtonClick={handleMenuButtonClick} onMenuFileChange={handleMenuFileChange} fileInputRef={fileInputRef} onNavigateToApplications={() => setActiveTab('applications')} />
+          <FaqAccordion items={ADMIN_FAQ} />
+        </>
+      );
+    }
     if (activeTab === 'network') return <AdminNetwork flattenedBranches={flattenedBranches} onToggleStatus={toggleBranchStatus} />;
     if (activeTab === 'catalog') return (
       <AdminCatalog

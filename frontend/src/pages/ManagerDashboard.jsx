@@ -12,6 +12,34 @@ import ManagerInventory from '../components/manager/ManagerInventory';
 import ManagerSales from '../components/manager/ManagerSales';
 import ManagerRequests from '../components/manager/ManagerRequests';
 import ManagerExpenses from '../components/manager/ManagerExpenses';
+import { FaqAccordion } from '../components/shared';
+
+const MANAGER_FAQ = [
+  {
+    question: "How do I record a stock delivery?",
+    answer: "Go to the Inventory tab and click \"Record Delivery\". Select the stock item, enter the quantity received, and add an optional note. The inventory quantity updates immediately and an audit record is created.",
+  },
+  {
+    question: "How do I log a sale?",
+    answer: "Go to the Sales tab and click \"Log Sale\". Select the products and quantities sold, choose the payment mode (Cash, Card, or UPI), and confirm. Ingredient inventory is automatically deducted based on product recipes.",
+  },
+  {
+    question: "How do I submit a stock purchase request?",
+    answer: "Go to the Stock Requests tab and click \"New Request\". Select the stock item, enter the quantity needed and the estimated unit cost. The request is sent to the branch owner for approval. Once approved, stock is added to inventory automatically.",
+  },
+  {
+    question: "What happens when a sale fails due to insufficient stock?",
+    answer: "If a product's required ingredients are below the needed quantity, the sale will be rejected with an insufficient stock error. Record a delivery or submit a stock request to replenish the item before retrying the sale.",
+  },
+  {
+    question: "How do I add a new staff member?",
+    answer: "Go to the My Staff tab and click \"Add Staff\". Fill in the name, email, phone, and a temporary password. The staff member will be prompted to set a new password on their first login.",
+  },
+  {
+    question: "How do I log a branch expense?",
+    answer: "Go to the Expenses tab and click \"Log Expense\". Choose a category (Rent, Utilities, Salaries, etc.), set the date and amount, and add an optional description. The branch owner can view all logged expenses in their Reports tab.",
+  },
+];
 
 export default function ManagerDashboard() {
   const { user, getBranchId, logout } = useAuth();
@@ -53,7 +81,12 @@ export default function ManagerDashboard() {
         return <ManagerExpenses expenses={expenses} logExpense={logExpense} deleteExpense={deleteExpense} onRefresh={refreshExpenses} setToast={setToast} />;
       case 'overview':
       default:
-        return <ManagerOverview todaySalesTotal={todaySalesTotal} lowStockItemsCount={lowStockItemsCount} pendingRequestsCount={pendingRequestsCount} />;
+        return (
+          <>
+            <ManagerOverview todaySalesTotal={todaySalesTotal} lowStockItemsCount={lowStockItemsCount} pendingRequestsCount={pendingRequestsCount} />
+            <FaqAccordion items={MANAGER_FAQ} />
+          </>
+        );
     }
   };
 

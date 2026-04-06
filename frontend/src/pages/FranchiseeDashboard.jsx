@@ -10,6 +10,34 @@ import FranchiseeRequests from '../components/franchisee/FranchiseeRequests';
 import FranchiseeStaff from '../components/franchisee/FranchiseeStaff';
 import FranchiseeReports from '../components/franchisee/FranchiseeReports';
 import FranchiseeExpenses from '../components/franchisee/FranchiseeExpenses';
+import { FaqAccordion } from '../components/shared';
+
+const FRANCHISEE_FAQ = [
+  {
+    question: "How do I approve a stock request from my manager?",
+    answer: "Go to the Stock Requests tab. You'll see all pending requests submitted by your manager. Click \"Approve\" to release the stock into branch inventory automatically, or \"Reject\" to decline. Approved requests update inventory records immediately.",
+  },
+  {
+    question: "How do I appoint a branch manager?",
+    answer: "Go to the My Staff tab. If no manager is assigned, an \"Appoint Manager\" button will appear. Fill in the manager's name, email, phone, and a temporary password. They will be prompted to set a new password on their very first login.",
+  },
+  {
+    question: "How do I view my royalty earnings?",
+    answer: "Your royalty share is shown on the Overview tab under \"Royalty Earned (MTD)\". For a detailed monthly breakdown, go to the Reports tab, select a month and year, and generate a report.",
+  },
+  {
+    question: "How do I deactivate a staff member?",
+    answer: "Go to the My Staff tab. Find the staff member in the Support Staff table and click \"Deactivate\". They lose access immediately. Use the \"Reactivate\" button to restore their access at any time.",
+  },
+  {
+    question: "What does Inventory Value represent?",
+    answer: "Inventory Value is calculated from approved stock-in transactions and their recorded unit costs. It represents the cumulative value of all stock received into your branch since it was set up.",
+  },
+  {
+    question: "How do I log an expense?",
+    answer: "Go to the Expenses tab and click \"Log Expense\". Select the category, enter the date, amount, and an optional description. All expenses are included in your monthly profit/loss report under the Reports tab.",
+  },
+];
 
 export default function FranchiseeDashboard() {
   const { user, getBranchId, logout } = useAuth();
@@ -62,7 +90,12 @@ export default function FranchiseeDashboard() {
         );
       case 'overview':
       default:
-        return <FranchiseeOverview metrics={metrics} sales={sales} onRefresh={loadData} branchSummary={branchSummary} branchSummaryLoading={branchSummaryLoading} />;
+        return (
+          <>
+            <FranchiseeOverview metrics={metrics} sales={sales} onRefresh={loadData} branchSummary={branchSummary} branchSummaryLoading={branchSummaryLoading} />
+            <FaqAccordion items={FRANCHISEE_FAQ} />
+          </>
+        );
     }
   };
 

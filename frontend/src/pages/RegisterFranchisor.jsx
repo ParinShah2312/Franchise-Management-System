@@ -104,6 +104,12 @@ export default function RegisterFranchisor() {
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 flex items-center justify-center py-10 px-4">
       <div className="bg-white rounded-2xl shadow-2xl p-8 w-full max-w-3xl">
+        <Link to="/register" className="inline-flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-900 transition-colors mb-6 -mt-2">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor" className="w-4 h-4">
+            <path fillRule="evenodd" d="M17 10a.75.75 0 01-.75.75H5.612l4.158 4.158a.75.75 0 11-1.06 1.06l-5.5-5.5a.75.75 0 010-1.06l5.5-5.5a.75.75 0 111.06 1.06L5.612 9.25H16.25A.75.75 0 0117 10z" clipRule="evenodd" />
+          </svg>
+          Back to choose path
+        </Link>
         <div className="flex items-center justify-between mb-8">
           <div>
             <h1 className="text-3xl font-bold text-gray-800">Start Your Franchise Brand</h1>
@@ -112,9 +118,6 @@ export default function RegisterFranchisor() {
               franchise network.
             </p>
           </div>
-          <Link to="/" className="text-sm text-blue-600 hover:text-blue-700 font-semibold">
-            Back to login
-          </Link>
         </div>
 
         <form className="space-y-6" onSubmit={handleSubmit}>
