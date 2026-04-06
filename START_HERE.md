@@ -313,11 +313,13 @@ Work through these tests in order to see every feature in the system.
 4. **FAQ Accordion** below with 6 Q&A items
 
 **My Staff tab:**
+
 5. Branch Owner section and Support Staff table visible
 6. Click **"Add Staff"** → fill form (name, email, phone, temporary password) → staff member appears in table
 7. Click **"Reset Password"** on any staff member to force password reset on next login
 
 **Inventory tab:**
+
 8. See all stock items for this branch with current quantities and reorder levels
 9. Items below reorder level show amber background; a **low-stock banner** appears at the top of every tab
 10. Click **"Add Item"** → select stock item, set quantity and reorder level → item appears in inventory
@@ -325,16 +327,19 @@ Work through these tests in order to see every feature in the system.
 12. Click **"Record Delivery"** → enter stock item, quantity, and notes → inventory updates; row briefly pulses
 
 **Sales tab:**
+
 13. Click **"Log Sale"** → select product, quantity, price
 14. Click **"+ Add Product"** to add multiple products to the same sale
 15. Choose payment mode (Cash / Card / UPI) and confirm
 16. The new sale appears in the sales history table with the correct date/time and payment mode
 
 **Stock Requests tab:**
+
 17. Click **"New Request"** → select stock item, enter quantity and estimated unit cost → submitted as PENDING
 18. View all existing requests with status badges
 
 **Expenses tab:**
+
 19. Click **"Log Expense"** → select category, enter date, amount, and optional description
 20. Total expenses shown in header
 21. Click **"Delete"** on any expense → expense removed

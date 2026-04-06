@@ -8,6 +8,8 @@
 
 👉 **[START_HERE.md](START_HERE.md)** — Complete startup guide from a fresh laptop boot. No database server required.
 
+🧪 **[TESTING_GUIDE.md](TESTING_GUIDE.md)** — Exhaustive manual feature testing checklist covering all 4 roles, RBAC, edge cases, and PDF verification.
+
 ---
 
 ## 🌟 What Is Relay?
