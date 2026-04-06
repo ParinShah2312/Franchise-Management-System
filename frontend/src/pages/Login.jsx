@@ -79,7 +79,7 @@ export default function Login() {
         </div>
 
         <div className="w-full max-w-md">
-          <div className="card p-10 shadow-xl">
+          <div className="card p-6 sm:p-10 shadow-xl">
             <div className="mb-8 flex items-center gap-3">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg">
                 <svg

@@ -63,7 +63,7 @@ export default function ManagerExpenses({ expenses, logExpense, deleteExpense, o
     return (
         <div>
             <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-5 border-b border-gray-100">
                     <div>
                         <h3 className="text-lg font-semibold text-gray-800">Expenses</h3>
                         {expenses.length > 0 && (
@@ -133,7 +133,7 @@ export default function ManagerExpenses({ expenses, logExpense, deleteExpense, o
 
             {showModal ? (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-6">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-4 sm:p-6 space-y-6 max-h-[90dvh] overflow-y-auto mx-2">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-semibold text-gray-800">Log Expense</h3>
                             <button type="button" onClick={closeModal} className="text-gray-400 hover:text-gray-600" aria-label="Close">✕</button>

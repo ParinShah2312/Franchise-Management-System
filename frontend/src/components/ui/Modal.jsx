@@ -5,9 +5,9 @@ export default function Modal({ isOpen, onClose, title, description, children, m
 
     return createPortal(
         <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
-            <div className={`w-full ${maxWidth} overflow-hidden rounded-xl bg-white shadow-2xl max-h-[90vh] flex flex-col`}>
+            <div className={`w-full ${maxWidth} overflow-hidden rounded-xl bg-white shadow-2xl max-h-[90dvh] flex flex-col mx-2`}>
                 {(title || description || onClose) && (
-                    <header className="flex items-center justify-between border-b border-gray-100 px-6 py-5 shrink-0">
+                    <header className="flex items-center justify-between border-b border-gray-100 px-4 sm:px-6 py-5 shrink-0">
                         <div>
                             {title && <h3 className="text-xl font-semibold text-gray-900">{title}</h3>}
                             {description && <p className="text-sm text-gray-500 mt-1">{description}</p>}
@@ -24,7 +24,7 @@ export default function Modal({ isOpen, onClose, title, description, children, m
                         )}
                     </header>
                 )}
-                <div className="px-6 py-6 overflow-y-auto">
+                <div className="px-4 sm:px-6 py-6 overflow-y-auto">
                     {children}
                 </div>
             </div>

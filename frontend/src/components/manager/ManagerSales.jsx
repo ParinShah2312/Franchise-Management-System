@@ -142,7 +142,7 @@ export default function ManagerSales({ sales, products, logSale, refreshSales, s
 
             {showSalesModal ? (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-6 space-y-6">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-4 sm:p-6 space-y-6 max-h-[90dvh] overflow-y-auto mx-2">
                         <div className="flex items-center justify-between">
                             <h3 className="text-xl font-semibold text-gray-800">Log New Sale</h3>
                             <button

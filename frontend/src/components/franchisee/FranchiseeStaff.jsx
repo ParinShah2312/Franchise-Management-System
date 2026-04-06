@@ -14,7 +14,7 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
     return (
         <div>
             <div className="bg-white border border-gray-200 rounded-xl p-6 space-y-6">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-wrap items-center justify-between gap-3">
                     <div>
                         <h3 className="text-lg font-semibold text-gray-800">My Staff</h3>
                         <p className="text-sm text-gray-500">Manage your branch manager and support staff.</p>
@@ -185,7 +185,7 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
 
             {showManagerModal ? (
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-6 space-y-6 transform transition-all">
+                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-4 sm:p-6 space-y-6 transform transition-all max-h-[90dvh] overflow-y-auto mx-2">
                         <div className="flex items-center justify-between border-b border-gray-100 pb-4">
                             <h3 className="text-lg font-semibold text-gray-900">Appoint Branch Manager</h3>
                             <button

@@ -118,14 +118,14 @@ export default function AdminDashboard() {
   return (
     <div className="min-h-screen bg-background">
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Franchisor Dashboard</h1>
-            <p className="text-gray-500 text-sm">
+            <p className="hidden sm:block text-gray-500 text-sm">
               Welcome back{user?.name ? `, ${user.name}` : ''}! Monitor network health and manage expansion requests.
             </p>
           </div>
-          <div className="flex items-center space-x-3">
+          <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
               onClick={fetchDashboard}
@@ -143,7 +143,7 @@ export default function AdminDashboard() {
           </div>
         </div>
       </header>
-      <main className="mx-auto max-w-6xl px-6 py-8">
+      <main className="mx-auto max-w-6xl px-4 sm:px-6 py-6 sm:py-8">
         {error && <div className="mb-6 rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">{error}</div>}
         <Tabs tabs={TABS} activeTab={activeTab} onTabChange={setActiveTab} />
         <div className="space-y-8">{renderTabContent()}</div>

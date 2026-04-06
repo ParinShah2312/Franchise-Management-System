@@ -40,7 +40,7 @@ export default function FranchiseeOverview({ metrics, sales, onRefresh, branchSu
             </div>
 
             <div className="bg-white border border-gray-100 rounded-xl shadow-sm overflow-hidden">
-                <div className="flex items-center justify-between px-6 py-5 border-b border-gray-100">
+                <div className="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-5 border-b border-gray-100">
                     <h3 className="text-lg font-semibold text-gray-800">Recent Sales</h3>
                     <button
                         type="button"

@@ -9,24 +9,26 @@ export default function Table({ headers, data, renderRow, emptyMessage, children
 
     return (
         <div className="overflow-hidden rounded-xl border border-gray-100 bg-white shadow-sm">
-            <table className="min-w-full divide-y divide-gray-100">
-                <thead className="bg-gray-50/50">
-                    <tr>
-                        {headers.map((heading) => (
-                            <th
-                                key={heading}
-                                scope="col"
-                                className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
-                            >
-                                {heading}
-                            </th>
-                        ))}
-                    </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-100 bg-white text-sm">
-                    {children ? children : data?.map((item, index) => renderRow(item, index))}
-                </tbody>
-            </table>
+            <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-100">
+                    <thead className="bg-gray-50/50">
+                        <tr>
+                            {headers.map((heading) => (
+                                <th
+                                    key={heading}
+                                    scope="col"
+                                    className="px-6 py-4 text-left text-xs font-semibold uppercase tracking-wider text-gray-500"
+                                >
+                                    {heading}
+                                </th>
+                            ))}
+                        </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100 bg-white text-sm">
+                        {children ? children : data?.map((item, index) => renderRow(item, index))}
+                    </tbody>
+                </table>
+            </div>
         </div>
     );
 }

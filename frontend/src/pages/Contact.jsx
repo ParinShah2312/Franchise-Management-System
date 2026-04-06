@@ -25,7 +25,7 @@ export default function Contact() {
   return (
     <div className="bg-background pb-24">
       <section className="bg-white">
-        <div className="mx-auto flex max-w-5xl flex-col gap-8 px-6 py-16 text-center">
+        <div className="mx-auto flex max-w-5xl flex-col gap-8 px-4 sm:px-6 py-12 sm:py-16 text-center">
           <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl">Let&apos;s build your franchise success story</h1>
           <p className="text-lg text-gray-600">
             Share a few details and our team will reach out to walk you through Relay&apos;s capabilities for your
@@ -34,7 +34,7 @@ export default function Contact() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-4xl px-6">
+      <section className="mx-auto max-w-4xl px-4 sm:px-6">
         <div className="card p-8 lg:p-12">
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>

@@ -59,14 +59,14 @@ export default function ManagerDashboard() {
 
   const renderHeader = () => (
     <header className="bg-white border-b border-gray-200">
-      <div className="max-w-6xl mx-auto px-6 py-4 flex items-center justify-between">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Manager Dashboard</h1>
-          <p className="text-gray-500 text-sm">
+          <p className="hidden sm:block text-gray-500 text-sm">
             Welcome back{user?.name ? `, ${user.name}` : ''}! Take charge of your branch operations.
           </p>
         </div>
-        <div className="flex items-center space-x-3">
+        <div className="flex items-center gap-2 flex-wrap">
           <button
             type="button"
             onClick={loadData}
@@ -90,7 +90,7 @@ export default function ManagerDashboard() {
     <div className="min-h-screen bg-gray-50">
       {renderHeader()}
 
-      <main className="max-w-6xl mx-auto px-6 py-10">
+      <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {error ? (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>
         ) : null}

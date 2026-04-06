@@ -5,7 +5,7 @@ export default function PendingDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center py-12 px-4 sm:px-6 lg:px-8">
-      <div className="max-w-md w-full space-y-8 bg-white p-10 rounded-2xl shadow-xl text-center">
+      <div className="max-w-2xl w-full space-y-8 bg-white p-8 sm:p-10 rounded-2xl shadow-xl text-center">
         <div>
           <div className="mx-auto flex items-center justify-center h-16 w-16 rounded-full bg-amber-100">
             <svg

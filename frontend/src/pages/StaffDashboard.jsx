@@ -31,10 +31,10 @@ export default function StaffDashboard() {
   return (
     <div className="min-h-screen bg-gray-50">
       <header className="bg-white border-b border-gray-200">
-        <div className="max-w-5xl mx-auto px-6 py-4 flex items-center justify-between">
+        <div className="max-w-5xl mx-auto px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Staff Dashboard</h1>
-            <p className="text-sm text-gray-500">Manage branch inventory and log sales with live stock deductions.</p>
+            <p className="hidden sm:block text-sm text-gray-500">Manage branch inventory and log sales with live stock deductions.</p>
           </div>
           <div className="flex items-center gap-3">
             <button
@@ -55,7 +55,7 @@ export default function StaffDashboard() {
         </div>
       </header>
 
-      <main className="max-w-5xl mx-auto px-6 py-10">
+      <main className="max-w-5xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {error ? (
           <div className="mb-6 bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">{error}</div>
         ) : null}

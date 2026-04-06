@@ -15,6 +15,14 @@
     animation: slideInRight 0.3s ease-out;
   }
 
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+
   @keyframes fadeIn {
     from {
       opacity: 0;

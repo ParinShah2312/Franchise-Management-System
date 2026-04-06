@@ -28,7 +28,7 @@ export default function Home() {
   return (
     <div className="flex flex-col gap-24 bg-background pb-24">
       <section className="relative overflow-hidden bg-white">
-        <div className="mx-auto flex max-w-6xl flex-col-reverse gap-12 px-6 py-16 lg:flex-row lg:items-center lg:gap-16">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
           <div className="max-w-xl">
             <span className="inline-flex items-center rounded-full bg-blue-50 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-primary">
               Relay Platform
@@ -48,16 +48,16 @@ export default function Home() {
                 Explore Features
               </Link>
             </div>
-            <dl className="mt-12 grid grid-cols-1 gap-6 text-sm text-gray-600 sm:grid-cols-3">
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6 text-center mt-12">
               {stats.map((stat) => (
                 <div key={stat.label} className="card border-none bg-blue-50/60 shadow-none">
                   <dt className="text-xs uppercase tracking-wide text-gray-500">{stat.label}</dt>
                   <dd className="mt-2 text-2xl font-semibold text-gray-900">{stat.value}</dd>
                 </div>
               ))}
-            </dl>
+            </div>
           </div>
-          <div className="relative flex flex-1 justify-center">
+          <div className="relative hidden md:flex flex-1 justify-center">
             <div className="relative w-full max-w-lg rounded-3xl border border-border bg-white p-6 shadow-xl">
               <div className="mb-6 flex items-center gap-3">
                 <div className="flex h-12 w-12 items-center justify-center rounded-full bg-primary text-white shadow-lg">
@@ -95,7 +95,7 @@ export default function Home() {
         </div>
       </section>
 
-      <section className="mx-auto flex max-w-6xl flex-col gap-12 px-6">
+      <section className="mx-auto flex max-w-6xl flex-col gap-12 px-4 sm:px-6">
         <div className="max-w-3xl">
           <h2 className="text-3xl font-semibold text-gray-900 sm:text-4xl">Built for scaling franchise networks</h2>
           <p className="mt-4 text-lg text-gray-600">
@@ -103,7 +103,7 @@ export default function Home() {
             dozens worldwide.
           </p>
         </div>
-        <div className="grid gap-6 md:grid-cols-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {featureHighlights.map((feature) => (
             <article key={feature.title} className="card">
               <h3 className="text-lg font-semibold text-gray-900">{feature.title}</h3>

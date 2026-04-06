@@ -79,7 +79,7 @@ export default function Features() {
   return (
     <div className="bg-background pb-24">
       <section className="bg-white">
-        <div className="mx-auto max-w-6xl px-6 py-16 text-center">
+        <div className="mx-auto max-w-6xl px-4 sm:px-6 py-16 sm:py-20 text-center">
           <h1 className="text-4xl font-bold text-gray-900 sm:text-5xl">Built to run modern franchise networks</h1>
           <p className="mt-6 text-lg text-gray-600">
             Relay unifies daily operations, performance analytics, and team collaboration under one scalable platform.
@@ -95,8 +95,8 @@ export default function Features() {
         </div>
       </section>
 
-      <section className="mx-auto max-w-6xl px-6">
-        <div className="grid gap-6 md:grid-cols-2 lg:grid-cols-3">
+      <section className="mx-auto max-w-6xl px-4 sm:px-6 mt-12">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 sm:gap-8">
           {features.map((feature) => (
             <article key={feature.title} className="card">
               <div className="flex h-12 w-12 items-center justify-center rounded-full bg-blue-100 text-primary">
