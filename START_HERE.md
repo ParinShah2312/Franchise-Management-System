@@ -364,7 +364,7 @@ Work through these tests in order to see every feature in the system.
 
 1. **Home page** (`http://localhost:3000/`): Hero section, stats, feature highlights, role cards, CTA banner
 2. **Features page** (click "Features" in navbar): Grid of 6 feature cards
-3. **Contact page** (click "Contact"): Contact form; submit returns success toast
+3. **Contact page** (click "Contact"): Contact form labeled **"Demo Only"** — submit returns success toast but nothing is sent
 4. **Signup Selection** (click "Sign Up"): Two cards — "Register as Franchisor" and "Apply for a Branch"
 5. Click **"← Back"** on any registration form → returns to signup selection page
 6. Resize browser to mobile width → **hamburger menu** appears; all links accessible
@@ -471,7 +471,7 @@ npm install
 
 ### Frontend shows blank page or auth errors after backend restart
 
-The JWT secret resets between runs in development. Log out and log back in — this clears the stale token.
+The `SECRET_KEY` is consistent across runs in development (set in `.env`). If you changed the secret between runs, existing tokens become invalid. Log out and log back in to get a fresh token.
 
 ---
 

@@ -29,7 +29,7 @@ Relay is a complete franchise operations ecosystem. It models the full hierarchy
 
 ### 🔐 Authentication & RBAC
 
-- JWT-based authentication (custom HS256 implementation using HMAC-SHA256 — no third-party JWT library)
+- JWT-based authentication (custom HS256 implementation using HMAC-SHA256 — no third-party JWT library); JWT signing consolidated with Flask `SECRET_KEY`
 - Two principal types: `Franchisor` (brand account) and `User` (all branch roles)
 - `token_required` decorator enforces role allow-lists on every protected endpoint
 - Inactive user check enforced at the token layer — deactivated accounts receive `403` immediately
@@ -37,6 +37,8 @@ Relay is a complete franchise operations ecosystem. It models the full hierarchy
 - Forced password reset on first login for system-created accounts (Managers & Staff)
 - Persistent auth state via `AuthContext` with auto-logout on `401` or expired token
 - Token expiry check on frontend — expired tokens trigger automatic logout
+- Login rate limiting via `Flask-Limiter` (5 attempts per minute per IP)
+- Request timeouts — all frontend API calls abort after 15 seconds via `AbortController`
 - Forgot password modal on login page with support contact info
 
 ### 📋 Franchise Application Workflow
@@ -184,7 +186,7 @@ Relay is a complete franchise operations ecosystem. It models the full hierarchy
 
 - **Home page:** Hero section, stats counters, feature highlights, role cards, CTA banner
 - **Features page:** Grid of 6 feature cards describing platform capabilities
-- **Contact page:** Contact form with validation and success toast
+- **Contact page:** Contact form labeled as demo-only (no backend endpoint); shows success toast on submit
 - **Signup Selection page:** Two cards — "Register as Franchisor" and "Apply for a Branch"
 - **Login page:** Email/password form with Forgot Password modal
 - Back arrow navigation ("← Back") on all authentication/registration forms
@@ -196,9 +198,13 @@ Relay is a complete franchise operations ecosystem. It models the full hierarchy
 - **Skeleton screens:** `DashboardSkeleton`, `SkeletonCard`, `SkeletonTable` replace text-based loading for all dashboard tabs
 - **Error recovery:** `ErrorState` component shows error message with "Try Again" retry button
 - **Toast notifications:** Success/error toasts for all user actions across every dashboard
+- **Confirmation dialogs:** Shared `ConfirmDialog` component replaces all native `window.confirm` calls
+- **Alert banners:** Shared `AlertBanner` component for dismissible status messages
 - **Animations:** `animate-fade-in` transitions on tab switches; row pulse on delivery record
 - **Responsive design:** Full usability on mobile (≥320px) and tablet (≥768px) without horizontal scrolling
 - **Error boundary:** Global `ErrorBoundary` component wraps the entire app
+- **Keyboard accessibility:** Modals close on `Escape` key press
+- **PropTypes:** Type safety enforced via `PropTypes` across all shared UI components (no TypeScript)
 
 ### 🗄️ Database File Storage
 
@@ -226,6 +232,7 @@ Relay is a complete franchise operations ecosystem. It models the full hierarchy
 | Password hashing | bcrypt |
 | Migrations | Flask-Migrate 4 (Alembic) |
 | CORS | Flask-CORS 5 |
+| Rate limiting | Flask-Limiter 3.8 |
 | Backend testing | Pytest 8 + pytest-cov |
 | Frontend testing | Vitest 4 + Testing Library |
 | Linting | ESLint (frontend), pytest (backend) |
@@ -239,7 +246,7 @@ Relay/
 ├── backend/
 │   ├── app/
 │   │   ├── __init__.py          # Flask app factory (create_app, register_blueprints)
-│   │   ├── extensions.py        # db, migrate singletons
+│   │   ├── extensions.py        # db, migrate, limiter singletons
 │   │   ├── models/
 │   │   │   ├── __init__.py      # Re-exports all 22 model classes
 │   │   │   ├── reference.py     # ApplicationStatus, BranchStatus, TransactionType, RequestStatus, SaleStatus, Unit
@@ -293,7 +300,7 @@ Relay/
 ├── frontend/
 │   ├── src/
 │   │   ├── App.jsx               # Route definitions and role-based route protection
-│   │   ├── api.js                # Fetch wrapper with auth headers, 401 auto-logout, base URL config
+│   │   ├── api.js                # Fetch wrapper with auth headers, 401 auto-logout, AbortController timeout, base URL config
 │   │   ├── main.jsx              # React entry point
 │   │   ├── index.css             # Global styles and Tailwind base
 │   │   ├── context/
@@ -321,7 +328,7 @@ Relay/
 │   │   │   ├── shared/           # FaqAccordion, ReportCard, ReportPDF, ReportPDFChart, ReportBranchTable
 │   │   │   ├── register/         # AccountInfoSection, BusinessInfoSection, ContactInfoSection, FranchiseDetailsSection, OrgInfoSection, PersonalInfoSection
 │   │   │   ├── layout/           # Navbar, Footer
-│   │   │   ├── ui/               # Table, Tabs, StatCard, Modal, Toast, LowStockBanner, SkeletonCard, SkeletonTable, DashboardSkeleton, ErrorState
+│   │   │   ├── ui/               # Table, Tabs, StatCard, Modal, ConfirmDialog, AlertBanner, Toast, LowStockBanner, SkeletonCard, SkeletonTable, DashboardSkeleton, ErrorState
 │   │   │   ├── ProtectedRoute.jsx
 │   │   │   ├── ErrorBoundary.jsx
 │   │   │   └── Toast.jsx
@@ -329,7 +336,7 @@ Relay/
 │   │   ├── layouts/              # PublicLayout (Navbar + Outlet + Footer wrapper)
 │   │   └── utils/
 │   │       ├── formatters.js     # formatINR, formatINRDecimal, formatDateTime, formatDate, formatNumber, formatRole, getNowString, getTodayString
-│   │       ├── validators.js     # sanitizePhone, isValidPhone, isValidEmail, isValidPassword
+│   │       ├── validators.js     # sanitizePhone, isValidPhone, isValidEmail, isValidPassword, hasEmailTypo
 │   │       ├── auth.js           # parseToken, isTokenExpired
 │   │       ├── constants.js      # STORAGE_KEYS and app constants
 │   │       ├── indianLocations.js # Indian state/city location data

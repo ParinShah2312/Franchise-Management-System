@@ -38,8 +38,9 @@
 | 1.7 | Pending applicant | Log in as `applicant@demo.com` / `applicant123` | Redirected to `/pending` with "Application Pending" screen |
 | 1.8 | Logout | Click Logout button on any dashboard | Redirected to home page, session cleared |
 | 1.9 | Expired session | Manually clear localStorage and reload a protected page | Redirected to `/` login |
-| 1.10 | Forgot password modal | On login page, click "Forgot password?" | Modal appears with support contact info |
+| 1.10 | Forgot password modal | On login page, click "Forgot password?" | Modal appears with support contact info; press `Escape` key to close |
 | 1.11 | Expired token auto-logout | Wait for token to expire (or manually set expired token in localStorage) | AuthContext detects expiry and auto-logs out |
+| 1.12 | Login rate limiting | Rapidly submit 6 wrong-password login attempts within 1 minute | 6th attempt returns `429 Too Many Requests` |
 
 ---
 
@@ -57,6 +58,7 @@
 | 2.1.7 | FAQ accordion | Scroll down, click any FAQ item | Answer expands; click again to collapse |
 | 2.1.8 | Skeleton loading | Hard refresh while data loads | Skeleton cards appear (animated placeholder blocks) instead of spinner |
 | 2.1.9 | Error recovery | Stop backend server, click Refresh Data | ErrorState component with "Try Again" button |
+| 2.1.10 | Modal escape key | Open any modal, press `Escape` | Modal closes without clicking the close button |
 
 ### 2.2 Network Tab
 | # | Feature | Steps | Expected Result |
@@ -143,8 +145,8 @@
 | 3.3.1 | Staff view | Switch to My Staff tab | Branch Manager section and Support Staff table visible |
 | 3.3.2 | No manager state | If no manager assigned | "Appoint Manager" button appears |
 | 3.3.3 | Appoint manager | Click "Appoint Manager", fill form (name, email, phone, temp password), submit | Manager appears in Branch Manager section; toast success |
-| 3.3.4 | Deactivate staff | Click "Deactivate" on any active staff, confirm | Name and email dim (opacity-50); Status badge turns gray "Inactive"; button changes to "Reactivate" |
-| 3.3.5 | Reactivate staff | Click "Reactivate" on inactive staff, confirm | Row brightens; Status badge turns green "Active" |
+| 3.3.4 | Deactivate staff | Click "Deactivate" on any active staff, confirm via `ConfirmDialog` | Name and email dim (opacity-50); Status badge turns gray "Inactive"; button changes to "Reactivate" |
+| 3.3.5 | Reactivate staff | Click "Reactivate" on inactive staff, confirm via `ConfirmDialog` | Row brightens; Status badge turns green "Active" |
 | 3.3.6 | Force reset password | Click "Reset Password" on manager or staff, confirm | Toast: user will be prompted to reset on next login |
 | 3.3.7 | Cannot deactivate self | Verify own row has "—" in Actions column | No deactivate button for the branch owner's own account |
 
@@ -238,7 +240,7 @@
 |---|---|---|---|
 | 6.1 | Home page | Go to `http://localhost:3000` | Hero section, stats, feature highlights, role cards, CTA banner all visible |
 | 6.2 | Features page | Click "Features" in navbar | Features grid with 6 feature cards |
-| 6.3 | Contact page | Click "Contact" in navbar | Contact form; submit returns success toast |
+| 6.3 | Contact page | Click "Contact" in navbar | Contact form with **"Demo Only"** badge; submit returns success toast |
 | 6.4 | Signup selection | Click "Sign Up" | Two cards: "Register as Franchisor" and "Apply for a Branch" |
 | 6.5 | Franchisor registration | Click "Start a New Brand", fill all fields, submit | New franchisor account created; redirected to `/admin` |
 | 6.6 | Franchise application | Click "Apply as Branch Owner", fill 11-field form including file upload, submit | Redirected to `/pending` Pending Dashboard |
