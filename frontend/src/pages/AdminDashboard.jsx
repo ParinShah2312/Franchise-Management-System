@@ -1,5 +1,6 @@
 import { useAuth } from '../context/AuthContext';
 import { useAdminDashboard } from '../hooks/useAdminDashboard';
+import { usePersistedTab } from '../hooks/usePersistedTab';
 import Toast from '../components/Toast';
 import Tabs from '../components/ui/Tabs';
 import {
@@ -46,9 +47,9 @@ const ADMIN_FAQ = [
 
 export default function AdminDashboard() {
   const { user, logout } = useAuth();
+  const [activeTab, setActiveTab] = usePersistedTab('relay_tab_admin', 'overview');
   const {
     metrics, applications, loading, error, toast,
-    activeTab, setActiveTab,
     modalApplication, actionState,
     menuUploading,
     rejectionModal, rejectionNote, setRejectionNote,
@@ -104,7 +105,7 @@ export default function AdminDashboard() {
       return <AdminNetwork flattenedBranches={flattenedBranches} onToggleStatus={toggleBranchStatus} />;
     }
     if (activeTab === 'catalog') {
-      if (loading) return <DashboardSkeleton statCount={2} showTable={true} />;
+      if (stockItemsLoading || categoriesLoading || productsLoading) return <DashboardSkeleton statCount={2} showTable={true} />;
       return (
       <AdminCatalog
         stockItems={stockItems}

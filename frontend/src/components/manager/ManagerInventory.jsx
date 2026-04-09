@@ -1,4 +1,5 @@
 import { useState, useMemo } from 'react';
+import { createPortal } from 'react-dom';
 import { formatNumber } from '../../utils';
 
 const initialInventoryForm = {
@@ -189,7 +190,7 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                 </div>
             </div>
 
-            {showInventoryModal ? (
+            {showInventoryModal ? createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
                     <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-4 sm:p-6 space-y-6 max-h-[90dvh] overflow-y-auto mx-2">
                         <div className="flex items-center justify-between">
@@ -283,9 +284,9 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                         </form>
                     </div>
                 </div>
-            ) : null}
+            , document.body) : null}
 
-            {showDeliveryModal ? (
+            {showDeliveryModal ? createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
                     <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-4 sm:p-6 space-y-6 max-h-[90dvh] overflow-y-auto mx-2">
                         <div className="flex items-center justify-between">
@@ -376,7 +377,7 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                         </form>
                     </div>
                 </div>
-            ) : null}
+            , document.body) : null}
         </div>
     );
 }

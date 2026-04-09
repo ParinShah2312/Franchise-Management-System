@@ -1,6 +1,15 @@
 import { createPortal } from 'react-dom';
+import { useRef, useEffect } from 'react';
 
 export default function Modal({ isOpen, onClose, title, description, children, maxWidth = 'max-w-md' }) {
+    const scrollRef = useRef(null);
+
+    useEffect(() => {
+        if (isOpen && scrollRef.current) {
+            scrollRef.current.scrollTop = 0;
+        }
+    }, [isOpen]);
+
     if (!isOpen) return null;
 
     return createPortal(
@@ -24,7 +33,7 @@ export default function Modal({ isOpen, onClose, title, description, children, m
                         )}
                     </header>
                 )}
-                <div className="px-4 sm:px-6 py-6 overflow-y-auto">
+                <div ref={scrollRef} className="px-4 sm:px-6 py-6 overflow-y-auto">
                     {children}
                 </div>
             </div>

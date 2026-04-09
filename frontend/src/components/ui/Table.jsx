@@ -1,5 +1,8 @@
 export default function Table({ headers, data, renderRow, emptyMessage, children }) {
-    if ((!data || data.length === 0) && !children) {
+    const hasChildren = children && (!Array.isArray(children) || children.length > 0);
+    const hasData = data && data.length > 0;
+
+    if (!hasData && !hasChildren) {
         return (
             <div className="rounded-xl border border-dashed border-border bg-white py-12 text-center text-gray-500">
                 {emptyMessage || 'No data available.'}

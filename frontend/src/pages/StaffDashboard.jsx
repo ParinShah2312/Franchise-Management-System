@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePersistedTab } from '../hooks/usePersistedTab';
 
 import { useAuth } from '../context/AuthContext';
 import { useStaffDashboard } from '../hooks/useStaffDashboard';
@@ -41,7 +42,7 @@ export default function StaffDashboard() {
   const { getBranchId, logout } = useAuth();
   const branchId = getBranchId();
 
-  const [activeTab, setActiveTab] = useState('inventory');
+  const [activeTab, setActiveTab] = usePersistedTab('relay_tab_staff', 'inventory');
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [toast, setToast] = useState(null);
 

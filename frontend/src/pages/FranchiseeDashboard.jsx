@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePersistedTab } from '../hooks/usePersistedTab';
 
 import { useAuth } from '../context/AuthContext';
 import { useFranchiseeDashboard } from '../hooks/useFranchiseeDashboard';
@@ -46,11 +47,11 @@ export default function FranchiseeDashboard() {
   const { user, getBranchId, logout } = useAuth();
   const branchId = getBranchId();
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = usePersistedTab('relay_tab_franchisee', 'overview');
   const [toast, setToast] = useState(null);
 
   const {
-    metrics, sales, requests, staff,
+    metrics, metricsLoading, sales, requests, staff,
     updateRequestStatus, appointManager,
     expenses, deleteExpense, refreshExpenses,
     loading, error, pendingRequestsCount, loadData,
@@ -102,7 +103,7 @@ export default function FranchiseeDashboard() {
         if (loading) return <DashboardSkeleton statCount={5} showTable={true} />;
         return (
           <>
-            <FranchiseeOverview metrics={metrics} sales={sales} onRefresh={loadData} branchSummary={branchSummary} branchSummaryLoading={branchSummaryLoading} />
+            <FranchiseeOverview metrics={metrics} sales={sales} onRefresh={loadData} branchSummary={branchSummary} branchSummaryLoading={branchSummaryLoading} loading={metricsLoading} />
             <FaqAccordion items={FRANCHISEE_FAQ} />
           </>
         );

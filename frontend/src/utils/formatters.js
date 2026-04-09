@@ -30,6 +30,23 @@ export function formatINRDecimal(value) {
   });
 }
 
+const _dateTimeFormatter = new Intl.DateTimeFormat('en-IN', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+  hour: '2-digit',
+  minute: '2-digit',
+  hour12: true,
+  timeZone: 'Asia/Kolkata',
+});
+
+const _dateFormatter = new Intl.DateTimeFormat('en-IN', {
+  day: '2-digit',
+  month: 'short',
+  year: 'numeric',
+  timeZone: 'Asia/Kolkata',
+});
+
 /**
  * Format a datetime string or Date object as locale string — e.g. "3/23/2026, 10:30:00 AM"
  * @param {string|Date} value 
@@ -39,15 +56,7 @@ export function formatDateTime(value) {
   if (!value) return '—';
   const date = value instanceof Date ? value : new Date(value);
   if (isNaN(date.getTime())) return '—';
-  return date.toLocaleString('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit',
-    hour12: true,
-    timeZone: 'Asia/Kolkata',
-  });
+  return _dateTimeFormatter.format(date);
 }
 
 /**
@@ -59,12 +68,7 @@ export function formatDate(isoDate) {
   if (!isoDate) return '—';
   const date = isoDate instanceof Date ? isoDate : new Date(isoDate);
   if (isNaN(date.getTime())) return '—';
-  return new Intl.DateTimeFormat('en-IN', {
-    day: '2-digit',
-    month: 'short',
-    year: 'numeric',
-    timeZone: 'Asia/Kolkata',
-  }).format(date);
+  return _dateFormatter.format(date);
 }
 
 /**

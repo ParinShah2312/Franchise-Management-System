@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { sanitizePhone, formatRole } from '../../utils';
 
 export default function FranchiseeStaff({ staff, appointManager, setToast, onDeactivate, onActivate, onForceReset }) {
@@ -183,7 +184,7 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                 </div>
             </div>
 
-            {showManagerModal ? (
+            {showManagerModal ? createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
                     <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-4 sm:p-6 space-y-6 transform transition-all max-h-[90dvh] overflow-y-auto mx-2">
                         <div className="flex items-center justify-between border-b border-gray-100 pb-4">
@@ -302,7 +303,7 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                         </form>
                     </div>
                 </div>
-            ) : null}
+            , document.body) : null}
         </div>
     );
 }

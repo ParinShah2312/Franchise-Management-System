@@ -20,7 +20,7 @@ export default function CatalogCategories({ categories, loading, onAddCategory }
       {loading ? (
         <div className="py-8 text-center text-sm text-gray-500">Loading categories...</div>
       ) : categories && categories.length > 0 ? (
-        <Table headers={headers}>
+        <Table headers={headers} emptyMessage="No categories yet. Add your first product category.">
           {categories.map((cat) => (
             <tr key={cat.category_id} className="hover:bg-gray-50/50">
               <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-900">

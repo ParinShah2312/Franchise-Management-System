@@ -6,6 +6,10 @@ const MONTH_NAMES = [
   'July', 'August', 'September', 'October', 'November', 'December',
 ];
 
+const _now = new Date();
+const _currentYear = _now.getFullYear();
+const YEAR_OPTIONS = [_currentYear, _currentYear - 1, _currentYear - 2];
+
 function getTodayString() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -22,16 +26,12 @@ export default function AdminRoyalty({
   summaryError,
   fetchSummary,
 }) {
-  const now = new Date();
   const [showEditConfig, setShowEditConfig] = useState(false);
   const [editForm, setEditForm] = useState({ franchisor_cut_pct: '', effective_from: getTodayString() });
   const [formError, setFormError] = useState('');
 
-  const [selectedMonth, setSelectedMonth] = useState(now.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(now.getFullYear());
-
-  const currentYear = now.getFullYear();
-  const yearOptions = [currentYear, currentYear - 1, currentYear - 2];
+  const [selectedMonth, setSelectedMonth] = useState(_now.getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(_currentYear);
 
   const handleOpenEdit = () => {
     setEditForm({
@@ -85,7 +85,14 @@ export default function AdminRoyalty({
 
         <div className="px-6 py-6">
           {configLoading ? (
-            <p className="text-sm text-gray-500">Loading configuration…</p>
+            <div className="space-y-4 animate-pulse">
+              <div className="grid grid-cols-2 gap-4 max-w-sm">
+                <div className="bg-gray-100 rounded-lg p-4 h-20" />
+                <div className="bg-gray-100 rounded-lg p-4 h-20" />
+              </div>
+              <div className="h-3 bg-gray-100 rounded w-48" />
+              <div className="h-8 bg-gray-100 rounded w-32" />
+            </div>
           ) : !configured ? (
             <div className="space-y-4">
               <div className="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3">
@@ -237,7 +244,7 @@ export default function AdminRoyalty({
                 onChange={(e) => setSelectedYear(Number(e.target.value))}
                 className="px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
-                {yearOptions.map((y) => (
+                {YEAR_OPTIONS.map((y) => (
                   <option key={y} value={y}>{y}</option>
                 ))}
               </select>
@@ -260,7 +267,12 @@ export default function AdminRoyalty({
           )}
 
           {summaryLoading && (
-            <p className="text-sm text-gray-500">Loading summary…</p>
+            <div className="space-y-2 animate-pulse">
+              <div className="h-8 bg-gray-100 rounded w-full" />
+              {[...Array(3)].map((_, i) => (
+                <div key={i} className="h-10 bg-gray-50 rounded w-full" />
+              ))}
+            </div>
           )}
 
           {!summaryLoading && summary && (

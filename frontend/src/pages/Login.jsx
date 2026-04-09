@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
@@ -7,6 +7,7 @@ import Modal from '../components/ui/Modal';
 export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
+  const submittingRef = useRef(false);
   const [formState, setFormState] = useState({ email: '', password: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
@@ -20,6 +21,8 @@ export default function Login() {
 
   const handleSubmit = async (event) => {
     event.preventDefault();
+    if (submittingRef.current) return;
+    submittingRef.current = true;
     setSubmitting(true);
     setError('');
 
@@ -50,6 +53,7 @@ export default function Login() {
       setError(err.message || 'Unable to sign in.');
     } finally {
       setSubmitting(false);
+      submittingRef.current = false;
     }
   };
 

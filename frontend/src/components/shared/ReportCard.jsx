@@ -86,14 +86,12 @@ export default function ReportCard({
         </button>
 
         {!report ? (
-          <button
-            type="button"
-            id="report-download-btn-disabled"
-            disabled={true}
-            className="rounded-lg border border-gray-300 bg-white px-5 py-2 text-sm font-semibold text-gray-700 shadow-sm opacity-40 cursor-not-allowed transition-colors"
+          <span
+            className="rounded-lg border border-gray-200 bg-gray-50 px-5 py-2 text-sm font-medium text-gray-400 cursor-default select-none"
+            title="Generate a report first to enable PDF download"
           >
             Download PDF
-          </button>
+          </span>
         ) : (
           <PDFDownloadLink
             document={

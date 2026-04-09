@@ -16,11 +16,10 @@ export default function LowStockBanner({ items, onDismiss }) {
             const quantity = item.quantity || 0;
             return (
               <span key={item.stock_item_id || item.id || index}>
-                {name} ({quantity} remaining)
-                {index < items.length - 1 ? ', ' : ''}
+                {name} ({quantity} remaining){index < items.length - 1 ? ', ' : ''}
               </span>
             );
-          }).reduce((acc, curr) => [acc, curr], [])}
+          })}
         </p>
       </div>
       <button

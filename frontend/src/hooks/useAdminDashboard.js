@@ -5,7 +5,7 @@ import { useRoyalty } from './useRoyalty';
 import { useReport } from './useReport';
 
 export function useAdminDashboard() {
-  const [activeTab, setActiveTab] = useState('overview');
+
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [toast, setToast] = useState(null);
@@ -57,8 +57,6 @@ export function useAdminDashboard() {
       setMetrics(metricsResponse);
       setNetwork(Array.isArray(networkResponse) ? networkResponse : []);
       setApplications(Array.isArray(applicationsResponse) ? applicationsResponse : []);
-
-      await Promise.all([refreshStockItems(), refreshCategories(), refreshProducts()]);
     } catch (err) {
       const message = err.message || 'Unable to load dashboard data.';
       setError(message);
@@ -66,7 +64,7 @@ export function useAdminDashboard() {
     } finally {
       setLoading(false);
     }
-  }, [refreshStockItems, refreshCategories, refreshProducts]);
+  }, []);
 
   useEffect(() => {
     fetchDashboard();
@@ -202,7 +200,7 @@ export function useAdminDashboard() {
     stockItems, stockItemsLoading, stockItemsError, refreshStockItems,
     units, unitsLoading,
     createStockItem, fetchIngredients, addIngredient, removeIngredient, fetchStockItemProducts,
-    activeTab, setActiveTab,
+
     modalApplication, setModalApplication,
     actionState,
     menuUploading,

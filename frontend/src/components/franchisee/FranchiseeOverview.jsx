@@ -1,39 +1,61 @@
 import { formatINR, formatINRDecimal, formatDateTime } from '../../utils';
 
-export default function FranchiseeOverview({ metrics, sales, onRefresh, branchSummary, branchSummaryLoading }) {
+export default function FranchiseeOverview({ metrics, sales, onRefresh, branchSummary, branchSummaryLoading, loading = false }) {
     return (
         <div className="space-y-6">
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-6">
                 <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                     <p className="text-sm text-gray-500">Revenue (MTD)</p>
                     <h3 className="text-xl font-semibold text-gray-800 mt-2">
-                        {formatINR(metrics.revenue)}
+                        {loading ? (
+                            <span className="inline-block h-7 w-24 animate-pulse rounded bg-gray-200" />
+                        ) : (
+                            formatINR(metrics.revenue)
+                        )}
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">Total sales recorded this month.</p>
                 </div>
                 <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                     <p className="text-sm text-gray-500">Inventory Value</p>
                     <h3 className="text-xl font-semibold text-gray-800 mt-2">
-                        {formatINR(metrics.inventory_value)}
+                        {loading ? (
+                            <span className="inline-block h-7 w-24 animate-pulse rounded bg-gray-200" />
+                        ) : (
+                            formatINR(metrics.inventory_value)
+                        )}
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">Based on approved stock-in transactions.</p>
                 </div>
                 <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                     <p className="text-sm text-gray-500">Pending Requests</p>
-                    <h3 className="text-xl font-semibold text-gray-800 mt-2">{metrics.pending_requests ?? 0}</h3>
+                    <h3 className="text-xl font-semibold text-gray-800 mt-2">
+                        {loading ? (
+                            <span className="inline-block h-7 w-24 animate-pulse rounded bg-gray-200" />
+                        ) : (
+                            metrics.pending_requests ?? 0
+                        )}
+                    </h3>
                     <p className="text-xs text-gray-500 mt-1">Awaiting your approval.</p>
                 </div>
                 <div className="bg-white border border-gray-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                     <p className="text-sm text-gray-500">Pending Quantity</p>
                     <h3 className="text-xl font-semibold text-gray-800 mt-2">
-                        {metrics.pending_items ?? 0}
+                        {loading ? (
+                            <span className="inline-block h-7 w-24 animate-pulse rounded bg-gray-200" />
+                        ) : (
+                            metrics.pending_items ?? 0
+                        )}
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">Units requested by staff.</p>
                 </div>
                 <div className="bg-white border border-emerald-100 rounded-xl p-6 shadow-sm hover:shadow-md transition-shadow duration-200">
                     <p className="text-sm text-emerald-600">Royalty Earned (MTD)</p>
                     <h3 className="text-xl font-semibold text-gray-800 mt-2">
-                        {branchSummaryLoading ? '…' : formatINRDecimal(branchSummary?.branch_owner_earned ?? 0)}
+                        {(loading || branchSummaryLoading) ? (
+                            <span className="inline-block h-7 w-24 animate-pulse rounded bg-gray-200" />
+                        ) : (
+                            formatINRDecimal(branchSummary?.branch_owner_earned ?? 0)
+                        )}
                     </h3>
                     <p className="text-xs text-gray-500 mt-1">Your share of this month's sales.</p>
                 </div>

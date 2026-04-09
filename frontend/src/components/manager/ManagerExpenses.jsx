@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { formatDateTime, formatINRDecimal, getNowString } from '../../utils';
 
 const EXPENSE_CATEGORIES = [
@@ -131,7 +132,7 @@ export default function ManagerExpenses({ expenses, logExpense, deleteExpense, o
                 </div>
             </div>
 
-            {showModal ? (
+            {showModal ? createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
                     <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-4 sm:p-6 space-y-6 max-h-[90dvh] overflow-y-auto mx-2">
                         <div className="flex items-center justify-between">
@@ -186,7 +187,7 @@ export default function ManagerExpenses({ expenses, logExpense, deleteExpense, o
                         </form>
                     </div>
                 </div>
-            ) : null}
+            , document.body) : null}
         </div>
     );
 }

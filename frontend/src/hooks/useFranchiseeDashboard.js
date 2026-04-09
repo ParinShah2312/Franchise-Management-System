@@ -9,7 +9,7 @@ import { useExpenses } from './useExpenses';
 
 export function useFranchiseeDashboard(branchId) {
   const { metrics, loading: metricsLoading, error: metricsError, refreshMetrics } = useFranchiseMetrics(branchId);
-  const { sales, loading: salesLoading, error: salesError, refreshSales } = useSales(branchId);
+  const { sales, loading: salesLoading, error: salesError, logSale, refreshSales } = useSales(branchId);
   const { requests, loading: reqLoading, error: reqError, updateRequestStatus, refreshRequests } = useRequests(branchId);
   const { staff, loading: staffLoading, error: staffError, appointManager, refreshStaff, deactivateUser, activateUser, forceResetUser } = useFranchiseStaff(branchId);
   const { expenses, loading: expLoading, error: expError, deleteExpense, refreshExpenses } = useExpenses(branchId);
@@ -46,12 +46,9 @@ export function useFranchiseeDashboard(branchId) {
   }, [refreshMetrics, refreshSales, refreshRequests, refreshStaff, refreshExpenses]);
 
   const logSaleAndRefresh = useCallback(async (data) => {
-    // Note: logSale is undefined in this scope because useFranchiseeDashboard doesn't actually get it from useSales.
-    // If the hook actually returned logSale from useSales, we would do: await logSale(data);
-    // Since we don't have it, we just define the wrapper in case it's added later as the instructions imply.
-    // But actually, useSales(branchId) returns { sales, loading, error, refreshSales } (from looking at line 12).
-    // So there is no logSale.
-  }, [refreshMetrics]);
+    await logSale(data);
+    refreshMetrics();
+  }, [logSale, refreshMetrics]);
 
   const updateRequestStatusAndRefresh = useCallback(async (requestId, action) => {
     await updateRequestStatus(requestId, action);
@@ -71,7 +68,7 @@ export function useFranchiseeDashboard(branchId) {
     refreshRequests,
     expenses, expLoading, expError, deleteExpense, refreshExpenses,
     staff, staffLoading, staffError, appointManager, refreshStaff, deactivateUser, activateUser, forceResetUser,
-    loading, error, pendingRequestsCount, loadData,
+    loading, error, pendingRequestsCount, loadData, logSale: logSaleAndRefresh,
     branchSummary, branchSummaryLoading, branchSummaryError, fetchBranchSummary,
     // Reports
     report, reportLoading, reportError,

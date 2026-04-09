@@ -1,4 +1,5 @@
 import { useState } from 'react';
+import { usePersistedTab } from '../hooks/usePersistedTab';
 
 import { useAuth } from '../context/AuthContext';
 import { useManagerDashboard } from '../hooks/useManagerDashboard';
@@ -48,7 +49,7 @@ export default function ManagerDashboard() {
   const { user, getBranchId, logout } = useAuth();
   const branchId = getBranchId();
 
-  const [activeTab, setActiveTab] = useState('overview');
+  const [activeTab, setActiveTab] = usePersistedTab('relay_tab_manager', 'overview');
   const [bannerDismissed, setBannerDismissed] = useState(false);
   const [toast, setToast] = useState(null);
 
