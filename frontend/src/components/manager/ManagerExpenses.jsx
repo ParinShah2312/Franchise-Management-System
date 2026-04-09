@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { formatDateTime, formatINRDecimal, getNowString } from '../../utils';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 const EXPENSE_CATEGORIES = [
     'Rent', 'Utilities', 'Salaries', 'Supplies', 'Maintenance',
@@ -18,6 +19,7 @@ export default function ManagerExpenses({ expenses, logExpense, deleteExpense, o
     const [showModal, setShowModal] = useState(false);
     const [submitting, setSubmitting] = useState(false);
     const [form, setForm] = useState(() => createInitialForm());
+    const [confirmTarget, setConfirmTarget] = useState(null);
 
     const closeModal = () => {
         if (submitting) return;
@@ -49,13 +51,15 @@ export default function ManagerExpenses({ expenses, logExpense, deleteExpense, o
         }
     };
 
-    const handleDelete = async (expenseId, category) => {
-        if (!window.confirm(`Delete this ${category} expense?`)) return;
+    const handleDelete = async () => {
+        if (!confirmTarget) return;
         try {
-            await deleteExpense(expenseId);
+            await deleteExpense(confirmTarget.id);
             setToast({ message: 'Expense deleted.', variant: 'success' });
         } catch (err) {
             setToast({ message: err.message || 'Failed to delete expense.', variant: 'error' });
+        } finally {
+            setConfirmTarget(null);
         }
     };
 
@@ -88,38 +92,38 @@ export default function ManagerExpenses({ expenses, logExpense, deleteExpense, o
                     <table className="min-w-full divide-y divide-gray-100">
                         <thead className="bg-gray-50/50">
                             <tr>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
-                                <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
-                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
-                                <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Date</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Category</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Description</th>
+                                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Amount</th>
+                                <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-100">
+                        <tbody className="bg-white divide-y divide-gray-100 text-sm">
                             {expenses.length === 0 ? (
                                 <tr>
-                                    <td colSpan={5} className="px-4 py-8 text-center text-gray-500 text-sm">
+                                    <td colSpan={5} className="px-6 py-8 text-center text-gray-500 text-sm">
                                         No expenses logged yet.
                                     </td>
                                 </tr>
                             ) : (
                                 expenses.map((expense) => (
-                                    <tr key={expense.expense_id}>
-                                        <td className="px-4 py-3 text-sm text-gray-700">
+                                    <tr key={expense.expense_id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-6 py-4 text-sm text-gray-700">
                                             {formatDateTime(expense.expense_date) || '—'}
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-gray-700">
+                                        <td className="px-6 py-4 text-sm text-gray-700">
                                             <span className="inline-flex items-center rounded-full bg-gray-100 px-2.5 py-0.5 text-xs font-medium text-gray-700">
                                                 {expense.category}
                                             </span>
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-gray-500">{expense.description || '—'}</td>
-                                        <td className="px-4 py-3 text-sm text-gray-900 text-right font-medium">
+                                        <td className="px-6 py-4 text-sm text-gray-500">{expense.description || '—'}</td>
+                                        <td className="px-6 py-4 text-sm text-gray-900 text-right font-medium">
                                             {formatINRDecimal(expense.amount)}
                                         </td>
-                                        <td className="px-4 py-3 text-right">
+                                        <td className="px-6 py-4 text-right">
                                             <button type="button"
-                                                onClick={() => handleDelete(expense.expense_id, expense.category)}
+                                                onClick={() => setConfirmTarget({ id: expense.expense_id, category: expense.category })}
                                                 className="text-xs font-semibold text-red-600 border border-red-200 rounded-lg px-3 py-1 hover:bg-red-50">
                                                 Delete
                                             </button>
@@ -188,6 +192,16 @@ export default function ManagerExpenses({ expenses, logExpense, deleteExpense, o
                     </div>
                 </div>
             , document.body) : null}
+
+            <ConfirmDialog
+                open={!!confirmTarget}
+                title="Delete Expense"
+                message={`Are you sure you want to delete this ${confirmTarget?.category || ''} expense? This action cannot be undone.`}
+                confirmLabel="Delete"
+                variant="danger"
+                onConfirm={handleDelete}
+                onCancel={() => setConfirmTarget(null)}
+            />
         </div>
     );
 }

@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types';
+
 export default function Tabs({ tabs, activeTab, onTabChange }) {
     return (
         <div className="relative">
@@ -34,3 +36,15 @@ export default function Tabs({ tabs, activeTab, onTabChange }) {
         </div>
     );
 }
+
+Tabs.propTypes = {
+    tabs: PropTypes.arrayOf(
+        PropTypes.shape({
+            key: PropTypes.string.isRequired,
+            label: PropTypes.string.isRequired,
+            badge: PropTypes.oneOfType([PropTypes.string, PropTypes.number]),
+        })
+    ).isRequired,
+    activeTab: PropTypes.string.isRequired,
+    onTabChange: PropTypes.func.isRequired,
+};

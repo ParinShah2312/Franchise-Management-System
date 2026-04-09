@@ -77,28 +77,28 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
                     </div>
                 </div>
                 <div className="overflow-x-auto">
-                    <table className="min-w-full divide-y divide-gray-200">
-                        <thead className="bg-gray-50">
+                    <table className="min-w-full divide-y divide-gray-100">
+                        <thead className="bg-gray-50/50">
                             <tr>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Created</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Items</th>
-                                <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Created</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Items</th>
+                                <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
                             </tr>
                         </thead>
-                        <tbody className="bg-white divide-y divide-gray-100">
+                        <tbody className="bg-white divide-y divide-gray-100 text-sm">
                             {requests.length === 0 ? (
                                 <tr>
-                                    <td colSpan={3} className="px-4 py-8 text-center text-gray-500 text-sm">
+                                    <td colSpan={3} className="px-6 py-8 text-center text-gray-500 text-sm">
                                         No stock requests submitted.
                                     </td>
                                 </tr>
                             ) : (
                                 requests.map((request) => (
-                                    <tr key={request.request_id}>
-                                        <td className="px-4 py-3 text-sm text-gray-700">
+                                    <tr key={request.request_id} className="hover:bg-gray-50/50 transition-colors">
+                                        <td className="px-6 py-4 text-sm text-gray-700">
                                             {formatDateTime(request.created_at) || '—'}
                                         </td>
-                                        <td className="px-4 py-3 text-sm text-gray-500">
+                                        <td className="px-6 py-4 text-sm text-gray-500">
                                             {Array.isArray(request.items) && request.items.length > 0
                                                 ? request.items.map((item) => (
                                                     <div key={item.request_item_id}>
@@ -107,7 +107,7 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
                                                 ))
                                                 : '—'}
                                         </td>
-                                        <td className="px-4 py-3 text-sm font-medium text-gray-700">{request.status}</td>
+                                        <td className="px-6 py-4 text-sm font-medium text-gray-700">{request.status}</td>
                                     </tr>
                                 ))
                             )}

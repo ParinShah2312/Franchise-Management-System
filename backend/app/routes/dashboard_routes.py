@@ -18,6 +18,7 @@ from ..models import (
     FranchiseApplication,
     InventoryTransaction,
     Sale,
+    SaleStatus,
     StockPurchaseRequest,
     StockPurchaseRequestItem,
     TransactionType,
@@ -44,8 +45,9 @@ def get_franchisor_metrics() -> tuple[dict[str, object], int]:
         db.session.query(func.coalesce(func.sum(Sale.total_amount), 0))
         .join(Branch, Sale.branch_id == Branch.branch_id)
         .join(Franchise, Branch.franchise_id == Franchise.franchise_id)
+        .join(SaleStatus, Sale.status_id == SaleStatus.sale_status_id)
         .filter(
-            Sale.status_id == 1,
+            SaleStatus.status_name == "PAID",
             Franchise.franchisor_id == franchisor_id
         )
         .scalar()
@@ -55,8 +57,9 @@ def get_franchisor_metrics() -> tuple[dict[str, object], int]:
     active_branches = (
         Branch.query
         .join(Franchise, Branch.franchise_id == Franchise.franchise_id)
+        .join(BranchStatus, Branch.status_id == BranchStatus.status_id)
         .filter(
-            Branch.status_id == 1,
+            BranchStatus.status_name == "ACTIVE",
             Franchise.franchisor_id == franchisor_id
         ).count()
     )
@@ -64,8 +67,9 @@ def get_franchisor_metrics() -> tuple[dict[str, object], int]:
     pending_applications = (
         FranchiseApplication.query
         .join(Franchise, FranchiseApplication.franchise_id == Franchise.franchise_id)
+        .join(ApplicationStatus, FranchiseApplication.status_id == ApplicationStatus.status_id)
         .filter(
-            FranchiseApplication.status_id == 1,
+            ApplicationStatus.status_name == "PENDING",
             Franchise.franchisor_id == franchisor_id
         ).count()
     )

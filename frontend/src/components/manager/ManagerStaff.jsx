@@ -1,5 +1,7 @@
 import { useState } from 'react';
+import { createPortal } from 'react-dom';
 import { isValidPhone, sanitizePhone, formatRole } from '../../utils';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 const initialStaffForm = {
     name: '',
@@ -13,6 +15,7 @@ export default function ManagerStaff({ staff, addStaff, setToast, onForceReset }
     const [staffForm, setStaffForm] = useState(initialStaffForm);
     const [staffErrors, setStaffErrors] = useState({});
     const [staffSubmitting, setStaffSubmitting] = useState(false);
+    const [resetTarget, setResetTarget] = useState(null);
 
     const validateStaffForm = () => {
         const errors = {};
@@ -94,42 +97,31 @@ export default function ManagerStaff({ staff, addStaff, setToast, onForceReset }
                         <table className="min-w-full divide-y divide-gray-100">
                             <thead className="bg-gray-50/50">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Phone</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
-                                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Phone</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Role</th>
+                                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-100">
                                 {team.length === 0 ? (
                                     <tr>
-                                        <td colSpan={5} className="px-4 py-6 text-center text-gray-500 text-sm">
+                                        <td colSpan={5} className="px-6 py-8 text-center text-gray-500 text-sm">
                                             No staff members added yet.
                                         </td>
                                     </tr>
                                 ) : (
                                     team.map((member) => (
-                                        <tr key={member.id}>
-                                            <td className="px-4 py-3 text-sm font-medium text-gray-800">{member.name}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-600">{member.email}</td>
-                                            <td className="px-4 py-3 text-sm text-gray-500">{member.phone || '—'}</td>
-                                            <td className="px-4 py-3 text-sm font-medium text-gray-700">{formatRole(member.role || 'STAFF')}</td>
-                                            <td className="px-4 py-3 text-right">
+                                        <tr key={member.id} className="hover:bg-gray-50/50 transition-colors">
+                                            <td className="px-6 py-4 text-sm font-medium text-gray-800">{member.name}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-600">{member.email}</td>
+                                            <td className="px-6 py-4 text-sm text-gray-500">{member.phone || '—'}</td>
+                                            <td className="px-6 py-4 text-sm font-medium text-gray-700">{formatRole(member.role || 'STAFF')}</td>
+                                            <td className="px-6 py-4 text-right">
                                                 <button
                                                     type="button"
-                                                    onClick={async () => {
-                                                        const confirmed = window.confirm(
-                                                            `Force ${member.name} to reset their password on next login?`
-                                                        );
-                                                        if (!confirmed) return;
-                                                        try {
-                                                            await onForceReset(member.id);
-                                                            setToast({ message: `${member.name} will be prompted to reset their password on next login.`, variant: 'success' });
-                                                        } catch (err) {
-                                                            setToast({ message: err.message || 'Failed to set reset flag.', variant: 'error' });
-                                                        }
-                                                    }}
+                                                    onClick={() => setResetTarget(member)}
                                                     className="px-3 py-1 text-xs font-semibold text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50"
                                                 >
                                                     Reset Password
@@ -144,7 +136,7 @@ export default function ManagerStaff({ staff, addStaff, setToast, onForceReset }
                 </div>
             </div>
 
-            {showAddStaffModal ? (
+            {showAddStaffModal ? createPortal(
                 <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
                     <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-4 sm:p-6 space-y-6 max-h-[90dvh] overflow-y-auto mx-2">
                         <div className="flex items-center justify-between">
@@ -252,7 +244,26 @@ export default function ManagerStaff({ staff, addStaff, setToast, onForceReset }
                         </form>
                     </div>
                 </div>
-            ) : null}
+            , document.body) : null}
+
+            <ConfirmDialog
+                open={!!resetTarget}
+                title="Reset Password"
+                message={`Force ${resetTarget?.name || 'this user'} to reset their password on next login?`}
+                confirmLabel="Reset Password"
+                variant="warning"
+                onConfirm={async () => {
+                    try {
+                        await onForceReset(resetTarget.id);
+                        setToast({ message: `${resetTarget.name} will be prompted to reset their password on next login.`, variant: 'success' });
+                    } catch (err) {
+                        setToast({ message: err.message || 'Failed to set reset flag.', variant: 'error' });
+                    } finally {
+                        setResetTarget(null);
+                    }
+                }}
+                onCancel={() => setResetTarget(null)}
+            />
         </div>
     );
 }

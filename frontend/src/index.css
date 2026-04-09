@@ -23,6 +23,19 @@
     display: none;
   }
 
+  /* ── Z-index design tokens ─────────────────────────────────
+   * z-dropdown   : 50  — Dropdowns, tooltips
+   * z-sticky      : 60  — Sticky headers
+   * z-modal       : 100 — Primary modals
+   * z-modal-above : 110 — Stacked modals (e.g. rejection over application)
+   * z-toast       : 120 — Toast notifications
+   * ──────────────────────────────────────────────────────── */
+  .z-dropdown   { z-index: 50; }
+  .z-sticky     { z-index: 60; }
+  .z-modal      { z-index: 100; }
+  .z-modal-above { z-index: 110; }
+  .z-toast      { z-index: 120; }
+
   @keyframes fadeIn {
     from {
       opacity: 0;

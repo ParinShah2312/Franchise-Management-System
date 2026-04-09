@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types';
+
 export default function StatCard({ title, helper, value, accent = 'neutral' }) {
     const accentClasses = {
         primary: 'border-blue-100/60 ring-1 ring-blue-50/50 shadow-[0_2px_10px_-3px_rgba(59,130,246,0.1)] hover:shadow-[0_4px_12px_-3px_rgba(59,130,246,0.15)]',
@@ -13,3 +15,10 @@ export default function StatCard({ title, helper, value, accent = 'neutral' }) {
         </div>
     );
 }
+
+StatCard.propTypes = {
+    title: PropTypes.string.isRequired,
+    helper: PropTypes.string,
+    value: PropTypes.oneOfType([PropTypes.string, PropTypes.number]).isRequired,
+    accent: PropTypes.oneOf(['primary', 'success', 'neutral']),
+};

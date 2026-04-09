@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { createPortal } from 'react-dom';
 import { sanitizePhone, formatRole } from '../../utils';
+import ConfirmDialog from '../ui/ConfirmDialog';
 
 export default function FranchiseeStaff({ staff, appointManager, setToast, onDeactivate, onActivate, onForceReset }) {
     const [showManagerModal, setShowManagerModal] = useState(false);
@@ -11,6 +12,7 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
         password: '',
         phone: '',
     });
+    const [confirmAction, setConfirmAction] = useState(null);
 
     return (
         <div>
@@ -48,18 +50,16 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                                 </div>
                                 <button
                                     type="button"
-                                    onClick={async () => {
-                                        const confirmed = window.confirm(
-                                            `Force ${staff.manager.name} to reset their password on next login?`
-                                        );
-                                        if (!confirmed) return;
-                                        try {
+                                    onClick={() => setConfirmAction({
+                                        title: 'Reset Password',
+                                        message: `Force ${staff.manager.name} to reset their password on next login?`,
+                                        label: 'Reset Password',
+                                        variant: 'warning',
+                                        handler: async () => {
                                             await onForceReset(staff.manager.user_id || staff.manager.id);
                                             setToast({ message: `${staff.manager.name} will be prompted to reset their password on next login.`, variant: 'success' });
-                                        } catch (err) {
-                                            setToast({ message: err.message || 'Failed to set reset flag.', variant: 'error' });
-                                        }
-                                    }}
+                                        },
+                                    })}
                                     className="px-3 py-1 text-xs font-semibold text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50"
                                 >
                                     Reset Password
@@ -80,16 +80,16 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                         <table className="min-w-full divide-y divide-gray-100">
                             <thead className="bg-gray-50/50">
                                 <tr>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
-                                    <th className="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
-                                    <th className="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Name</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Email</th>
+                                    <th className="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                                    <th className="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                                 </tr>
                             </thead>
                             <tbody className="divide-y divide-gray-100">
                                 {staff.team.length === 0 ? (
                                     <tr>
-                                        <td colSpan={4} className="px-4 py-6 text-sm text-gray-500 text-center">
+                                        <td colSpan={4} className="px-6 py-8 text-sm text-gray-500 text-center">
                                             No staff members linked to this branch.
                                         </td>
                                     </tr>
@@ -97,11 +97,11 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                                     staff.team.map((member) => (
                                         <tr
                                             key={member.user_id}
-                                            className={member.is_active === false ? 'bg-gray-50' : ''}
+                                            className={`hover:bg-gray-50/50 transition-colors ${member.is_active === false ? 'bg-gray-50' : ''}`}
                                         >
-                                            <td className={`px-4 py-3 text-sm font-medium text-gray-800${member.is_active === false ? ' opacity-50' : ''}`}>{member.name}</td>
-                                            <td className={`px-4 py-3 text-sm text-gray-600${member.is_active === false ? ' opacity-50' : ''}`}>{member.email}</td>
-                                            <td className={`px-4 py-3 text-sm${member.is_active === false ? ' opacity-50' : ''}`}>
+                                            <td className={`px-6 py-4 text-sm font-medium text-gray-800${member.is_active === false ? ' opacity-50' : ''}`}>{member.name}</td>
+                                            <td className={`px-6 py-4 text-sm text-gray-600${member.is_active === false ? ' opacity-50' : ''}`}>{member.email}</td>
+                                            <td className={`px-6 py-4 text-sm${member.is_active === false ? ' opacity-50' : ''}`}>
                                                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
                                                     member.is_active !== false
                                                         ? 'bg-green-100 text-green-700'
@@ -110,24 +110,22 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                                                     {member.is_active !== false ? 'Active' : 'Inactive'}
                                                 </span>
                                             </td>
-                                            <td className="px-4 py-3 text-right">
+                                            <td className="px-6 py-4 text-right">
                                                 {member.role !== 'BRANCH_OWNER' ? (
                                                     <div className="flex justify-end items-center">
                                                     {member.is_active !== false ? (
                                                         <button
                                                             type="button"
-                                                            onClick={async () => {
-                                                                const confirmed = window.confirm(
-                                                                    `Deactivate ${member.name}? They will no longer be able to log in.`
-                                                                );
-                                                                if (!confirmed) return;
-                                                                try {
+                                                            onClick={() => setConfirmAction({
+                                                                title: 'Deactivate Staff',
+                                                                message: `Deactivate ${member.name}? They will no longer be able to log in.`,
+                                                                label: 'Deactivate',
+                                                                variant: 'danger',
+                                                                handler: async () => {
                                                                     await onDeactivate(member.user_id);
                                                                     setToast({ message: `${member.name} has been deactivated.`, variant: 'success' });
-                                                                } catch (err) {
-                                                                    setToast({ message: err.message || 'Failed to deactivate user.', variant: 'error' });
-                                                                }
-                                                            }}
+                                                                },
+                                                            })}
                                                             className="px-3 py-1 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
                                                         >
                                                             Deactivate
@@ -135,18 +133,16 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                                                     ) : (
                                                         <button
                                                             type="button"
-                                                            onClick={async () => {
-                                                                const confirmed = window.confirm(
-                                                                    `Reactivate ${member.name}? They will be able to log in again.`
-                                                                );
-                                                                if (!confirmed) return;
-                                                                try {
+                                                            onClick={() => setConfirmAction({
+                                                                title: 'Reactivate Staff',
+                                                                message: `Reactivate ${member.name}? They will be able to log in again.`,
+                                                                label: 'Reactivate',
+                                                                variant: 'primary',
+                                                                handler: async () => {
                                                                     await onActivate(member.user_id);
                                                                     setToast({ message: `${member.name} has been reactivated.`, variant: 'success' });
-                                                                } catch (err) {
-                                                                    setToast({ message: err.message || 'Failed to reactivate user.', variant: 'error' });
-                                                                }
-                                                            }}
+                                                                },
+                                                            })}
                                                             className="px-3 py-1 text-xs font-semibold text-green-600 border border-green-200 rounded-lg hover:bg-green-50"
                                                         >
                                                             Reactivate
@@ -154,18 +150,16 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                                                     )}
                                                     <button
                                                         type="button"
-                                                        onClick={async () => {
-                                                            const confirmed = window.confirm(
-                                                                `Force ${member.name} to reset their password on next login?`
-                                                            );
-                                                            if (!confirmed) return;
-                                                            try {
+                                                        onClick={() => setConfirmAction({
+                                                            title: 'Reset Password',
+                                                            message: `Force ${member.name} to reset their password on next login?`,
+                                                            label: 'Reset Password',
+                                                            variant: 'warning',
+                                                            handler: async () => {
                                                                 await onForceReset(member.user_id);
                                                                 setToast({ message: `${member.name} will be prompted to reset their password on next login.`, variant: 'success' });
-                                                            } catch (err) {
-                                                                setToast({ message: err.message || 'Failed to set reset flag.', variant: 'error' });
-                                                            }
-                                                        }}
+                                                            },
+                                                        })}
                                                         className="px-3 py-1 text-xs font-semibold text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50 ml-2"
                                                     >
                                                         Reset Password
@@ -304,6 +298,24 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                     </div>
                 </div>
             , document.body) : null}
+
+            <ConfirmDialog
+                open={!!confirmAction}
+                title={confirmAction?.title || ''}
+                message={confirmAction?.message || ''}
+                confirmLabel={confirmAction?.label || 'Confirm'}
+                variant={confirmAction?.variant || 'danger'}
+                onConfirm={async () => {
+                    try {
+                        await confirmAction?.handler?.();
+                    } catch (err) {
+                        setToast({ message: err.message || 'Action failed.', variant: 'error' });
+                    } finally {
+                        setConfirmAction(null);
+                    }
+                }}
+                onCancel={() => setConfirmAction(null)}
+            />
         </div>
     );
 }

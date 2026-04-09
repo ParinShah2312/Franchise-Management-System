@@ -1,3 +1,4 @@
+import PropTypes from 'prop-types';
 import SkeletonCard from './SkeletonCard';
 import SkeletonTable from './SkeletonTable';
 
@@ -15,3 +16,8 @@ export default function DashboardSkeleton({ statCount = 3, showTable = true }) {
     </div>
   );
 }
+
+DashboardSkeleton.propTypes = {
+  statCount: PropTypes.number,
+  showTable: PropTypes.bool,
+};

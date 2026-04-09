@@ -1,25 +1,27 @@
+import StatCard from '../ui/StatCard';
 import { formatINR } from '../../utils';
 
 export default function ManagerOverview({ todaySalesTotal = 0, lowStockItemsCount = 0, pendingRequestsCount = 0 }) {
     return (
-        <div className="grid gap-6 md:grid-cols-3">
-            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-gray-500">Today&apos;s Sales</p>
-                <h3 className="text-2xl font-semibold text-gray-800 mt-2">
-                    {formatINR(todaySalesTotal)}
-                </h3>
-                <p className="text-xs text-gray-500 mt-1">Total sales recorded today.</p>
-            </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-gray-500">Low Stock Items</p>
-                <h3 className="text-2xl font-semibold text-gray-800 mt-2">{lowStockItemsCount}</h3>
-                <p className="text-xs text-gray-500 mt-1">Items needing replenishment.</p>
-            </div>
-            <div className="bg-white border border-gray-200 rounded-xl p-5 shadow-sm">
-                <p className="text-sm text-gray-500">Pending Requests</p>
-                <h3 className="text-2xl font-semibold text-gray-800 mt-2">{pendingRequestsCount}</h3>
-                <p className="text-xs text-gray-500 mt-1">Awaiting owner approval.</p>
-            </div>
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-3">
+            <StatCard
+                title="Today's Sales"
+                helper="Total sales recorded today."
+                value={formatINR(todaySalesTotal)}
+                accent="success"
+            />
+            <StatCard
+                title="Low Stock Items"
+                helper="Items needing replenishment."
+                value={lowStockItemsCount}
+                accent="neutral"
+            />
+            <StatCard
+                title="Pending Requests"
+                helper="Awaiting owner approval."
+                value={pendingRequestsCount}
+                accent="primary"
+            />
         </div>
     );
 }

@@ -9,7 +9,7 @@ from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
 
-from .extensions import db, migrate
+from .extensions import db, migrate, limiter
 
 
 def create_app(
@@ -56,6 +56,7 @@ def register_extensions(app: Flask) -> None:
 
     db.init_app(app)
     migrate.init_app(app, db)
+    limiter.init_app(app)
 
     # Import models after extension initialization to register metadata
     from . import models  # noqa: F401  pylint: disable=unused-import
@@ -63,6 +64,9 @@ def register_extensions(app: Flask) -> None:
 
 def register_blueprints(app: Flask) -> None:
     """Attach route blueprints to the app."""
+
+    # Initialize CORS before registering blueprints so all routes are covered
+    CORS(app)
 
     from .routes.auth_routes import auth_bp
     from .routes.registration_routes import registration_bp
@@ -95,7 +99,6 @@ def register_blueprints(app: Flask) -> None:
     app.register_blueprint(user_bp)
     app.register_blueprint(expense_bp)
     app.register_blueprint(file_bp)
-    CORS(app)
 
 
 def shell_context() -> dict[str, Any]:

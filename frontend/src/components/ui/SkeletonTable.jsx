@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types';
+
 export default function SkeletonTable({ rows = 5, cols = 4 }) {
   return (
     <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden animate-pulse">
@@ -21,3 +23,8 @@ export default function SkeletonTable({ rows = 5, cols = 4 }) {
     </div>
   );
 }
+
+SkeletonTable.propTypes = {
+  rows: PropTypes.number,
+  cols: PropTypes.number,
+};

@@ -65,7 +65,7 @@ function handleResponse(response, data, isJson) {
 
 async function request(path, options = {}) {
   const url = `${API_URL}${path}`;
-  const { headers: incomingHeaders, body, ...rest } = options;
+  const { headers: incomingHeaders, body, timeout = 15000, ...rest } = options;
   const headers = new Headers(incomingHeaders || {});
   const isFormData = body instanceof FormData;
 
@@ -77,12 +77,24 @@ async function request(path, options = {}) {
     headers.set('Authorization', `Bearer ${authToken}`);
   }
 
-  const response = await fetch(url, { ...rest, body, headers });
-  const contentType = response.headers.get('content-type') || '';
-  const isJson = contentType.includes('application/json');
-  const data = isJson ? await response.json() : await response.text();
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), timeout);
 
-  return handleResponse(response, data, isJson);
+  try {
+    const response = await fetch(url, { ...rest, body, headers, signal: controller.signal });
+    const contentType = response.headers.get('content-type') || '';
+    const isJson = contentType.includes('application/json');
+    const data = isJson ? await response.json() : await response.text();
+
+    return handleResponse(response, data, isJson);
+  } catch (err) {
+    if (err.name === 'AbortError') {
+      throw new Error('Request timed out. Please check your connection and try again.');
+    }
+    throw err;
+  } finally {
+    clearTimeout(timeoutId);
+  }
 }
 
 const prepareBody = (body) => {

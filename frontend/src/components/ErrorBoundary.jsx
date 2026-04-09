@@ -30,8 +30,8 @@ export default class ErrorBoundary extends React.Component {
                                 </svg>
                             </div>
                         </div>
-                        <h2 className="text-xl font-semibold text-gray-900">Something went wrong</h2>
-                        <p className="text-sm text-gray-600">
+                        <h2 className="text-xl font-semibold text-gray-800">Something went wrong</h2>
+                        <p className="text-sm text-gray-500">
                             An unexpected error occurred. Please try again or refresh the page.
                         </p>
                         <div className="flex gap-3 justify-center pt-2">

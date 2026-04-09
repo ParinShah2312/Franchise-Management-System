@@ -7,3 +7,4 @@ Werkzeug==3.0.3
 bcrypt==4.2.0
 pytest==8.3.5
 pytest-cov==5.0.0
+flask-limiter==3.8.0

@@ -41,15 +41,6 @@ export function AuthProvider({ children }) {
         setLoading(false);
         return;
       }
-
-      const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
-      const storedScope = localStorage.getItem(STORAGE_KEYS.SCOPE);
-      if (storedUser) {
-        setUser(JSON.parse(storedUser));
-      }
-      if (storedScope) {
-        setScope(JSON.parse(storedScope));
-      }
       setAuthToken(token);
     } else {
       clearAuthToken();

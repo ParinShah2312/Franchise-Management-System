@@ -1,10 +1,11 @@
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 
 export function useRoyalty() {
-  const now = new Date();
-  const currentMonth = now.getMonth() + 1; // 1-indexed
-  const currentYear = now.getFullYear();
+  const { currentMonth, currentYear } = useMemo(() => {
+    const now = new Date();
+    return { currentMonth: now.getMonth() + 1, currentYear: now.getFullYear() };
+  }, []);
 
   // --- Config state ---
   const [config, setConfig] = useState(null);

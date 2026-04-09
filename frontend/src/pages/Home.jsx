@@ -75,8 +75,8 @@ export default function Home() {
               <div className="grid grid-cols-3 gap-6 mt-12 border-t border-gray-100 pt-8">
                 {stats.map((stat) => (
                   <div key={stat.label}>
-                    <dd className="text-2xl font-bold text-gray-900">{stat.value}</dd>
-                    <dt className="mt-1 text-sm text-gray-500">{stat.label}</dt>
+                    <dt className="text-sm text-gray-500">{stat.label}</dt>
+                    <dd className="mt-1 text-2xl font-bold text-gray-900">{stat.value}</dd>
                   </div>
                 ))}
               </div>

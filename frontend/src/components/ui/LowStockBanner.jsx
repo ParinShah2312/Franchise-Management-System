@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types';
+
 export default function LowStockBanner({ items, onDismiss }) {
   if (!items || items.length === 0) return null;
 
@@ -33,3 +35,8 @@ export default function LowStockBanner({ items, onDismiss }) {
     </div>
   );
 }
+
+LowStockBanner.propTypes = {
+  items: PropTypes.arrayOf(PropTypes.object),
+  onDismiss: PropTypes.func.isRequired,
+};

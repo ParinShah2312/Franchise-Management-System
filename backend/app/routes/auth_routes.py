@@ -5,7 +5,7 @@ from ..utils.validators import validate_password_strength, PASSWORD_ERROR
 from http import HTTPStatus
 from flask import Blueprint, current_app, g, jsonify, request
 from sqlalchemy.orm import joinedload
-from ..extensions import db
+from ..extensions import db, limiter
 from ..models import (
     ApplicationStatus, BranchStaff, Franchisor, FranchiseApplication, User
 )
@@ -18,6 +18,7 @@ from ..utils.branch_helpers import _ensure_franchise_for_franchisor, _resolve_br
 auth_bp = Blueprint("auth", __name__, url_prefix="/api/auth")
 
 @auth_bp.route("/login", methods=["POST"])
+@limiter.limit("5 per minute")
 def login() -> tuple[dict[str, object], int]:
     """Authenticate a user and return their role and scope."""
 

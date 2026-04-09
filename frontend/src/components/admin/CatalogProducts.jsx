@@ -1,5 +1,6 @@
-import React from 'react';
+import { useState } from 'react';
 import Table from '../ui/Table';
+import ConfirmDialog from '../ui/ConfirmDialog';
 import { formatINR } from '../../utils/formatters';
 
 export default function CatalogProducts({
@@ -11,13 +12,7 @@ export default function CatalogProducts({
   onToggleActive,
 }) {
   const headers = ['Product', 'Category', 'Price', 'Status', 'Actions'];
-
-  const handleToggle = (product) => {
-    const action = product.is_active ? 'inactive' : 'active';
-    if (window.confirm(`Set ${product.name} to ${action}?`)) {
-      onToggleActive(product);
-    }
-  };
+  const [confirmTarget, setConfirmTarget] = useState(null);
 
   return (
     <div className="space-y-4 pt-8 border-t border-gray-200 mt-8">
@@ -50,7 +45,10 @@ export default function CatalogProducts({
               <td className="whitespace-nowrap px-6 py-4">
                 <button
                   type="button"
-                  onClick={() => handleToggle(prod)}
+                  onClick={() => {
+                    const action = prod.is_active ? 'inactive' : 'active';
+                    setConfirmTarget({ product: prod, action });
+                  }}
                   className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium transition-colors ${
                     prod.is_active
                       ? 'bg-green-100 text-green-800 hover:bg-green-200'
@@ -79,6 +77,19 @@ export default function CatalogProducts({
           </p>
         </div>
       )}
+
+      <ConfirmDialog
+        open={!!confirmTarget}
+        title="Change Product Status"
+        message={`Set ${confirmTarget?.product?.name || 'this product'} to ${confirmTarget?.action || ''}?`}
+        confirmLabel="Confirm"
+        variant="warning"
+        onConfirm={() => {
+          onToggleActive(confirmTarget.product);
+          setConfirmTarget(null);
+        }}
+        onCancel={() => setConfirmTarget(null)}
+      />
     </div>
   );
 }

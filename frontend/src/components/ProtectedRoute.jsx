@@ -8,9 +8,11 @@ import { ROLE_REDIRECTS } from '../utils';
 export default function ProtectedRoute({ allowedRoles = [], allowReset = false, children }) {
   const { isAuthenticated, user, loading } = useAuth();
   const normalizedRole = (user?.role || '').toUpperCase();
+  // eslint-disable-next-line react-hooks/exhaustive-deps -- allowedRoles is a new array ref each render; stringify stabilizes the memo
   const allowedSet = useMemo(
     () => allowedRoles.map((role) => role.toUpperCase()),
-    [allowedRoles],
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [JSON.stringify(allowedRoles)],
   );
 
   if (loading) {

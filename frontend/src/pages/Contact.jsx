@@ -39,6 +39,12 @@ export default function Contact() {
       {/* Form Card */}
       <section className="max-w-3xl w-full mx-auto px-4 sm:px-6 -mt-8 relative z-10">
         <div className="bg-white rounded-2xl p-8 sm:p-12 shadow-xl border border-gray-100">
+          <div className="flex items-center gap-2 mb-6">
+            <span className="inline-flex items-center rounded-full bg-amber-50 border border-amber-200 px-3 py-1 text-xs font-semibold text-amber-700">
+              Demo Only
+            </span>
+            <span className="text-xs text-gray-400">Submissions are not sent — no backend configured.</span>
+          </div>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2" htmlFor="name">

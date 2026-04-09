@@ -1,5 +1,6 @@
 import { createPortal } from 'react-dom';
 import { useRef, useEffect } from 'react';
+import PropTypes from 'prop-types';
 
 export default function Modal({ isOpen, onClose, title, description, children, maxWidth = 'max-w-md' }) {
     const scrollRef = useRef(null);
@@ -9,6 +10,13 @@ export default function Modal({ isOpen, onClose, title, description, children, m
             scrollRef.current.scrollTop = 0;
         }
     }, [isOpen]);
+
+    useEffect(() => {
+        if (!isOpen || !onClose) return;
+        const handleEsc = (e) => { if (e.key === 'Escape') onClose(); };
+        document.addEventListener('keydown', handleEsc);
+        return () => document.removeEventListener('keydown', handleEsc);
+    }, [isOpen, onClose]);
 
     if (!isOpen) return null;
 
@@ -41,3 +49,12 @@ export default function Modal({ isOpen, onClose, title, description, children, m
         document.body
     );
 }
+
+Modal.propTypes = {
+    isOpen: PropTypes.bool.isRequired,
+    onClose: PropTypes.func,
+    title: PropTypes.string,
+    description: PropTypes.string,
+    children: PropTypes.node,
+    maxWidth: PropTypes.string,
+};

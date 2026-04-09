@@ -42,11 +42,35 @@ export function isValidPassword(password) {
 }
 
 /**
+ * Common email domain typos to warn users about.
+ * @type {string[]}
+ */
+const EMAIL_TYPO_DOMAINS = [
+  '@gamil.com',
+  '@gnail.com',
+  '@gmial.com',
+  '@gmai.com',
+  '@gmal.com',
+  '@gmail.con',
+  '@gmail.co',
+  '@yahooo.com',
+  '@yaho.com',
+  '@yahoo.con',
+  '@outlok.com',
+  '@outllok.com',
+  '@outlook.con',
+  '@hotmal.com',
+  '@hotmai.com',
+  '@hotmail.con',
+];
+
+/**
  * Typo check — return true if email looks like a common domain typo (e.g. @gamil.com)
- * @param {string} email 
+ * @param {string} email
  * @returns {boolean}
  */
 export function hasEmailTypo(email) {
   if (!email) return false;
-  return email.toLowerCase().includes('@gamil.com');
+  const lower = email.toLowerCase();
+  return EMAIL_TYPO_DOMAINS.some((typo) => lower.endsWith(typo));
 }

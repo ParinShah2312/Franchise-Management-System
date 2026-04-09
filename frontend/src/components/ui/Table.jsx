@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types';
+
 export default function Table({ headers, data, renderRow, emptyMessage, children }) {
     const hasChildren = children && (!Array.isArray(children) || children.length > 0);
     const hasData = data && data.length > 0;
@@ -35,3 +37,11 @@ export default function Table({ headers, data, renderRow, emptyMessage, children
         </div>
     );
 }
+
+Table.propTypes = {
+    headers: PropTypes.arrayOf(PropTypes.string).isRequired,
+    data: PropTypes.array,
+    renderRow: PropTypes.func,
+    emptyMessage: PropTypes.string,
+    children: PropTypes.node,
+};

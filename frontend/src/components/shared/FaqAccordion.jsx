@@ -15,7 +15,7 @@ export default function FaqAccordion({ items }) {
           const isOpen = openIndex === index;
           return (
             <div
-              key={index}
+              key={item.question}
               className="bg-white border border-gray-100 rounded-xl overflow-hidden shadow-sm"
             >
               <button

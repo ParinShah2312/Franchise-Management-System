@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types';
+
 export default function ErrorState({ message, onRetry }) {
   return (
     <div className="flex flex-col items-center justify-center py-16 px-6 text-center">
@@ -20,3 +22,8 @@ export default function ErrorState({ message, onRetry }) {
     </div>
   );
 }
+
+ErrorState.propTypes = {
+  message: PropTypes.string,
+  onRetry: PropTypes.func,
+};

@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
 import StatCard from '../ui/StatCard';
+import AlertBanner from '../ui/AlertBanner';
 import { formatINR } from '../../utils';
 import { API_ORIGIN } from '../../api';
 
@@ -23,33 +24,21 @@ export default function AdminOverview({
   return (
     <div className="space-y-6">
       {metrics?.pending_apps > 0 && !dismissed && (
-        <div className="flex items-start gap-3 rounded-xl border border-amber-200 bg-amber-50 px-4 py-3 shadow-sm">
-          <svg className="h-5 w-5 text-amber-500 shrink-0" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path strokeLinecap="round" strokeLinejoin="round" d="M12 9v4m0 4h.01M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z" />
-          </svg>
-          <div className="flex-1 min-w-0">
-            <h4 className="text-sm font-bold text-amber-800">
-              {metrics.pending_apps} application{metrics.pending_apps === 1 ? '' : 's'} pending review
-            </h4>
-            {onNavigateToApplications && (
-              <button
-                type="button"
-                onClick={onNavigateToApplications}
-                className="mt-1 text-sm font-semibold text-amber-900 border-none bg-transparent p-0 hover:underline"
-              >
-                Review now →
-              </button>
-            )}
-          </div>
-          <button
-            type="button"
-            onClick={() => setDismissed(true)}
-            className="text-amber-400 hover:text-amber-600 transition-colors p-0.5"
-            aria-label="Dismiss banner"
-          >
-            ✕
-          </button>
-        </div>
+        <AlertBanner
+          title={`${metrics.pending_apps} application${metrics.pending_apps === 1 ? '' : 's'} pending review`}
+          variant="warning"
+          onDismiss={() => setDismissed(true)}
+        >
+          {onNavigateToApplications && (
+            <button
+              type="button"
+              onClick={onNavigateToApplications}
+              className="mt-1 text-sm font-semibold text-amber-900 border-none bg-transparent p-0 hover:underline"
+            >
+              Review now →
+            </button>
+          )}
+        </AlertBanner>
       )}
       <div className="grid grid-cols-1 gap-4 md:grid-cols-3">
         <StatCard

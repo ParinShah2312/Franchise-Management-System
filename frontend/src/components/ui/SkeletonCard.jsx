@@ -1,3 +1,5 @@
+import PropTypes from 'prop-types';
+
 export default function SkeletonCard({ className = '' }) {
   return (
     <div className={`bg-white rounded-xl border border-gray-100 shadow-sm p-6 animate-pulse ${className}`}>
@@ -7,3 +9,7 @@ export default function SkeletonCard({ className = '' }) {
     </div>
   );
 }
+
+SkeletonCard.propTypes = {
+  className: PropTypes.string,
+};

@@ -39,17 +39,13 @@ _DEFAULT_DEV_SECRET = "dev-secret-key"
 
 
 def _get_jwt_secret() -> bytes:
-    """Retrieve the JWT secret key safely."""
-    secret = (
-        current_app.config.get("JWT_SECRET")
-        or os.environ.get("JWT_SECRET")
-        or _DEFAULT_DEV_SECRET
-    )
-    if secret == _DEFAULT_DEV_SECRET and not current_app.debug:
-        raise RuntimeError(
-            "JWT_SECRET must be set in production. "
-            "Set the JWT_SECRET environment variable or app config."
-        )
+    """Retrieve the JWT secret key safely from app config.
+    
+    This consolidates the JWT secret with the Flask SECRET_KEY.
+    """
+    secret = current_app.config.get("SECRET_KEY")
+    if not secret:
+        raise RuntimeError("SECRET_KEY must be set in app configuration.")
     return secret.encode("utf-8")
 
 
