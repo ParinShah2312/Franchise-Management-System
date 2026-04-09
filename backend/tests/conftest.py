@@ -32,7 +32,6 @@ class TestConfig:
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = "test_secret_key"
-    JWT_SECRET = "test_jwt_secret"
     WTF_CSRF_ENABLED = False
 
 
@@ -40,7 +39,6 @@ class TestConfig:
 def app():
     # Set necessary environment variables for testing just in case
     os.environ["SECRET_KEY"] = "test_secret_key"
-    os.environ["JWT_SECRET"] = "test_jwt_secret"
 
     app = create_app(TestConfig)
 

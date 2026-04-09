@@ -35,9 +35,6 @@ def verify_password(password: str, hashed: str) -> bool:
         return False
 
 
-_DEFAULT_DEV_SECRET = "dev-secret-key"
-
-
 def _get_jwt_secret() -> bytes:
     """Retrieve the JWT secret key safely from app config.
     
