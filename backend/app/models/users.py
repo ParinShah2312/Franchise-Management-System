@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from datetime import datetime, timezone
 from decimal import Decimal
-from typing import Optional
+from typing import TYPE_CHECKING, Optional
 
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
@@ -14,6 +14,13 @@ from sqlalchemy.types import (
 
 from ..extensions import db
 from .core import TimestampMixin
+
+if TYPE_CHECKING:
+    from .business import FranchiseApplication, Report
+    from .core import Branch
+    from .operations import (
+        Expense, InventoryTransaction, Sale, StockPurchaseRequest,
+    )
 
 
 class User(TimestampMixin, db.Model):

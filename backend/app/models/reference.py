@@ -2,10 +2,18 @@
 
 from __future__ import annotations
 
+from typing import TYPE_CHECKING
+
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import BigInteger, Integer, String
 
 from ..extensions import db
+
+if TYPE_CHECKING:
+    from .business import FranchiseApplication
+    from .catalog import BranchInventory, StockItem
+    from .core import Branch
+    from .operations import InventoryTransaction, Sale, StockPurchaseRequest
 
 
 class ApplicationStatus(db.Model):
