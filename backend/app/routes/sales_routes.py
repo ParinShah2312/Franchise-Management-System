@@ -1,4 +1,4 @@
-﻿"""Sales management routes for branch-level transactions."""
+"""Sales management routes for branch-level transactions."""
 
 from __future__ import annotations
 
@@ -19,16 +19,10 @@ from ..models import (
 )
 from ..services.inventory_service import deduct_ingredients_for_sale, get_transaction_type_id, InsufficientStockError
 from ..utils.security import token_required
+from ..utils.branch_helpers import _current_role
 
 
 sales_bp = Blueprint("sales", __name__, url_prefix="/api/sales")
-
-
-def _current_role():
-    role = getattr(g, "current_role", None)
-    if not role:
-        raise PermissionError("No role scope attached to request.")
-    return role
 
 
 def _ensure_branch_scope(branch_id: int | None) -> int | tuple[dict[str, object], int]:
@@ -258,13 +252,6 @@ def create_sale() -> tuple[dict[str, object], int]:
 @token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
 def list_sales() -> tuple[list[dict[str, object]], int]:
     branch_id_param = request.args.get("branch_id", type=int)
-    if branch_id_param is not None:
-        try:
-            branch_id_param = int(branch_id_param)
-        except (TypeError, ValueError):
-            return jsonify(
-                {"error": "branch_id must be numeric."}
-            ), HTTPStatus.BAD_REQUEST
 
     role = getattr(g, "current_role", None)
     if not role:

@@ -5,7 +5,8 @@ from __future__ import annotations
 from decimal import Decimal, InvalidOperation
 from http import HTTPStatus
 
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, current_app, jsonify, request, g
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from ..extensions import db
@@ -120,7 +121,11 @@ def create_category() -> tuple[dict[str, object], int]:
         description=description
     )
     db.session.add(category)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "A category with this name already exists."}), HTTPStatus.CONFLICT
 
     return jsonify({
         "category_id": category.category_id,
@@ -184,7 +189,11 @@ def create_product() -> tuple[dict[str, object], int]:
         is_active=True
     )
     db.session.add(product)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Unable to create product due to duplicate data."}), HTTPStatus.CONFLICT
 
     return jsonify({
         "product_id": product.product_id,
@@ -253,7 +262,11 @@ def update_product(product_id: int) -> tuple[dict[str, object], int]:
     if "is_active" in payload:
         product.is_active = bool(payload["is_active"])
 
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Unable to update product due to duplicate data."}), HTTPStatus.CONFLICT
 
     category = db.session.get(ProductCategory, product.category_id)
     return jsonify({
@@ -353,7 +366,11 @@ def add_product_ingredient(product_id: int) -> tuple[dict[str, object], int]:
         quantity_required=quantity_required
     )
     db.session.add(ingredient)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Unable to add ingredient due to a data conflict."}), HTTPStatus.CONFLICT
 
     refreshed_ingredient = db.session.query(ProductIngredient).options(
         joinedload(ProductIngredient.stock_item).joinedload(StockItem.unit)
@@ -389,7 +406,12 @@ def remove_product_ingredient(product_id: int, ingredient_id: int) -> tuple[dict
         return jsonify({"error": "Ingredient not found."}), HTTPStatus.NOT_FOUND
 
     db.session.delete(ingredient)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except Exception as exc:  # pragma: no cover
+        db.session.rollback()
+        current_app.logger.exception("Failed to remove ingredient: %s", exc)
+        return jsonify({"error": "Unable to remove ingredient."}), HTTPStatus.INTERNAL_SERVER_ERROR
 
     return jsonify({"message": "Ingredient removed."}), HTTPStatus.OK
 

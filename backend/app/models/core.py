@@ -136,7 +136,7 @@ class Branch(TimestampMixin, db.Model):
         ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
     )
     status_id: Mapped[int] = mapped_column(
-        ForeignKey("branch_statuses.status_id"), nullable=False
+        ForeignKey("branch_statuses.status_id", ondelete="RESTRICT"), nullable=False
     )
 
     franchise: Mapped["Franchise"] = relationship(

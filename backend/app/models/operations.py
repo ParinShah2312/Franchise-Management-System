@@ -33,7 +33,7 @@ class Sale(TimestampMixin, db.Model):
     sale_datetime: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     total_amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)
     status_id: Mapped[int] = mapped_column(
-        ForeignKey("sale_statuses.sale_status_id"), nullable=False
+        ForeignKey("sale_statuses.sale_status_id", ondelete="RESTRICT"), nullable=False
     )
     payment_mode: Mapped[str | None] = mapped_column(String(50), nullable=True)
 
@@ -88,7 +88,7 @@ class InventoryTransaction(db.Model):
         ForeignKey("stock_items.stock_item_id", ondelete="CASCADE"), nullable=False
     )
     transaction_type_id: Mapped[int] = mapped_column(
-        ForeignKey("transaction_types.transaction_type_id"), nullable=False
+        ForeignKey("transaction_types.transaction_type_id", ondelete="RESTRICT"), nullable=False
     )
     quantity_change: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False)
     unit_cost: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
@@ -147,7 +147,7 @@ class StockPurchaseRequest(db.Model):
         ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
     )
     status_id: Mapped[int] = mapped_column(
-        ForeignKey("request_statuses.request_status_id"), nullable=False
+        ForeignKey("request_statuses.request_status_id", ondelete="RESTRICT"), nullable=False
     )
     note: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(

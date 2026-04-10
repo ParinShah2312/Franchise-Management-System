@@ -35,7 +35,7 @@ class FranchiseApplication(TimestampMixin, db.Model):
     reason: Mapped[str | None] = mapped_column(Text)
     investment_capacity: Mapped[Decimal | None] = mapped_column(Numeric(15, 2))
     status_id: Mapped[int] = mapped_column(
-        ForeignKey("application_statuses.status_id"), nullable=False
+        ForeignKey("application_statuses.status_id", ondelete="RESTRICT"), nullable=False
     )
     decision_by_franchisor_id: Mapped[int | None] = mapped_column(
         BigInteger, ForeignKey("franchisors.franchisor_id", ondelete="SET NULL"), nullable=True

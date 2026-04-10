@@ -11,6 +11,7 @@ from ..extensions import db
 from ..models import Report, ReportData, Branch, Franchise
 from ..services.report_service import get_authorized_branch_ids, build_report_summary
 from ..utils.security import token_required
+from ..utils.db_helpers import month_bounds
 
 
 report_bp = Blueprint("reports", __name__, url_prefix="/api/reports")
@@ -29,14 +30,6 @@ def _month_year() -> tuple[int, int]:
 
     return month, year
 
-
-def _period_bounds(year: int, month: int) -> tuple[date, date]:
-    start_date = date(year, month, 1)
-    if month == 12:
-        end_date = date(year + 1, 1, 1)
-    else:
-        end_date = date(year, month + 1, 1)
-    return start_date, end_date
 
 
 def _filter_branch_ids(
@@ -69,7 +62,7 @@ def report_summary() -> tuple[dict[str, object], int]:
     except ValueError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
 
-    start_date, end_date = _period_bounds(year, month)
+    start_date, end_date = month_bounds(date(year, month, 1))
 
     _role = getattr(g, "current_role", None)
     role_name = getattr(getattr(_role, "role", None), "name", None)

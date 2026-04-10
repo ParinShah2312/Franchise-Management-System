@@ -20,16 +20,10 @@ from ..models import (
 from ..services.inventory_service import apply_inventory_transaction, get_transaction_type_id
 from ..utils.security import token_required
 from ..utils.db_helpers import serialize_dt
+from ..utils.branch_helpers import _current_role
 
 
 request_bp = Blueprint("requests", __name__, url_prefix="/api/requests")
-
-
-def _current_role():
-    role = getattr(g, "current_role", None)
-    if not role:
-        raise PermissionError("No role scope attached to request.")
-    return role
 
 
 def _resolve_branch_id(explicit_branch_id: int | None) -> int:
@@ -350,10 +344,7 @@ def reject_request(request_id: int) -> tuple[dict[str, object], int]:
             {"error": "Only pending requests can be rejected."}
         ), HTTPStatus.BAD_REQUEST
 
-    current_user = getattr(g, "current_user", None)
-
     record.status_id = rejected_status_id
-    record.approved_by_user_id = current_user.user_id if current_user else None
     record.rejected_at = datetime.now(timezone.utc)
 
     db.session.commit()

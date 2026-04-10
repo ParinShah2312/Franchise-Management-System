@@ -110,7 +110,7 @@ export default function FranchiseeDashboard() {
     }
   };
 
-  const renderHeader = (showRefreshButton = true) => (
+  const renderHeader = () => (
     <header className="bg-white border-b border-gray-200">
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
@@ -118,7 +118,6 @@ export default function FranchiseeDashboard() {
           <p className="hidden sm:block text-gray-500 text-sm">Welcome back, {user?.name || user?.email || 'branch owner'}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
-          {showRefreshButton ? (
             <button
               type="button"
               onClick={loadData}
@@ -126,7 +125,6 @@ export default function FranchiseeDashboard() {
             >
               Refresh Data
             </button>
-          ) : null}
           <button
             type="button"
             onClick={logout}
@@ -141,7 +139,7 @@ export default function FranchiseeDashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {renderHeader(true)}
+      {renderHeader()}
 
       <main className="max-w-6xl mx-auto px-4 sm:px-6 py-6 sm:py-10">
         {error && metrics ? (

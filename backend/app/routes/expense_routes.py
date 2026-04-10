@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal, InvalidOperation
 from http import HTTPStatus
 
@@ -110,11 +110,13 @@ def create_expense() -> tuple[dict, int]:
     expense_date_raw = payload.get("expense_date")
     if expense_date_raw:
         try:
-            expense_date = datetime.fromisoformat(str(expense_date_raw))
+            # Accept both "YYYY-MM-DD" and full ISO datetime strings
+            raw = str(expense_date_raw)
+            expense_date = date.fromisoformat(raw[:10])
         except (TypeError, ValueError):
-            return jsonify({"error": "expense_date must be a valid ISO datetime."}), HTTPStatus.BAD_REQUEST
+            return jsonify({"error": "expense_date must be a valid ISO date (YYYY-MM-DD)."}), HTTPStatus.BAD_REQUEST
     else:
-        expense_date = datetime.now(timezone.utc)
+        expense_date = date.today()
 
     current_user = getattr(g, "current_user", None)
 

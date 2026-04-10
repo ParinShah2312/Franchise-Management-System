@@ -182,8 +182,13 @@ export function useAdminDashboard() {
   };
 
   const toggleBranchStatus = async (branchId, newStatus) => {
-    await api.put(`/franchises/branches/${branchId}/status`, { status: newStatus });
-    await fetchDashboard();
+    try {
+      await api.put(`/franchises/branches/${branchId}/status`, { status: newStatus });
+      await fetchDashboard();
+      setToast({ message: `Branch ${newStatus === 'ACTIVE' ? 'activated' : 'deactivated'} successfully.`, variant: 'success' });
+    } catch (err) {
+      setToast({ message: err.message || 'Failed to update branch status.', variant: 'error' });
+    }
   };
 
   const openApplication = (application) => {

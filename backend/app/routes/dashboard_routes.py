@@ -4,7 +4,7 @@ from __future__ import annotations
 
 from http import HTTPStatus
 
-from flask import Blueprint, jsonify
+from flask import Blueprint, g, jsonify, request
 from ..utils.db_helpers import floatify
 from sqlalchemy import func
 
@@ -32,7 +32,6 @@ dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
 @token_required({"FRANCHISOR"})
 def get_franchisor_metrics() -> tuple[dict[str, object], int]:
     """Return high-level metrics for the franchisor dashboard, scoped to their franchise."""
-    from flask import g
     current_user = getattr(g, "current_user", None)
     franchisor_id = getattr(current_user, "franchisor_id", None)
 
@@ -85,7 +84,6 @@ def get_franchisor_metrics() -> tuple[dict[str, object], int]:
 @token_required({"BRANCH_OWNER", "MANAGER"})
 def get_branch_metrics() -> tuple[dict[str, object], int]:
     """Aggregate metrics for a branch owner or manager, scoped to their branch."""
-    from flask import g, request
 
     branch_id_param = request.args.get("branch_id", type=int)
     role = getattr(g, "current_role", None)

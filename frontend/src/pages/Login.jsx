@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
+import { ROLE_REDIRECTS } from '../utils';
 import Modal from '../components/ui/Modal';
 
 export default function Login() {
@@ -35,20 +36,7 @@ export default function Login() {
       }
 
       const role = (session.role || '').toUpperCase();
-
-      if (role === 'FRANCHISOR') {
-        navigate('/admin', { replace: true });
-      } else if (role === 'BRANCH_OWNER') {
-        navigate('/franchisee', { replace: true });
-      } else if (role === 'MANAGER') {
-        navigate('/manager', { replace: true });
-      } else if (role === 'STAFF') {
-        navigate('/staff', { replace: true });
-      } else if (role === 'PENDING_APPLICANT') {
-        navigate('/pending', { replace: true });
-      } else {
-        navigate('/', { replace: true });
-      }
+      navigate(ROLE_REDIRECTS[role] || '/', { replace: true });
     } catch (err) {
       setError(err.message || 'Unable to sign in.');
     } finally {

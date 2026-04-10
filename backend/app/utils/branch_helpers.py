@@ -1,4 +1,4 @@
-﻿"""Branch ownership and staff-resolution helpers.
+"""Branch ownership and staff-resolution helpers.
 
 Extracted from registration_routes for shared use across
 registration_routes.py and auth_routes.py.
@@ -13,6 +13,13 @@ from flask import g, jsonify
 from ..extensions import db
 from ..models import Branch, BranchStatus, Franchise, Franchisor, Role
 
+
+def _current_role():
+    """Return the current user's role from the request context, or raise."""
+    role = getattr(g, "current_role", None)
+    if not role:
+        raise PermissionError("No role scope attached to request.")
+    return role
 
 def _get_role_by_name(role_name: str) -> Role:
     """Look up a role by its canonical name or raise LookupError."""

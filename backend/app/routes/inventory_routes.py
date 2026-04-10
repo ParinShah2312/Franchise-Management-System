@@ -1,4 +1,4 @@
-﻿"""Inventory management routes for branch-scoped stock control."""
+"""Inventory management routes for branch-scoped stock control."""
 
 from __future__ import annotations
 
@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 from http import HTTPStatus
 
 from flask import Blueprint, jsonify, request, g
+from sqlalchemy.exc import IntegrityError
 from sqlalchemy.orm import joinedload
 
 from ..extensions import db
@@ -302,6 +303,14 @@ def create_branch_inventory() -> tuple[dict[str, object], int]:
     branch_id_param = request.args.get("branch_id", type=int) or payload.get(
         "branch_id"
     )
+    if branch_id_param is not None:
+        try:
+            branch_id_param = int(branch_id_param)
+        except (TypeError, ValueError):
+            return jsonify(
+                {"error": "branch_id must be numeric."}
+            ), HTTPStatus.BAD_REQUEST
+
     result = _allowed_branch_id(branch_id_param)
     if isinstance(result, tuple):
         return result
@@ -446,7 +455,11 @@ def create_stock_item() -> tuple[dict[str, object], int]:
         unit_id=unit_id
     )
     db.session.add(stock_item)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Unable to create stock item due to duplicate data."}), HTTPStatus.CONFLICT
 
     return jsonify({
         "stock_item_id": stock_item.stock_item_id,
