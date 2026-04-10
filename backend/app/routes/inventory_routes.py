@@ -1,4 +1,4 @@
-"""Inventory management routes for branch-scoped stock control."""
+﻿"""Inventory management routes for branch-scoped stock control."""
 
 from __future__ import annotations
 

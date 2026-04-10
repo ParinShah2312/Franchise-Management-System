@@ -9,7 +9,7 @@ from typing import Optional
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 from sqlalchemy.types import (
-    BigInteger, DateTime, Integer,
+    BigInteger, Date, DateTime, Integer,
     Numeric, String, Text,
 )
 
@@ -93,13 +93,13 @@ class InventoryTransaction(db.Model):
     quantity_change: Mapped[Decimal] = mapped_column(Numeric(14, 4), nullable=False)
     unit_cost: Mapped[Decimal | None] = mapped_column(Numeric(10, 2))
     related_sale_item_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("sale_items.sale_item_id")
+        BigInteger, ForeignKey("sale_items.sale_item_id", ondelete="SET NULL")
     )
     created_by_user_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("users.user_id")
+        BigInteger, ForeignKey("users.user_id", ondelete="SET NULL")
     )
     approved_by_user_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("users.user_id")
+        BigInteger, ForeignKey("users.user_id", ondelete="SET NULL")
     )
     note: Mapped[str | None] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(
@@ -231,6 +231,9 @@ class RoyaltyConfig(db.Model):
     franchise: Mapped["Franchise"] = relationship(
         "Franchise", back_populates="royalty_configs"
     )
+    created_by_franchisor: Mapped[Optional["Franchisor"]] = relationship(
+        "Franchisor", foreign_keys=[created_by_franchisor_id]
+    )
 
 
 class SaleRoyalty(db.Model):
@@ -272,7 +275,7 @@ class Expense(TimestampMixin, db.Model):
     logged_by_user_id: Mapped[int | None] = mapped_column(
         ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
     )
-    expense_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
+    expense_date: Mapped[date] = mapped_column(Date, nullable=False)
     category: Mapped[str] = mapped_column(String(100), nullable=False)
     description: Mapped[str | None] = mapped_column(Text, nullable=True)
     amount: Mapped[Decimal] = mapped_column(Numeric(12, 2), nullable=False)

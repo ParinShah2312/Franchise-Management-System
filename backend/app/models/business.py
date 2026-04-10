@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from datetime import datetime, timezone
+from datetime import date, datetime, timezone
 from decimal import Decimal
 from typing import Optional
 
@@ -38,7 +38,7 @@ class FranchiseApplication(TimestampMixin, db.Model):
         ForeignKey("application_statuses.status_id"), nullable=False
     )
     decision_by_franchisor_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("franchisors.franchisor_id")
+        BigInteger, ForeignKey("franchisors.franchisor_id", ondelete="SET NULL"), nullable=True
     )
     decision_notes: Mapped[str | None] = mapped_column(Text)
     document_blob_id: Mapped[int | None] = mapped_column(
@@ -72,19 +72,19 @@ class Report(db.Model):
         autoincrement=True,
     )
     generated_by_user_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("users.user_id"), nullable=True
+        BigInteger, ForeignKey("users.user_id", ondelete="SET NULL"), nullable=True
     )
     franchisor_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("franchisors.franchisor_id"), nullable=False
     )
     branch_id: Mapped[int | None] = mapped_column(
-        BigInteger, ForeignKey("branches.branch_id")
+        BigInteger, ForeignKey("branches.branch_id", ondelete="SET NULL"), nullable=True
     )
     report_type: Mapped[str] = mapped_column(
         String(20), nullable=False
     )  # 'MASTER', 'BRANCH'
-    period_start: Mapped[Date] = mapped_column(Date, nullable=False)
-    period_end: Mapped[Date] = mapped_column(Date, nullable=False)
+    period_start: Mapped[date] = mapped_column(Date, nullable=False)
+    period_end: Mapped[date] = mapped_column(Date, nullable=False)
     created_at: Mapped[datetime] = mapped_column(
         DateTime, default=lambda: datetime.now(timezone.utc)
     )
@@ -92,7 +92,7 @@ class Report(db.Model):
     generated_by_user: Mapped[Optional["User"]] = relationship(
         "User", back_populates="reports", foreign_keys=[generated_by_user_id]
     )
-    franchisor: Mapped[Optional["Franchisor"]] = relationship(
+    franchisor: Mapped["Franchisor"] = relationship(
         "Franchisor", back_populates="reports"
     )
     branch: Mapped[Optional["Branch"]] = relationship(
@@ -111,7 +111,7 @@ class ReportData(db.Model):
         autoincrement=True,
     )
     report_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("reports.report_id"), nullable=False
+        BigInteger, ForeignKey("reports.report_id", ondelete="CASCADE"), nullable=False
     )
     data_key: Mapped[str] = mapped_column(String(100), nullable=False)
     data_value: Mapped[str | None] = mapped_column(String(255))

@@ -103,7 +103,7 @@ def get_royalty_summary(
     for branch in branches:
         row = row_by_branch.get(branch.branch_id)
         if row:
-            config = RoyaltyConfig.query.get(row.royalty_config_id)
+            config = db.session.get(RoyaltyConfig, row.royalty_config_id)
             franchisor_cut_pct = float(config.franchisor_cut_pct) if config else 0.0
             result.append(
                 {
@@ -140,7 +140,7 @@ def get_branch_royalty_summary(
     """Return royalty summary for a single branch for the given month and year."""
     start_date, end_date = month_bounds(date(year, month, 1))
 
-    branch = Branch.query.get(branch_id)
+    branch = db.session.get(Branch, branch_id)
     branch_name = branch.name if branch else str(branch_id)
 
     row = (
@@ -161,7 +161,7 @@ def get_branch_royalty_summary(
     )
 
     if row:
-        config = RoyaltyConfig.query.get(row.royalty_config_id)
+        config = db.session.get(RoyaltyConfig, row.royalty_config_id)
         franchisor_cut_pct = float(config.franchisor_cut_pct) if config else 0.0
         return {
             "branch_id": branch_id,

@@ -7,6 +7,8 @@ from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
 
 DOCUMENT_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
+# Currently identical to DOCUMENT_EXTENSIONS, but kept separate for future divergence 
+# (e.g. allowing video/higher-res files specifically for menus).
 MENU_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
 
 MIME_MAP = {

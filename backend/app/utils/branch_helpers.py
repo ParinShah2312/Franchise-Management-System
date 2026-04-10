@@ -1,4 +1,4 @@
-"""Branch ownership and staff-resolution helpers.
+﻿"""Branch ownership and staff-resolution helpers.
 
 Extracted from registration_routes for shared use across
 registration_routes.py and auth_routes.py.
@@ -11,7 +11,7 @@ from http import HTTPStatus
 from flask import g, jsonify
 
 from ..extensions import db
-from ..models import Branch, Franchise, Franchisor, Role
+from ..models import Branch, BranchStatus, Franchise, Franchisor, Role
 
 
 def _get_role_by_name(role_name: str) -> Role:
@@ -44,7 +44,7 @@ def _require_owner_branch(
                 {"error": "You are not authorized to manage this branch."}
             ), HTTPStatus.FORBIDDEN
 
-    branch = Branch.query.get(branch_id)
+    branch = db.session.get(Branch, branch_id)
     if not branch:
         return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
 
@@ -81,7 +81,8 @@ def _resolve_branch_for_staff(
         branch = _require_owner_branch(branch_id_param)
         if isinstance(branch, tuple):
             return branch
-        if branch.status_id != 1:
+        active_status = BranchStatus.query.filter_by(status_name="ACTIVE").first()
+        if not active_status or branch.status_id != active_status.status_id:
             return jsonify({"error": "Branch is not active."}), HTTPStatus.BAD_REQUEST
         return branch
 
@@ -98,14 +99,15 @@ def _resolve_branch_for_staff(
                     {"error": "You are not authorized to manage this branch."}
                 ), HTTPStatus.FORBIDDEN
 
-        branch = Branch.query.get(branch_id)
+        branch = db.session.get(Branch, branch_id)
         if not branch:
             return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
         if branch.manager_user_id != getattr(current_user, "user_id", None):
             return jsonify(
                 {"error": "You are not assigned as manager for this branch."}
             ), HTTPStatus.FORBIDDEN
-        if branch.status_id != 1:
+        active_status = BranchStatus.query.filter_by(status_name="ACTIVE").first()
+        if not active_status or branch.status_id != active_status.status_id:
             return jsonify({"error": "Branch is not active."}), HTTPStatus.BAD_REQUEST
         return branch
 

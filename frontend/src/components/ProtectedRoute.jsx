@@ -24,7 +24,7 @@ export default function ProtectedRoute({ allowedRoles = [], allowReset = false, 
   }
 
   if (!isAuthenticated) {
-    return <Navigate to="/" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (user?.mustResetPassword && !allowReset) {

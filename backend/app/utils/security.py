@@ -178,15 +178,24 @@ def _load_principal_from_token(token: str | None):
 
 
 def _select_primary_role(user: User) -> Optional[UserRole]:
-    """Pick the most privileged role for this user."""
-    # Order: BRANCH_OWNER > MANAGER > STAFF
-    # Since role_id 1=Owner, 2=Manager, 3=Staff, ordering by role_id ASC works perfectly.
-    return (
-        UserRole.query.options(joinedload(UserRole.role))
-        .filter(UserRole.user_id == user.user_id)
-        .order_by(UserRole.role_id.asc())
-        .first()
-    )
+    """Pick the most privileged role for this user using a priority map."""
+    roles = UserRole.query.options(joinedload(UserRole.role)).filter(UserRole.user_id == user.user_id).all()
+    if not roles:
+        return None
+
+    # Priority: Lower number = higher privilege
+    PRIORITY = {
+        "FRANCHISOR": 1,
+        "BRANCH_OWNER": 2,
+        "MANAGER": 3,
+        "STAFF": 4,
+        "PENDING_APPLICANT": 5
+    }
+
+    def _priority(ur):
+        return PRIORITY.get(ur.role.name if ur.role else "", 99)
+
+    return min(roles, key=_priority)
 
 
 def token_required(allowed_roles: Iterable[str] | None = None):

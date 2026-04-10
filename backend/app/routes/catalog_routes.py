@@ -45,7 +45,7 @@ def list_catalog_products() -> tuple[list[dict[str, object]], int]:
             "product_id": p.product_id,
             "name": p.name,
             "description": p.description,
-            "base_price": float(p.base_price),
+            "base_price": float(p.base_price) if p.base_price is not None else 0.0,
             "category_id": p.category_id,
             "category_name": p.category.name if p.category else None,
             "is_active": p.is_active,
@@ -61,6 +61,8 @@ def list_catalog_products() -> tuple[list[dict[str, object]], int]:
 @token_required({"FRANCHISOR"})
 def list_catalog_categories() -> tuple[list[dict[str, object]], int]:
     franchisor = getattr(g, "current_user", None)
+    if not franchisor:
+        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
     
     franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
     if not franchise:
@@ -90,6 +92,8 @@ def list_catalog_categories() -> tuple[list[dict[str, object]], int]:
 @token_required({"FRANCHISOR"})
 def create_category() -> tuple[dict[str, object], int]:
     franchisor = getattr(g, "current_user", None)
+    if not franchisor:
+        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
     
     franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
     if not franchise:
@@ -131,6 +135,8 @@ def create_category() -> tuple[dict[str, object], int]:
 @token_required({"FRANCHISOR"})
 def create_product() -> tuple[dict[str, object], int]:
     franchisor = getattr(g, "current_user", None)
+    if not franchisor:
+        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
     
     franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
     if not franchise:
@@ -157,7 +163,7 @@ def create_product() -> tuple[dict[str, object], int]:
     if base_price <= 0:
         return jsonify({"error": "base_price must be a positive number."}), HTTPStatus.BAD_REQUEST
 
-    category = ProductCategory.query.get(category_id)
+    category = db.session.get(ProductCategory, category_id)
     if not category or category.franchise_id != franchise.franchise_id:
         return jsonify({"error": "Invalid category for this franchise."}), HTTPStatus.BAD_REQUEST
 
@@ -184,7 +190,7 @@ def create_product() -> tuple[dict[str, object], int]:
         "product_id": product.product_id,
         "name": product.name,
         "description": product.description,
-        "base_price": float(product.base_price),
+        "base_price": float(product.base_price) if product.base_price is not None else 0.0,
         "is_active": product.is_active,
         "category_id": product.category_id,
         "category_name": category.name,
@@ -196,12 +202,14 @@ def create_product() -> tuple[dict[str, object], int]:
 @token_required({"FRANCHISOR"})
 def update_product(product_id: int) -> tuple[dict[str, object], int]:
     franchisor = getattr(g, "current_user", None)
+    if not franchisor:
+        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
     
     franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
     if not franchise:
         return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
 
-    product = Product.query.get(product_id)
+    product = db.session.get(Product, product_id)
     if not product:
         return jsonify({"error": "Product not found."}), HTTPStatus.NOT_FOUND
     if product.franchise_id != franchise.franchise_id:
@@ -225,7 +233,7 @@ def update_product(product_id: int) -> tuple[dict[str, object], int]:
     if "category_id" in payload:
         category_id = payload["category_id"]
         if category_id != product.category_id:
-            category = ProductCategory.query.get(category_id)
+            category = db.session.get(ProductCategory, category_id)
             if not category or category.franchise_id != franchise.franchise_id:
                 return jsonify({"error": "Invalid category for this franchise."}), HTTPStatus.BAD_REQUEST
             product.category_id = category_id
@@ -247,12 +255,12 @@ def update_product(product_id: int) -> tuple[dict[str, object], int]:
 
     db.session.commit()
 
-    category = ProductCategory.query.get(product.category_id)
+    category = db.session.get(ProductCategory, product.category_id)
     return jsonify({
         "product_id": product.product_id,
         "name": product.name,
         "description": product.description,
-        "base_price": float(product.base_price),
+        "base_price": float(product.base_price) if product.base_price is not None else 0.0,
         "is_active": product.is_active,
         "category_id": product.category_id,
         "category_name": category.name if category else None,
@@ -264,12 +272,14 @@ def update_product(product_id: int) -> tuple[dict[str, object], int]:
 @token_required({"FRANCHISOR"})
 def get_product_ingredients(product_id: int) -> tuple[list[dict[str, object]], int]:
     franchisor = getattr(g, "current_user", None)
+    if not franchisor:
+        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
     
     franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
     if not franchise:
         return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
 
-    product = Product.query.get(product_id)
+    product = db.session.get(Product, product_id)
     if not product or product.franchise_id != franchise.franchise_id:
         return jsonify({"error": "Product not found or unauthorized."}), HTTPStatus.FORBIDDEN
 
@@ -288,7 +298,7 @@ def get_product_ingredients(product_id: int) -> tuple[list[dict[str, object]], i
             "stock_item_id": ingredient.stock_item_id,
             "stock_item_name": ingredient.stock_item.name,
             "unit_name": ingredient.stock_item.unit.unit_name,
-            "quantity_required": float(ingredient.quantity_required)
+            "quantity_required": float(ingredient.quantity_required) if ingredient.quantity_required is not None else 0.0
         }
         for ingredient in ingredients
     ]
@@ -300,12 +310,14 @@ def get_product_ingredients(product_id: int) -> tuple[list[dict[str, object]], i
 @token_required({"FRANCHISOR"})
 def add_product_ingredient(product_id: int) -> tuple[dict[str, object], int]:
     franchisor = getattr(g, "current_user", None)
+    if not franchisor:
+        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
     
     franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
     if not franchise:
         return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
 
-    product = Product.query.get(product_id)
+    product = db.session.get(Product, product_id)
     if not product or product.franchise_id != franchise.franchise_id:
         return jsonify({"error": "Product not found or unauthorized."}), HTTPStatus.FORBIDDEN
 
@@ -324,7 +336,7 @@ def add_product_ingredient(product_id: int) -> tuple[dict[str, object], int]:
     if quantity_required <= 0:
         return jsonify({"error": "quantity_required must be a positive number."}), HTTPStatus.BAD_REQUEST
 
-    stock_item = StockItem.query.get(stock_item_id)
+    stock_item = db.session.get(StockItem, stock_item_id)
     if not stock_item or stock_item.franchise_id != franchise.franchise_id:
         return jsonify({"error": "Invalid stock item."}), HTTPStatus.BAD_REQUEST
 
@@ -343,9 +355,9 @@ def add_product_ingredient(product_id: int) -> tuple[dict[str, object], int]:
     db.session.add(ingredient)
     db.session.commit()
 
-    refreshed_ingredient = ProductIngredient.query.options(
+    refreshed_ingredient = db.session.query(ProductIngredient).options(
         joinedload(ProductIngredient.stock_item).joinedload(StockItem.unit)
-    ).get(ingredient.ingredient_id)
+    ).filter(ProductIngredient.ingredient_id == ingredient.ingredient_id).first()
 
     return jsonify({
         "ingredient_id": refreshed_ingredient.ingredient_id,
@@ -353,7 +365,7 @@ def add_product_ingredient(product_id: int) -> tuple[dict[str, object], int]:
         "stock_item_id": refreshed_ingredient.stock_item_id,
         "stock_item_name": refreshed_ingredient.stock_item.name,
         "unit_name": refreshed_ingredient.stock_item.unit.unit_name,
-        "quantity_required": float(refreshed_ingredient.quantity_required)
+        "quantity_required": float(refreshed_ingredient.quantity_required) if refreshed_ingredient.quantity_required is not None else 0.0
     }), HTTPStatus.CREATED
 
 
@@ -361,16 +373,18 @@ def add_product_ingredient(product_id: int) -> tuple[dict[str, object], int]:
 @token_required({"FRANCHISOR"})
 def remove_product_ingredient(product_id: int, ingredient_id: int) -> tuple[dict[str, object], int]:
     franchisor = getattr(g, "current_user", None)
+    if not franchisor:
+        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
     
     franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
     if not franchise:
         return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
 
-    product = Product.query.get(product_id)
+    product = db.session.get(Product, product_id)
     if not product or product.franchise_id != franchise.franchise_id:
         return jsonify({"error": "Product not found or unauthorized."}), HTTPStatus.FORBIDDEN
 
-    ingredient = ProductIngredient.query.get(ingredient_id)
+    ingredient = db.session.get(ProductIngredient, ingredient_id)
     if not ingredient or ingredient.product_id != product_id:
         return jsonify({"error": "Ingredient not found."}), HTTPStatus.NOT_FOUND
 
@@ -384,12 +398,14 @@ def remove_product_ingredient(product_id: int, ingredient_id: int) -> tuple[dict
 @token_required({"FRANCHISOR"})
 def get_stock_item_products(stock_item_id: int) -> tuple[list[dict[str, object]], int]:
     franchisor = getattr(g, "current_user", None)
+    if not franchisor:
+        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
     
     franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
     if not franchise:
         return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
 
-    stock_item = StockItem.query.get(stock_item_id)
+    stock_item = db.session.get(StockItem, stock_item_id)
     if not stock_item or stock_item.franchise_id != franchise.franchise_id:
         return jsonify({"error": "Stock item not found or unauthorized."}), HTTPStatus.FORBIDDEN
 
@@ -403,7 +419,7 @@ def get_stock_item_products(stock_item_id: int) -> tuple[list[dict[str, object]]
         {
             "product_id": ingredient.product_id,
             "product_name": ingredient.product.name,
-            "quantity_required": float(ingredient.quantity_required)
+            "quantity_required": float(ingredient.quantity_required) if ingredient.quantity_required is not None else 0.0
         }
         for ingredient in ingredients
     ]

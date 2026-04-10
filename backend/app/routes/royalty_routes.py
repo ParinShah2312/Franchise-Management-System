@@ -9,7 +9,7 @@ from http import HTTPStatus
 from flask import Blueprint, g, jsonify, request
 
 from ..extensions import db
-from ..models import Branch, Franchise, RoyaltyConfig
+from ..models import Branch, Franchise, Franchisor, RoyaltyConfig
 from ..services.royalty_service import (
     get_active_royalty_config,
     get_branch_royalty_summary,
@@ -22,7 +22,7 @@ from ..utils.db_helpers import serialize_dt
 royalty_bp = Blueprint("royalty", __name__, url_prefix="/api/royalty")
 
 
-def _get_franchisor_franchise():
+def _get_franchisor_franchise() -> tuple[Franchisor | None, Franchise | None]:
     """Return (franchisor, franchise) for the current FRANCHISOR user, or raise."""
     franchisor = getattr(g, "current_user", None)
     if not franchisor:
@@ -33,7 +33,7 @@ def _get_franchisor_franchise():
     return franchisor, franchise
 
 
-def _serialize_config(config: RoyaltyConfig) -> dict:
+def _serialize_config(config: RoyaltyConfig) -> dict[str, object]:
     return {
         "royalty_config_id": config.royalty_config_id,
         "franchise_id": config.franchise_id,
@@ -50,7 +50,7 @@ def _serialize_config(config: RoyaltyConfig) -> dict:
 
 @royalty_bp.route("/config", methods=["GET"])
 @token_required({"FRANCHISOR"})
-def get_royalty_config() -> tuple[dict, int]:
+def get_royalty_config() -> tuple[dict[str, object], int]:
     _, franchise = _get_franchisor_franchise()
     if not franchise:
         return jsonify({"error": "No franchise found for this franchisor."}), HTTPStatus.NOT_FOUND
@@ -124,7 +124,7 @@ def create_royalty_config() -> tuple[dict, int]:
 
 @royalty_bp.route("/summary", methods=["GET"])
 @token_required({"FRANCHISOR"})
-def royalty_summary() -> tuple[dict, int]:
+def royalty_summary() -> tuple[dict[str, object], int]:
     _, franchise = _get_franchisor_franchise()
     if not franchise:
         return jsonify({"error": "No franchise found for this franchisor."}), HTTPStatus.NOT_FOUND
@@ -157,7 +157,7 @@ def royalty_summary() -> tuple[dict, int]:
 
 @royalty_bp.route("/branch-summary", methods=["GET"])
 @token_required({"BRANCH_OWNER"})
-def royalty_branch_summary() -> tuple[dict, int]:
+def royalty_branch_summary() -> tuple[dict[str, object], int]:
     role = getattr(g, "current_role", None)
     if not role:
         return jsonify({"error": "No role scope attached to request."}), HTTPStatus.FORBIDDEN
@@ -176,7 +176,7 @@ def royalty_branch_summary() -> tuple[dict, int]:
         effective_branch_id = branch_id_param
 
     # Verify the branch exists
-    branch = Branch.query.get(effective_branch_id)
+    branch = db.session.get(Branch, effective_branch_id)
     if not branch:
         return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
 

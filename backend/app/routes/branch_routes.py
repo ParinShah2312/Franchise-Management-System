@@ -1,4 +1,4 @@
-"""Branch-level helper routes for manager and owner workflows."""
+﻿"""Branch-level helper routes for manager and owner workflows."""
 
 from __future__ import annotations
 
@@ -7,7 +7,8 @@ from http import HTTPStatus
 from flask import Blueprint, jsonify, g
 from sqlalchemy.orm import joinedload
 
-from ..models import Branch, BranchStaff, User, UserRole
+from ..extensions import db
+from ..models import Branch, BranchStatus, BranchStaff, User, UserRole
 from ..utils.security import token_required
 
 branch_bp = Blueprint("branch", __name__, url_prefix="/api/branch")
@@ -20,7 +21,7 @@ def _branch_scope() -> Branch | tuple[dict[str, object], int]:
     if not role or role.scope_type != "BRANCH" or not current_user:
         return jsonify({"error": "Branch-scoped role required."}), HTTPStatus.FORBIDDEN
 
-    branch = Branch.query.get(role.scope_id)
+    branch = db.session.get(Branch, role.scope_id)
     if not branch:
         return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
 
@@ -32,7 +33,8 @@ def _branch_scope() -> Branch | tuple[dict[str, object], int]:
             {"error": "You are not assigned as manager for this branch."}
         ), HTTPStatus.FORBIDDEN
 
-    if branch.status_id != 1:
+    active_status = BranchStatus.query.filter_by(status_name="ACTIVE").first()
+    if not active_status or branch.status_id != active_status.status_id:
         return jsonify({"error": "Branch is not active."}), HTTPStatus.BAD_REQUEST
 
     return branch

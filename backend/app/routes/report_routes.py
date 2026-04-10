@@ -5,9 +5,10 @@ from __future__ import annotations
 from datetime import date, datetime, timezone
 from http import HTTPStatus
 
-from flask import Blueprint, jsonify, request, g
+from flask import Blueprint, current_app, jsonify, request, g
+import calendar
 from ..extensions import db
-from ..models import Report, ReportData
+from ..models import Report, ReportData, Branch, Franchise
 from ..services.report_service import get_authorized_branch_ids, build_report_summary
 from ..utils.security import token_required
 
@@ -76,7 +77,6 @@ def report_summary() -> tuple[dict[str, object], int]:
 
     # ── Build summary data ──────────────────────────────────────────────────
     if role_name == "FRANCHISOR":
-        from ..models import Branch, Franchise
         if not current_user:
             return jsonify({"error": "Unauthorized."}), HTTPStatus.UNAUTHORIZED
         franchise = Franchise.query.filter_by(
@@ -88,7 +88,6 @@ def report_summary() -> tuple[dict[str, object], int]:
             b.branch_id
             for b in Branch.query.filter_by(franchise_id=franchise.franchise_id).all()
         ]
-        import calendar
         month_name = calendar.month_name[month]
         summary_data = build_report_summary(
             branch_ids, month, year, start_date, end_date,
@@ -108,8 +107,6 @@ def report_summary() -> tuple[dict[str, object], int]:
             branch_ids, month, year, start_date, end_date
         )
         # Resolve franchisor_id through the branch's franchise
-        from ..models import Branch, Franchise
-        import calendar
         month_name = calendar.month_name[month]
         franchisor_id = None
         report_title = f"Report - {month_name} {year}"
@@ -160,8 +157,7 @@ def report_summary() -> tuple[dict[str, object], int]:
         except Exception as exc:
             db.session.rollback()
             # Persistence failure must not break the report response
-            import logging
-            logging.getLogger(__name__).warning(
+            current_app.logger.warning(
                 "Failed to persist report record: %s", exc
             )
 

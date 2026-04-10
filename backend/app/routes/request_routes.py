@@ -42,7 +42,7 @@ def _resolve_branch_id(explicit_branch_id: int | None) -> int:
     elif role.scope_type == "FRANCHISE":
         if explicit_branch_id is None:
             raise ValueError("branch_id is required for this operation.")
-        branch = Branch.query.get(explicit_branch_id)
+        branch = db.session.get(Branch, explicit_branch_id)
         if not branch or branch.franchise_id != role.scope_id:
             raise PermissionError("Branch not accessible for this franchise scope.")
         branch_id = branch.branch_id
@@ -73,6 +73,7 @@ def _serialize_request(request_obj: StockPurchaseRequest) -> dict[str, object]:
         "approved_by_user_id": request_obj.approved_by_user_id,
         "created_at": serialize_dt(request_obj.created_at),
         "approved_at": serialize_dt(request_obj.approved_at),
+        "rejected_at": serialize_dt(request_obj.rejected_at),
         "note": request_obj.note,
         "items": [
             {
@@ -80,7 +81,7 @@ def _serialize_request(request_obj: StockPurchaseRequest) -> dict[str, object]:
                 "stock_item_id": item.stock_item_id,
                 "stock_item_name": item.stock_item.name if item.stock_item else None,
                 "unit_name": item.stock_item.unit.unit_name if item.stock_item and item.stock_item.unit else None,
-                "requested_quantity": float(item.requested_quantity),
+                "requested_quantity": float(item.requested_quantity) if item.requested_quantity is not None else 0.0,
                 "estimated_unit_cost": float(item.estimated_unit_cost)
                 if item.estimated_unit_cost is not None
                 else None,
@@ -111,7 +112,7 @@ def create_request() -> tuple[dict[str, object], int]:
             exc, PermissionError
         ) else HTTPStatus.BAD_REQUEST
 
-    branch = Branch.query.get(branch_id)
+    branch = db.session.get(Branch, branch_id)
     if not branch:
         return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
 
@@ -140,7 +141,7 @@ def create_request() -> tuple[dict[str, object], int]:
                 {"error": "Each item requires stock_item_id."}
             ), HTTPStatus.BAD_REQUEST
 
-        stock_item = StockItem.query.get(stock_item_id)
+        stock_item = db.session.get(StockItem, stock_item_id)
         if not stock_item or stock_item.franchise_id != branch.franchise_id:
             db.session.rollback()
             return jsonify(
@@ -192,12 +193,12 @@ def create_request() -> tuple[dict[str, object], int]:
 
     db.session.commit()
 
-    request_record = StockPurchaseRequest.query.options(
+    request_record = db.session.query(StockPurchaseRequest).options(
         joinedload(StockPurchaseRequest.items).joinedload(
             StockPurchaseRequestItem.stock_item
         ).joinedload(StockItem.unit),
         joinedload(StockPurchaseRequest.status),
-    ).get(request_record.request_id)
+    ).filter(StockPurchaseRequest.request_id == request_record.request_id).first()
 
     return jsonify(_serialize_request(request_record)), HTTPStatus.CREATED
 
@@ -214,7 +215,7 @@ def _ensure_request_access(
         return jsonify({"error": "Unauthorized branch access."}), HTTPStatus.FORBIDDEN
 
     if role.scope_type == "FRANCHISE":
-        branch = Branch.query.get(request_obj.branch_id)
+        branch = db.session.get(Branch, request_obj.branch_id)
         if not branch or branch.franchise_id != role.scope_id:
             return jsonify(
                 {"error": "Unauthorized branch access."}
@@ -253,10 +254,10 @@ def list_requests() -> tuple[list[dict[str, object]], int]:
 @request_bp.route("/<int:request_id>/approve", methods=["PUT"])
 @token_required({"BRANCH_OWNER"})
 def approve_request(request_id: int) -> tuple[dict[str, object], int]:
-    record = StockPurchaseRequest.query.options(
+    record = db.session.query(StockPurchaseRequest).options(
         joinedload(StockPurchaseRequest.items),
         joinedload(StockPurchaseRequest.branch),
-    ).get(request_id)
+    ).filter(StockPurchaseRequest.request_id == request_id).first()
 
     if not record:
         return jsonify({"error": "Request not found."}), HTTPStatus.NOT_FOUND
@@ -283,7 +284,7 @@ def approve_request(request_id: int) -> tuple[dict[str, object], int]:
             {"error": "Cannot approve a request without items."}
         ), HTTPStatus.BAD_REQUEST
 
-    branch = record.branch or Branch.query.get(record.branch_id)
+    branch = record.branch or db.session.get(Branch, record.branch_id)
     if not branch:
         return jsonify(
             {"error": "Branch not found for this request."}
@@ -314,12 +315,12 @@ def approve_request(request_id: int) -> tuple[dict[str, object], int]:
 
     db.session.commit()
 
-    record = StockPurchaseRequest.query.options(
+    record = db.session.query(StockPurchaseRequest).options(
         joinedload(StockPurchaseRequest.items).joinedload(
             StockPurchaseRequestItem.stock_item
         ).joinedload(StockItem.unit),
         joinedload(StockPurchaseRequest.status),
-    ).get(record.request_id)
+    ).filter(StockPurchaseRequest.request_id == record.request_id).first()
 
     return jsonify(_serialize_request(record)), HTTPStatus.OK
 
@@ -327,9 +328,9 @@ def approve_request(request_id: int) -> tuple[dict[str, object], int]:
 @request_bp.route("/<int:request_id>/reject", methods=["PUT"])
 @token_required({"BRANCH_OWNER"})
 def reject_request(request_id: int) -> tuple[dict[str, object], int]:
-    record = StockPurchaseRequest.query.options(
+    record = db.session.query(StockPurchaseRequest).options(
         joinedload(StockPurchaseRequest.branch)
-    ).get(request_id)
+    ).filter(StockPurchaseRequest.request_id == request_id).first()
 
     if not record:
         return jsonify({"error": "Request not found."}), HTTPStatus.NOT_FOUND
@@ -353,15 +354,15 @@ def reject_request(request_id: int) -> tuple[dict[str, object], int]:
 
     record.status_id = rejected_status_id
     record.approved_by_user_id = current_user.user_id if current_user else None
-    record.approved_at = datetime.now(timezone.utc)
+    record.rejected_at = datetime.now(timezone.utc)
 
     db.session.commit()
 
-    record = StockPurchaseRequest.query.options(
+    record = db.session.query(StockPurchaseRequest).options(
         joinedload(StockPurchaseRequest.items).joinedload(
             StockPurchaseRequestItem.stock_item
         ).joinedload(StockItem.unit),
         joinedload(StockPurchaseRequest.status),
-    ).get(record.request_id)
+    ).filter(StockPurchaseRequest.request_id == record.request_id).first()
 
     return jsonify(_serialize_request(record)), HTTPStatus.OK

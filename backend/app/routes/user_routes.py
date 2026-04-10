@@ -1,4 +1,4 @@
-"""User management routes for activation and deactivation."""
+﻿"""User management routes for activation and deactivation."""
 
 from __future__ import annotations
 
@@ -31,7 +31,7 @@ def deactivate_user(user_id: int) -> tuple[dict[str, object], int]:
             HTTPStatus.BAD_REQUEST,
         )
 
-    target_user = User.query.get(user_id)
+    target_user = db.session.get(User, user_id)
     if not target_user:
         return jsonify({"error": "User not found."}), HTTPStatus.NOT_FOUND
 
@@ -94,11 +94,11 @@ def activate_user(user_id: int) -> tuple[dict[str, object], int]:
     # Prevent self-action (edge case guard – user would be active anyway)
     if user_id == current_user.user_id:
         return (
-            jsonify({"error": "You cannot deactivate your own account."}),
+            jsonify({"error": "You cannot activate your own account."}),
             HTTPStatus.BAD_REQUEST,
         )
 
-    target_user = User.query.get(user_id)
+    target_user = db.session.get(User, user_id)
     if not target_user:
         return jsonify({"error": "User not found."}), HTTPStatus.NOT_FOUND
 
@@ -125,7 +125,7 @@ def activate_user(user_id: int) -> tuple[dict[str, object], int]:
     )
     if target_role_name == "BRANCH_OWNER":
         return (
-            jsonify({"error": "You cannot deactivate a branch owner."}),
+            jsonify({"error": "You cannot activate a branch owner."}),
             HTTPStatus.FORBIDDEN,
         )
 
@@ -165,7 +165,7 @@ def force_reset_password(user_id: int) -> tuple[dict[str, object], int]:
             HTTPStatus.BAD_REQUEST,
         )
 
-    target_user = User.query.get(user_id)
+    target_user = db.session.get(User, user_id)
     if not target_user:
         return jsonify({"error": "User not found."}), HTTPStatus.NOT_FOUND
 

@@ -1,4 +1,4 @@
-"""Sales management routes for branch-level transactions."""
+﻿"""Sales management routes for branch-level transactions."""
 
 from __future__ import annotations
 

@@ -58,7 +58,7 @@ def list_active_branches() -> tuple[list[dict[str, object]], int]:
 @franchise_bp.route("/<int:franchise_id>/menu", methods=["POST"])
 @token_required({"FRANCHISOR"})
 def upload_franchise_menu(franchise_id: int) -> tuple[dict[str, object], int]:
-    franchise = Franchise.query.get(franchise_id)
+    franchise = db.session.get(Franchise, franchise_id)
     if not franchise:
         return jsonify({"error": "Franchise not found."}), HTTPStatus.NOT_FOUND
 
@@ -188,7 +188,7 @@ def toggle_branch_status(branch_id: int) -> tuple[dict[str, object], int]:
     if new_status not in ("ACTIVE", "INACTIVE"):
         return jsonify({"error": "status must be ACTIVE or INACTIVE."}), HTTPStatus.BAD_REQUEST
 
-    branch = Branch.query.get(branch_id)
+    branch = db.session.get(Branch, branch_id)
     if not branch:
         return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
 

@@ -1,4 +1,4 @@
-"""Authentication routes aligned with role-based permissions."""
+﻿"""Authentication routes aligned with role-based permissions."""
 
 from __future__ import annotations
 from ..utils.validators import validate_password_strength, PASSWORD_ERROR

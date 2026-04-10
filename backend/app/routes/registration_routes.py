@@ -140,6 +140,9 @@ def register_franchisee() -> tuple[dict[str, object], int]:
             HTTPStatus.BAD_REQUEST,
         )
 
+    if not validate_email(email):
+        return jsonify({"error": EMAIL_ERROR}), HTTPStatus.BAD_REQUEST
+
     if not validate_password_strength(password):
         return (
             jsonify({"error": PASSWORD_ERROR}),
@@ -150,23 +153,11 @@ def register_franchisee() -> tuple[dict[str, object], int]:
     if not validate_phone(sanitized_phone):
         return jsonify({"error": PHONE_ERROR}), HTTPStatus.BAD_REQUEST
 
-    if User.query.filter_by(email=email).first():
+    if User.query.filter_by(email=email).first() or Franchisor.query.filter_by(email=email).first():
         return jsonify({"error": "Email is already registered."}), HTTPStatus.CONFLICT
 
-    if Franchisor.query.filter_by(email=email).first():
-        return jsonify(
-            {"error": "Email is already registered as a franchisor."}
-        ), HTTPStatus.CONFLICT
-
-    if User.query.filter_by(phone=sanitized_phone).first():
-        return jsonify(
-            {"error": "Phone number is already registered."}
-        ), HTTPStatus.CONFLICT
-
-    if Franchisor.query.filter_by(phone=sanitized_phone).first():
-        return jsonify(
-            {"error": "Phone number is already registered to another franchisor."}
-        ), HTTPStatus.CONFLICT
+    if User.query.filter_by(phone=sanitized_phone).first() or Franchisor.query.filter_by(phone=sanitized_phone).first():
+        return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
 
     try:
         franchise_id = int(franchise_id_raw)
@@ -175,7 +166,7 @@ def register_franchisee() -> tuple[dict[str, object], int]:
             {"error": "Invalid franchise selection."}
         ), HTTPStatus.BAD_REQUEST
 
-    franchise = Franchise.query.get(franchise_id)
+    franchise = db.session.get(Franchise, franchise_id)
     if not franchise:
         return jsonify({"error": "Franchise not found."}), HTTPStatus.BAD_REQUEST
 
@@ -201,7 +192,7 @@ def register_franchisee() -> tuple[dict[str, object], int]:
 
     status = ApplicationStatus.query.filter_by(status_name="PENDING").first()
     if not status:
-        status = ApplicationStatus.query.get(1)
+        status = db.session.get(ApplicationStatus, 1)
     if not status:
         db.session.rollback()
         return (
@@ -278,22 +269,21 @@ def register_manager() -> tuple[dict[str, object], int]:
     if not all([name, email, password, phone_raw, branch_id_raw]):
         return jsonify({"error": "Missing required fields."}), HTTPStatus.BAD_REQUEST
 
+    if not validate_email(email):
+        return jsonify({"error": EMAIL_ERROR}), HTTPStatus.BAD_REQUEST
+
     sanitized_phone = sanitize_phone(phone_raw)
     if not validate_phone(sanitized_phone):
         return jsonify({"error": PHONE_ERROR}), HTTPStatus.BAD_REQUEST
 
-    if len(password) < 8:
-        return jsonify(
-            {"error": "Password must be at least 8 characters long."}
-        ), HTTPStatus.BAD_REQUEST
+    if not validate_password_strength(password):
+        return jsonify({"error": PASSWORD_ERROR}), HTTPStatus.BAD_REQUEST
 
-    if User.query.filter_by(email=email).first():
+    if User.query.filter_by(email=email).first() or Franchisor.query.filter_by(email=email).first():
         return jsonify({"error": "Email is already registered."}), HTTPStatus.CONFLICT
 
-    if User.query.filter_by(phone=sanitized_phone).first():
-        return jsonify(
-            {"error": "Phone number is already registered."}
-        ), HTTPStatus.CONFLICT
+    if User.query.filter_by(phone=sanitized_phone).first() or Franchisor.query.filter_by(phone=sanitized_phone).first():
+        return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
 
     branch = _resolve_branch_for_staff(branch_id_raw)
     if isinstance(branch, tuple):
@@ -362,22 +352,21 @@ def register_staff() -> tuple[dict[str, object], int]:
     if not all([name, email, password, phone_raw]):
         return jsonify({"error": "Missing required fields."}), HTTPStatus.BAD_REQUEST
 
+    if not validate_email(email):
+        return jsonify({"error": EMAIL_ERROR}), HTTPStatus.BAD_REQUEST
+
     sanitized_phone = sanitize_phone(phone_raw)
     if not validate_phone(sanitized_phone):
         return jsonify({"error": PHONE_ERROR}), HTTPStatus.BAD_REQUEST
 
-    if len(password) < 8:
-        return jsonify(
-            {"error": "Password must be at least 8 characters long."}
-        ), HTTPStatus.BAD_REQUEST
+    if not validate_password_strength(password):
+        return jsonify({"error": PASSWORD_ERROR}), HTTPStatus.BAD_REQUEST
 
-    if User.query.filter_by(email=email).first():
+    if User.query.filter_by(email=email).first() or Franchisor.query.filter_by(email=email).first():
         return jsonify({"error": "Email is already registered."}), HTTPStatus.CONFLICT
 
-    if User.query.filter_by(phone=sanitized_phone).first():
-        return jsonify(
-            {"error": "Phone number is already registered."}
-        ), HTTPStatus.CONFLICT
+    if User.query.filter_by(phone=sanitized_phone).first() or Franchisor.query.filter_by(phone=sanitized_phone).first():
+        return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
 
     branch = _resolve_branch_for_staff(branch_id_raw)
     if isinstance(branch, tuple):
@@ -433,5 +422,3 @@ def register_staff() -> tuple[dict[str, object], int]:
     return jsonify(
         {"message": "Staff member registered successfully."}
     ), HTTPStatus.CREATED
-
-

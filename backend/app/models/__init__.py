@@ -13,7 +13,8 @@ Domain organization:
     catalog.py    -> ProductCategory, Product, StockItem,
                      ProductIngredient, BranchInventory
     operations.py -> Sale, SaleItem, InventoryTransaction,
-                     StockPurchaseRequest, StockPurchaseRequestItem,
+                     Expense, StockPurchaseRequest,
+                     StockPurchaseRequestItem,
                      RoyaltyConfig, SaleRoyalty, FileBlob
     business.py   -> FranchiseApplication, Report, ReportData
 """

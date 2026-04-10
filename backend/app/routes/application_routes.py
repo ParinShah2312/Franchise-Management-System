@@ -18,7 +18,7 @@ application_bp = Blueprint("applications", __name__, url_prefix="/api/franchises
 def _hydrate_address(location: str) -> Address:
     """Parse location string into an Address object."""
 
-    parts = location.split(",")
+    parts = [p.strip() for p in location.split(",")]
     city = parts[0] if len(parts) > 0 else "UNKNOWN"
     state = parts[1] if len(parts) > 1 else "UNKNOWN"
     country = parts[2] if len(parts) > 2 else "India"
@@ -212,8 +212,7 @@ def approve_application(application_id: int) -> tuple[dict[str, object], int]:
 
     # 4. Update Application Status
     application.status_id = support["app_status"].status_id
-    # Optional: Link decision maker if current_user is available in context
-    # application.decision_by_franchisor_id = g.user.id
+    application.decision_by_franchisor_id = franchisor_id
 
     db.session.commit()
 
@@ -236,6 +235,9 @@ def reject_application(application_id: int) -> tuple[dict[str, object], int]:
     payload = request.get_json(silent=True) or {}
     notes = (payload.get("notes") or "").strip() or None
 
+    current_user = getattr(g, "current_user", None)
+    franchisor_id = getattr(current_user, "franchisor_id", None)
+
     application = (
         FranchiseApplication.query.options(joinedload(FranchiseApplication.status))
         .filter_by(application_id=application_id)
@@ -257,6 +259,7 @@ def reject_application(application_id: int) -> tuple[dict[str, object], int]:
 
     application.status_id = rejected_status.status_id
     application.decision_notes = notes
+    application.decision_by_franchisor_id = franchisor_id
 
     db.session.commit()
 

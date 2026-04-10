@@ -1,4 +1,4 @@
-"""Application-wide extension instances."""
+﻿"""Application-wide extension instances."""
 
 from __future__ import annotations
 

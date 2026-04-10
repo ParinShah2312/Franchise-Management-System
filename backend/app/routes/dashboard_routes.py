@@ -1,12 +1,11 @@
-"""Dashboard analytics routes for admin users."""
+"""Dashboard analytics routes for franchisors and operational managers."""
 
 from __future__ import annotations
 
-from datetime import date
 from http import HTTPStatus
 
 from flask import Blueprint, jsonify
-from ..utils.db_helpers import floatify, month_bounds, serialize_dt
+from ..utils.db_helpers import floatify
 from sqlalchemy import func
 
 from ..extensions import db
@@ -26,14 +25,13 @@ from ..models import (
 from ..utils.security import token_required
 
 
-
-dashboard_bp = Blueprint("franchisee", __name__, url_prefix="/api/franchisee")
+dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
 
 
 @dashboard_bp.route("/franchisor/metrics", methods=["GET"])
 @token_required({"FRANCHISOR"})
 def get_franchisor_metrics() -> tuple[dict[str, object], int]:
-    """Return high-level metrics required for the franchisor dashboard."""
+    """Return high-level metrics for the franchisor dashboard, scoped to their franchise."""
     from flask import g
     current_user = getattr(g, "current_user", None)
     franchisor_id = getattr(current_user, "franchisor_id", None)
@@ -48,7 +46,7 @@ def get_franchisor_metrics() -> tuple[dict[str, object], int]:
         .join(SaleStatus, Sale.status_id == SaleStatus.sale_status_id)
         .filter(
             SaleStatus.status_name == "PAID",
-            Franchise.franchisor_id == franchisor_id
+            Franchise.franchisor_id == franchisor_id,
         )
         .scalar()
         or 0
@@ -60,7 +58,7 @@ def get_franchisor_metrics() -> tuple[dict[str, object], int]:
         .join(BranchStatus, Branch.status_id == BranchStatus.status_id)
         .filter(
             BranchStatus.status_name == "ACTIVE",
-            Franchise.franchisor_id == franchisor_id
+            Franchise.franchisor_id == franchisor_id,
         ).count()
     )
 
@@ -70,7 +68,7 @@ def get_franchisor_metrics() -> tuple[dict[str, object], int]:
         .join(ApplicationStatus, FranchiseApplication.status_id == ApplicationStatus.status_id)
         .filter(
             ApplicationStatus.status_name == "PENDING",
-            Franchise.franchisor_id == franchisor_id
+            Franchise.franchisor_id == franchisor_id,
         ).count()
     )
 
@@ -86,8 +84,7 @@ def get_franchisor_metrics() -> tuple[dict[str, object], int]:
 @dashboard_bp.route("/branch/metrics", methods=["GET"])
 @token_required({"BRANCH_OWNER", "MANAGER"})
 def get_branch_metrics() -> tuple[dict[str, object], int]:
-    """Aggregate metrics for a branch owner scoped to their branch."""
-
+    """Aggregate metrics for a branch owner or manager, scoped to their branch."""
     from flask import g, request
 
     branch_id_param = request.args.get("branch_id", type=int)
@@ -119,8 +116,7 @@ def get_branch_metrics() -> tuple[dict[str, object], int]:
         )
         .join(
             TransactionType,
-            InventoryTransaction.transaction_type_id
-            == TransactionType.transaction_type_id,
+            InventoryTransaction.transaction_type_id == TransactionType.transaction_type_id,
         )
         .filter(
             InventoryTransaction.branch_id == branch_id,
@@ -167,92 +163,3 @@ def get_branch_metrics() -> tuple[dict[str, object], int]:
     }
 
     return jsonify(payload), HTTPStatus.OK
-
-
-@dashboard_bp.route("/metrics", methods=["GET"])
-@token_required({"FRANCHISOR"})
-def get_dashboard_metrics() -> tuple[dict[str, object], int]:
-    """Aggregate high-level business metrics for the admin dashboard."""
-
-    total_revenue = (
-        db.session.query(func.coalesce(func.sum(Sale.total_amount), 0)).scalar() or 0
-    )
-
-    today = date.today()
-    month_start, month_end = month_bounds(today)
-    monthly_revenue = (
-        db.session.query(func.coalesce(func.sum(Sale.total_amount), 0))
-        .filter(Sale.sale_datetime >= month_start, Sale.sale_datetime < month_end)
-        .scalar()
-        or 0
-    )
-
-    total_franchises = Franchise.query.count()
-    active_branches = (
-        Branch.query.join(BranchStatus, Branch.status_id == BranchStatus.status_id)
-        .filter(BranchStatus.status_name == "ACTIVE")
-        .count()
-    )
-    pending_applications = (
-        FranchiseApplication.query.join(
-            ApplicationStatus,
-            FranchiseApplication.status_id == ApplicationStatus.status_id,
-        )
-        .filter(ApplicationStatus.status_name == "PENDING")
-        .count()
-    )
-
-    payload = {
-        "total_revenue": floatify(total_revenue),
-        "monthly_revenue": floatify(monthly_revenue),
-        "total_franchises": total_franchises,
-        "active_branches": active_branches,
-        "pending_applications": pending_applications,
-    }
-
-    return jsonify(payload), HTTPStatus.OK
-
-
-@dashboard_bp.route("/recent-sales", methods=["GET"])
-@token_required({"FRANCHISOR"})
-def get_recent_sales() -> tuple[list[dict[str, object]], int]:
-    """Return the latest sales across all franchises for admin visibility."""
-
-    # Join with Franchise to surface contextual details.
-    results = (
-        db.session.query(
-            Sale.sale_id,
-            Sale.sale_datetime,
-            Sale.total_amount,
-            Branch.branch_id,
-            Branch.name.label("branch_name"),
-            Franchise.franchise_id,
-            Franchise.name.label("franchise_name"),
-        )
-        .join(Branch, Sale.branch_id == Branch.branch_id)
-        .join(Franchise, Branch.franchise_id == Franchise.franchise_id)
-        .order_by(Sale.sale_datetime.desc(), Sale.sale_id.desc())
-        .limit(10)
-        .all()
-    )
-
-    sales_data: list[dict[str, object]] = []
-    for row in results:
-        sale_datetime = (
-            serialize_dt(row.sale_datetime)
-            if hasattr(row.sale_datetime, "isoformat")
-            else str(row.sale_datetime)
-        )
-        sales_data.append(
-            {
-                "id": row.sale_id,
-                "sale_datetime": sale_datetime,
-                "total_amount": floatify(row.total_amount),
-                "branch_id": row.branch_id,
-                "branch_name": row.branch_name,
-                "franchise_id": row.franchise_id,
-                "franchise_name": row.franchise_name,
-            }
-        )
-
-    return jsonify(sales_data), HTTPStatus.OK

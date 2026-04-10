@@ -104,7 +104,6 @@ def get_expenses_total(
     Return the total expenses amount across the given branches
     for the period [start_date, end_date).
     """
-    from sqlalchemy import func
     query = db.session.query(
         func.coalesce(func.sum(Expense.amount), 0)
     ).filter(
@@ -127,7 +126,6 @@ def get_branch_expense_breakdown(
     if not branch_ids:
         return {}
 
-    from sqlalchemy import func
     rows = (
         db.session.query(
             Expense.branch_id,
@@ -163,7 +161,6 @@ def get_branch_product_sales_breakdown(
     if not branch_ids:
         return {}
     
-    from sqlalchemy import func
     from ..models import Sale, SaleItem, Product
     rows = (
         db.session.query(

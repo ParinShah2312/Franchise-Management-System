@@ -88,6 +88,12 @@ def create_expense() -> tuple[dict, int]:
     category = (payload.get("category") or "").strip()
     if not category:
         return jsonify({"error": "category is required."}), HTTPStatus.BAD_REQUEST
+    
+    if category not in VALID_CATEGORIES:
+        return (
+            jsonify({"error": f"Invalid category. Must be one of: {', '.join(VALID_CATEGORIES)}"}),
+            HTTPStatus.BAD_REQUEST
+        )
 
     description = (payload.get("description") or "").strip() or None
 

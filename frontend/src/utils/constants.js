@@ -5,4 +5,5 @@ export const ROLE_REDIRECTS = {
   BRANCH_OWNER: '/franchisee',
   MANAGER: '/manager',
   STAFF: '/staff',
+  PENDING_APPLICANT: '/pending',
 };

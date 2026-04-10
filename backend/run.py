@@ -11,7 +11,7 @@ with app.app_context():
         print("[startup] Empty database detected — running seed script...")
         from seed import seed_database
         seed_database()
-        print("[startup] Seed complete. Default login: admin@system.com / admin123")
+        print("[startup] Seed complete. Default login: admin@mcd.com or admin@ajays.com / admin123")
 
 if __name__ == "__main__":
     app.run(debug=True, port=5000)
