@@ -55,7 +55,7 @@ def _filter_branch_ids(
 
 
 @report_bp.route("/summary", methods=["GET"])
-@token_required({"FRANCHISOR", "BRANCH_OWNER", "MANAGER"})
+@token_required({"FRANCHISOR", "BRANCH_OWNER"})
 def report_summary() -> tuple[dict[str, object], int]:
     try:
         month, year = _month_year()

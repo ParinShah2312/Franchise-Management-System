@@ -100,100 +100,7 @@ def list_inventory() -> tuple[list[dict[str, object]], int]:
     return jsonify([_serialize_inventory(record) for record in records]), HTTPStatus.OK
 
 
-@inventory_bp.route("/transaction", methods=["POST"])
-@token_required({"BRANCH_OWNER", "MANAGER"})
-def create_transaction() -> tuple[dict[str, object], int]:
-    payload = request.get_json(silent=True) or {}
 
-    branch_id_param = request.args.get("branch_id", type=int) or payload.get(
-        "branch_id"
-    )
-    if branch_id_param is not None:
-        try:
-            branch_id_param = int(branch_id_param)
-        except (TypeError, ValueError):
-            return jsonify(
-                {"error": "branch_id must be numeric."}
-            ), HTTPStatus.BAD_REQUEST
-
-    result = _allowed_branch_id(branch_id_param)
-    if isinstance(result, tuple):
-        return result
-
-    stock_item_id = payload.get("stock_item_id")
-    if not stock_item_id:
-        return jsonify({"error": "stock_item_id is required."}), HTTPStatus.BAD_REQUEST
-
-    stock_item = db.session.get(
-        StockItem, stock_item_id,
-        options=[joinedload(StockItem.franchise)]
-    )
-    if not stock_item:
-        return jsonify({"error": "Stock item not found."}), HTTPStatus.BAD_REQUEST
-
-    branch = db.session.get(Branch, result)
-    if not branch or branch.franchise_id != stock_item.franchise_id:
-        return jsonify(
-            {"error": "Stock item does not belong to this branch's franchise."}
-        ), HTTPStatus.BAD_REQUEST
-
-    transaction_code = (payload.get("transaction_type") or "").upper()
-    if transaction_code not in {"IN", "OUT", "ADJUSTMENT"}:
-        return jsonify(
-            {"error": "transaction_type must be one of IN, OUT, ADJUSTMENT."}
-        ), HTTPStatus.BAD_REQUEST
-
-    quantity_raw = payload.get("quantity")
-    if quantity_raw is None:
-        return jsonify({"error": "quantity is required."}), HTTPStatus.BAD_REQUEST
-
-    try:
-        quantity = Decimal(str(quantity_raw))
-    except (InvalidOperation, TypeError, ValueError):
-        return jsonify({"error": "quantity must be numeric."}), HTTPStatus.BAD_REQUEST
-
-    if transaction_code == "OUT" and quantity > 0:
-        quantity = quantity * Decimal("-1")
-    elif transaction_code == "IN" and quantity < 0:
-        quantity = quantity.copy_abs()
-
-    note = payload.get("note")
-
-    try:
-        transaction_type_id = get_transaction_type_id(transaction_code)
-    except LookupError as exc:
-        return jsonify({"error": str(exc)}), HTTPStatus.INTERNAL_SERVER_ERROR
-
-    transaction, inventory_record = apply_inventory_transaction(
-        branch_id=branch.branch_id,
-        stock_item_id=stock_item.stock_item_id,
-        quantity_delta=quantity,
-        transaction_type_id=transaction_type_id,
-        created_by_user_id=getattr(g, "current_user", None).user_id if getattr(g, "current_user", None) else None,
-        note=note,
-    )
-
-    db.session.commit()
-
-    refreshed_record = db.session.get(
-        BranchInventory, inventory_record.branch_inventory_id,
-        options=[joinedload(BranchInventory.stock_item).joinedload(StockItem.unit)]
-    )
-
-    if not refreshed_record:
-        refreshed_record = inventory_record
-
-    return (
-        jsonify(
-            {
-                "transaction_id": transaction.transaction_id,
-                "transaction_type": transaction_code,
-                "quantity_change": float(transaction.quantity_change),
-                "branch_inventory": _serialize_inventory(refreshed_record),
-            }
-        ),
-        HTTPStatus.CREATED,
-    )
 
 @inventory_bp.route("/stock-in", methods=["POST"])
 @token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
@@ -287,6 +194,7 @@ def list_stock_items() -> tuple[list[dict[str, object]], int]:
 
     payload = [
         {
+            "stock_item_id": item.stock_item_id,
             "id": item.stock_item_id,
             "name": item.name,
             "description": item.description,

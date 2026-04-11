@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { formatNumber } from '../../utils';
+import Modal from '../ui/Modal';
 
 const initialDeliveryForm = {
     stock_item_id: '',
@@ -153,21 +153,11 @@ export default function StaffInventory({ inventoryItems, stockItems, recordDeliv
                 </div>
             </div>
 
-            {showDeliveryModal ? createPortal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-4 sm:p-6 space-y-6 max-h-[90dvh] overflow-y-auto mx-2">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-xl font-semibold text-gray-800">Record Stock Delivery</h3>
-                            <button
-                                type="button"
-                                onClick={closeDeliveryModal}
-                                className="text-gray-400 hover:text-gray-600"
-                                aria-label="Close delivery modal"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
+            <Modal
+                isOpen={showDeliveryModal}
+                onClose={closeDeliveryModal}
+                title="Record Stock Delivery"
+            >
                         <form className="space-y-4" onSubmit={submitDelivery}>
                             <div>
                                 <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="delivery_stock_item">
@@ -242,9 +232,7 @@ export default function StaffInventory({ inventoryItems, stockItems, recordDeliv
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            , document.body) : null}
+            </Modal>
         </div>
     );
 }

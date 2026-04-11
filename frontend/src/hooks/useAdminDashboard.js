@@ -14,6 +14,7 @@ export function useAdminDashboard() {
   const [network, setNetwork] = useState([]);
   const [applications, setApplications] = useState([]);
   const [menuUploading, setMenuUploading] = useState(false);
+  
   const {
     stockItems, stockItemsLoading, stockItemsError, refreshStockItems,
     units, unitsLoading,
@@ -27,7 +28,7 @@ export function useAdminDashboard() {
     config, configLoading, configured, refreshConfig,
     summary, summaryLoading, summaryError, fetchSummary,
     saveConfig, saving, saveError,
-  } = useRoyalty();
+  } = useRoyalty(setToast);
 
   const {
     report, reportLoading, reportError,
@@ -134,8 +135,8 @@ export function useAdminDashboard() {
         branchId: branch.branch_id,
         branchName: branch.name,
         location: branch.location,
-        ownerName: branch.owner_name,
-        managerName: branch.manager_name,
+        ownerName: branch.ownerName || branch.owner_name,
+        managerName: branch.managerName || branch.manager_name,
         status: branch.status,
       }))
     );
@@ -152,6 +153,16 @@ export function useAdminDashboard() {
       return;
     }
     fileInputRef.current?.click();
+  };
+
+  const updateFranchise = async (franchiseId, newName) => {
+    try {
+      await api.patch(`/franchises/${franchiseId}`, { name: newName });
+      await fetchDashboard();
+      setToast({ message: 'Franchise updated successfully.', variant: 'success' });
+    } catch (err) {
+      setToast({ message: err.message || 'Failed to update franchise.', variant: 'error' });
+    }
   };
 
   const uploadMenuFile = async (file) => {
@@ -224,6 +235,7 @@ export function useAdminDashboard() {
     uploadMenuFile,
     handleMenuFileChange,
     toggleBranchStatus,
+    updateFranchise,
     setToast,
     fileInputRef,
     // Royalty

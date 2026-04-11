@@ -117,10 +117,10 @@ def register_franchisee() -> tuple[dict[str, object], int]:
     proposed_location = (form_data.get("proposed_location") or "").strip()
     investment_capacity_raw = form_data.get("investment_capacity")
     experience_text = (
-        form_data.get("experience") or form_data.get("business_experience") or ""
+        form_data.get("business_experience") or ""
     ).strip() or None
     reason_text = (
-        form_data.get("reason") or form_data.get("reason_for_franchise") or ""
+        form_data.get("reason") or ""
     ).strip() or None
     application_file = files.get("application_file")
 

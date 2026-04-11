@@ -1,14 +1,7 @@
 import { useState } from 'react';
 import { formatINR, formatINRDecimal } from '../../utils/formatters';
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-const _now = new Date();
-const _currentYear = _now.getFullYear();
-const YEAR_OPTIONS = [_currentYear, _currentYear - 1, _currentYear - 2];
+import { MONTH_NAMES, YEAR_OPTIONS } from '../../utils/constants';
 
 function getTodayString() {
   return new Date().toISOString().slice(0, 10);
@@ -30,8 +23,8 @@ export default function AdminRoyalty({
   const [editForm, setEditForm] = useState({ franchisor_cut_pct: '', effective_from: getTodayString() });
   const [formError, setFormError] = useState('');
 
-  const [selectedMonth, setSelectedMonth] = useState(_now.getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState(_currentYear);
+  const [selectedMonth, setSelectedMonth] = useState(new Date().getMonth() + 1);
+  const [selectedYear, setSelectedYear] = useState(YEAR_OPTIONS[0]);
 
   const handleOpenEdit = () => {
     setEditForm({

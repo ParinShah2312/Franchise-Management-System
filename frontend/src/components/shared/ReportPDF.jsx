@@ -173,10 +173,7 @@ const styles = StyleSheet.create({
     },
 });
 
-const MONTH_NAMES = [
-    'January', 'February', 'March', 'April', 'May', 'June',
-    'July', 'August', 'September', 'October', 'November', 'December',
-];
+import { MONTH_NAMES } from '../../utils/constants';
 
 function formatINR(value) {
     if (value === null || value === undefined) return 'Rs. 0.00';

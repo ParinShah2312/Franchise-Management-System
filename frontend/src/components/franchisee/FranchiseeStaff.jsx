@@ -1,9 +1,10 @@
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
-import { sanitizePhone, formatRole } from '../../utils';
-import ConfirmDialog from '../ui/ConfirmDialog';
 
-export default function FranchiseeStaff({ staff, appointManager, setToast, onDeactivate, onActivate, onForceReset }) {
+import { isValidPhone, sanitizePhone, formatRole } from '../../utils';
+import ConfirmDialog from '../ui/ConfirmDialog';
+import Modal from '../ui/Modal';
+
+export default function FranchiseeStaff({ staff, appointManager, addStaff, setToast, onDeactivate, onActivate, onForceReset }) {
     const [showManagerModal, setShowManagerModal] = useState(false);
     const [managerSubmitting, setManagerSubmitting] = useState(false);
     const [managerForm, setManagerForm] = useState({
@@ -13,6 +14,41 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
         phone: '',
     });
     const [confirmAction, setConfirmAction] = useState(null);
+
+    const [showAddStaffModal, setShowAddStaffModal] = useState(false);
+    const [staffForm, setStaffForm] = useState({ name: '', email: '', phone: '', password: '' });
+    const [staffErrors, setStaffErrors] = useState({});
+    const [staffSubmitting, setStaffSubmitting] = useState(false);
+
+    const validateStaffForm = () => {
+        const errors = {};
+        if (!isValidPhone(staffForm.phone)) {
+            errors.phone = 'Phone number must be exactly 10 digits.';
+        }
+        return errors;
+    };
+
+    const handleAddStaff = async (event) => {
+        event.preventDefault();
+        const validationErrors = validateStaffForm();
+        if (Object.keys(validationErrors).length > 0) {
+            setStaffErrors(validationErrors);
+            return;
+        }
+
+        setStaffErrors({});
+        setStaffSubmitting(true);
+
+        try {
+            await addStaff(staffForm);
+            setShowAddStaffModal(false);
+            setToast({ message: 'Staff member added successfully!', variant: 'success' });
+        } catch (err) {
+            setToast({ message: err.message || 'Failed to add staff member.', variant: 'error' });
+        } finally {
+            setStaffSubmitting(false);
+        }
+    };
 
     return (
         <div>
@@ -56,7 +92,7 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                                         label: 'Reset Password',
                                         variant: 'warning',
                                         handler: async () => {
-                                            await onForceReset(staff.manager.user_id || staff.manager.id);
+                                            await onForceReset(staff.manager.user_id);
                                             setToast({ message: `${staff.manager.name} will be prompted to reset their password on next login.`, variant: 'success' });
                                         },
                                     })}
@@ -74,7 +110,20 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                 <div className="border border-gray-200 rounded-lg">
                     <div className="px-4 py-3 border-b border-gray-100 bg-gray-50 flex items-center justify-between">
                         <h4 className="text-sm font-medium text-gray-700">Support Staff</h4>
-                        <span className="text-xs text-gray-500">{staff.team.length} staff members</span>
+                        <div className="flex items-center gap-3">
+                            <span className="text-xs text-gray-500">{staff.team.length} staff members</span>
+                            <button
+                                type="button"
+                                onClick={() => {
+                                    setStaffForm({ name: '', email: '', phone: '', password: '' });
+                                    setStaffErrors({});
+                                    setShowAddStaffModal(true);
+                                }}
+                                className="text-xs px-3 py-1.5 bg-blue-600 text-white rounded-lg shadow hover:bg-blue-700"
+                            >
+                                Add Staff
+                            </button>
+                        </div>
                     </div>
                     <div className="overflow-x-auto">
                         <table className="min-w-full divide-y divide-gray-100">
@@ -178,44 +227,32 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                 </div>
             </div>
 
-            {showManagerModal ? createPortal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-md w-full p-4 sm:p-6 space-y-6 transform transition-all max-h-[90dvh] overflow-y-auto mx-2">
-                        <div className="flex items-center justify-between border-b border-gray-100 pb-4">
-                            <h3 className="text-lg font-semibold text-gray-900">Appoint Branch Manager</h3>
-                            <button
-                                type="button"
-                                onClick={() => !managerSubmitting && setShowManagerModal(false)}
-                                className="text-gray-400 hover:text-gray-500 transition-colors"
-                                aria-label="Close manager modal"
-                            >
-                                <svg className="h-5 w-5" viewBox="0 0 20 20" fill="currentColor">
-                                    <path fillRule="evenodd" d="M4.293 4.293a1 1 0 011.414 0L10 8.586l4.293-4.293a1 1 0 111.414 1.414L11.414 10l4.293 4.293a1 1 0 01-1.414 1.414L10 11.414l-4.293 4.293a1 1 0 01-1.414-1.414L8.586 10 4.293 5.707a1 1 0 010-1.414z" clipRule="evenodd" />
-                                </svg>
-                            </button>
-                        </div>
-
-                        <form
-                            className="space-y-4"
-                            onSubmit={async (event) => {
-                                event.preventDefault();
-                                setManagerSubmitting(true);
-                                try {
-                                    await appointManager({
-                                        name: managerForm.name.trim(),
-                                        email: managerForm.email.trim(),
-                                        password: managerForm.password,
-                                        phone: managerForm.phone.trim(),
-                                    });
-                                    setShowManagerModal(false);
-                                    setToast({ message: 'Manager appointed successfully!', variant: 'success' });
-                                } catch (err) {
-                                    setToast({ message: err.message || 'Failed to appoint manager.', variant: 'error' });
-                                } finally {
-                                    setManagerSubmitting(false);
-                                }
-                            }}
-                        >
+            <Modal
+                isOpen={showManagerModal}
+                onClose={() => { if (!managerSubmitting) setShowManagerModal(false); }}
+                title="Appoint Branch Manager"
+            >
+                <form
+                    className="space-y-4"
+                    onSubmit={async (event) => {
+                        event.preventDefault();
+                        setManagerSubmitting(true);
+                        try {
+                            await appointManager({
+                                name: managerForm.name.trim(),
+                                email: managerForm.email.trim(),
+                                password: managerForm.password,
+                                phone: managerForm.phone.trim(),
+                            });
+                            setShowManagerModal(false);
+                            setToast({ message: 'Manager appointed successfully!', variant: 'success' });
+                        } catch (err) {
+                            setToast({ message: err.message || 'Failed to appoint manager.', variant: 'error' });
+                        } finally {
+                            setManagerSubmitting(false);
+                        }
+                    }}
+                >
                             <div className="space-y-1.5">
                                 <label className="block text-sm font-medium text-gray-700" htmlFor="manager_name">
                                     Full Name*
@@ -295,9 +332,103 @@ export default function FranchiseeStaff({ staff, appointManager, setToast, onDea
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            , document.body) : null}
+            </Modal>
+
+            <Modal
+                isOpen={showAddStaffModal}
+                onClose={() => { if (!staffSubmitting) setShowAddStaffModal(false); }}
+                title="Add Staff Member"
+            >
+                        <form className="space-y-4" onSubmit={handleAddStaff}>
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="franchisee_staff_name">
+                                    Full Name*
+                                </label>
+                                <input
+                                    id="franchisee_staff_name"
+                                    type="text"
+                                    required
+                                    value={staffForm.name}
+                                    onChange={(event) => setStaffForm((prev) => ({ ...prev, name: event.target.value }))}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Jane Doe"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="franchisee_staff_email">
+                                    Email Address*
+                                </label>
+                                <input
+                                    id="franchisee_staff_email"
+                                    type="email"
+                                    required
+                                    value={staffForm.email}
+                                    onChange={(event) => setStaffForm((prev) => ({ ...prev, email: event.target.value }))}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="jane.doe@example.com"
+                                />
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="franchisee_staff_phone">
+                                    Phone Number*
+                                </label>
+                                <input
+                                    id="franchisee_staff_phone"
+                                    type="tel"
+                                    required
+                                    value={staffForm.phone}
+                                    onChange={(event) => {
+                                        setStaffForm((prev) => ({ ...prev, phone: sanitizePhone(event.target.value) }));
+                                        if (staffErrors.phone) {
+                                            setStaffErrors((prev) => ({ ...prev, phone: '' }));
+                                        }
+                                    }}
+                                    className={`w-full px-4 py-3 border rounded-lg focus:ring-2 ${
+                                        staffErrors.phone ? 'border-red-500 focus:ring-red-500' : 'border-gray-300 focus:ring-blue-500'
+                                    }`}
+                                    placeholder="10-digit mobile number"
+                                    maxLength={10}
+                                />
+                                {staffErrors.phone && <p className="text-red-500 text-sm mt-1">{staffErrors.phone}</p>}
+                            </div>
+
+                            <div>
+                                <label className="block text-sm font-medium text-gray-700 mb-1" htmlFor="franchisee_staff_password">
+                                    Temporary Password*
+                                </label>
+                                <input
+                                    id="franchisee_staff_password"
+                                    type="password"
+                                    required
+                                    minLength={8}
+                                    value={staffForm.password}
+                                    onChange={(event) => setStaffForm((prev) => ({ ...prev, password: event.target.value }))}
+                                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500"
+                                    placeholder="Minimum 8 characters"
+                                />
+                                <p className="text-xs text-gray-500 mt-1">Staff will be asked to change this upon first login.</p>
+                            </div>
+
+                            <div className="pt-4 flex justify-end gap-3">
+                                <button
+                                    type="button"
+                                    onClick={() => !staffSubmitting && setShowAddStaffModal(false)}
+                                    className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium"
+                                >
+                                    Cancel
+                                </button>
+                                <button
+                                    type="submit"
+                                    disabled={staffSubmitting}
+                                    className="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50 font-medium"
+                                >
+                                    {staffSubmitting ? 'Adding...' : 'Add Staff'}
+                                </button>
+                            </div>
+                        </form>
+            </Modal>
 
             <ConfirmDialog
                 open={!!confirmAction}

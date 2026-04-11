@@ -67,6 +67,7 @@ export default function AdminDashboard() {
     fetchStockItemProducts,
     fetchDashboard,
     toggleBranchStatus,
+    updateFranchise,
     config, configLoading, configured, saveConfig, saving, saveError,
     summary, summaryLoading, summaryError, fetchSummary,
     report, reportLoading, reportError,
@@ -95,7 +96,7 @@ export default function AdminDashboard() {
       if (loading) return <DashboardSkeleton statCount={3} showTable={false} />;
       return (
         <>
-          <AdminOverview metrics={metrics} primaryFranchise={primaryFranchise} menuUploading={menuUploading} onMenuButtonClick={handleMenuButtonClick} onMenuFileChange={handleMenuFileChange} fileInputRef={fileInputRef} onNavigateToApplications={() => setActiveTab('applications')} />
+          <AdminOverview metrics={metrics} primaryFranchise={primaryFranchise} updateFranchise={updateFranchise} menuUploading={menuUploading} onMenuButtonClick={handleMenuButtonClick} onMenuFileChange={handleMenuFileChange} fileInputRef={fileInputRef} onNavigateToApplications={() => setActiveTab('applications')} />
           <FaqAccordion items={ADMIN_FAQ} />
         </>
       );

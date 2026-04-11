@@ -1,27 +1,39 @@
-import { createPortal } from 'react-dom';
+import { useEffect } from 'react';
+import Modal from '../ui/Modal';
 
 export default function RejectionModal({ isOpen, onClose, onSubmit, rejectionNote, setRejectionNote, isSubmitting, error }) {
+  useEffect(() => {
+    if (!isOpen || !onClose) return;
+    const handleEsc = (e) => {
+      if (e.key === 'Escape') {
+        e.stopImmediatePropagation();
+        onClose();
+      }
+    };
+    // Use capture phase so this fires before the underlying Modal's listener
+    document.addEventListener('keydown', handleEsc, true);
+    return () => document.removeEventListener('keydown', handleEsc, true);
+  }, [isOpen, onClose]);
+
   if (!isOpen) return null;
 
-  return createPortal(
-    <div className="fixed inset-0 z-[110] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
-      <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-6 space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-lg font-semibold text-gray-900">Reject Application</h2>
-          <button onClick={onClose} className="text-gray-400 hover:text-gray-600">✕</button>
-        </div>
-        
-        <p className="text-sm text-gray-600">
+  return (
+    <Modal
+      isOpen={isOpen}
+      onClose={onClose}
+      title="Reject Application"
+    >
+        <p className="text-sm text-gray-600 mb-6">
           Please provide a reason for rejection. This will be recorded against the application.
         </p>
         
         {error && (
-          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3">
+          <div className="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-3 mb-6">
             {error}
           </div>
         )}
 
-        <div>
+        <div className="mb-6">
           <textarea
             className="input-field w-full"
             rows={5}
@@ -53,8 +65,6 @@ export default function RejectionModal({ isOpen, onClose, onSubmit, rejectionNot
             {isSubmitting ? 'Rejecting…' : 'Confirm Rejection'}
           </button>
         </div>
-      </div>
-    </div>,
-    document.body
+    </Modal>
   );
 }

@@ -111,6 +111,40 @@ def upload_franchise_menu(franchise_id: int) -> tuple[dict[str, object], int]:
     )
 
 
+@franchise_bp.route("/<int:franchise_id>", methods=["PATCH"])
+@token_required({"FRANCHISOR"})
+def update_franchise(franchise_id: int) -> tuple[dict[str, object], int]:
+    """Update franchise details (e.g., name)."""
+    franchise = db.session.get(Franchise, franchise_id)
+    if not franchise:
+        return jsonify({"error": "Franchise not found."}), HTTPStatus.NOT_FOUND
+
+    role = getattr(g, "current_role", None)
+    current_user = getattr(g, "current_user", None)
+    role_name = getattr(getattr(role, "role", None), "name", None)
+
+    if role_name == "FRANCHISOR":
+        franchisor_id = getattr(current_user, "franchisor_id", None)
+        if franchisor_id != franchise.franchisor_id:
+            return (
+                jsonify({"error": "You do not have permission to manage this franchise."}),
+                HTTPStatus.FORBIDDEN,
+            )
+
+    data = request.get_json(silent=True) or {}
+    new_name = data.get("name")
+    
+    if new_name is not None:
+        new_name = new_name.strip()
+        if not new_name:
+            return jsonify({"error": "Franchise name cannot be empty."}), HTTPStatus.BAD_REQUEST
+        franchise.name = new_name
+
+    db.session.commit()
+
+    return jsonify({"message": "Franchise updated successfully", "name": franchise.name}), HTTPStatus.OK
+
+
 @franchise_bp.route("/network", methods=["GET"])
 @token_required({"FRANCHISOR"})
 def list_franchise_network() -> tuple[list[dict[str, object]], int]:

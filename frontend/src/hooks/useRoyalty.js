@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 
-export function useRoyalty() {
+export function useRoyalty(setToast) {
   const { currentMonth, currentYear } = useMemo(() => {
     const now = new Date();
     return { currentMonth: now.getMonth() + 1, currentYear: now.getFullYear() };
@@ -26,15 +26,24 @@ export function useRoyalty() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState('');
 
+  const [configError, setConfigError] = useState('');
+
   // Fetch config on mount
   const refreshConfig = useCallback(async () => {
     setConfigLoading(true);
+    setConfigError('');
     try {
       const data = await api.get('/royalty/config');
       setConfigured(data.configured ?? false);
       setConfig(data.config ?? null);
-    } catch {
-      // If the user is not a FRANCHISOR, this will 403 — swallow silently
+    } catch (err) {
+      if (err.status !== 403) {
+        const errorMsg = err.message || 'Failed to load royalty configuration.';
+        setConfigError(errorMsg);
+        if (setToast) {
+            setToast({ message: errorMsg, variant: 'error' });
+        }
+      }
       setConfigured(false);
       setConfig(null);
     } finally {
@@ -98,6 +107,7 @@ export function useRoyalty() {
     // Config
     config,
     configLoading,
+    configError,
     configured,
     refreshConfig,
 

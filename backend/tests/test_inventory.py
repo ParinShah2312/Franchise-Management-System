@@ -41,12 +41,11 @@ def test_add_branch_inventory(client, setup_franchise_branch, db_session):
         "branch_id": b_id,
         "stock_item_id": stock_item_id,
         "quantity": 50.0,
-        "transaction_type": "IN",
-        "note": "Initial stock",
+        "reorder_level": 10.0,
     }
 
     response = client.post(
-        "/api/inventory/transaction", json=trx_payload, headers=branch_auth_headers
+        "/api/inventory", json=trx_payload, headers=branch_auth_headers
     )
     assert response.status_code == 201
 

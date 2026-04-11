@@ -53,9 +53,9 @@ export default function FranchiseeDashboard() {
   const {
     metrics, metricsLoading, sales, requests, staff,
     updateRequestStatus, appointManager,
-    expenses, deleteExpense, refreshExpenses,
+    expenses, logExpense, deleteExpense, refreshExpenses,
     loading, error, pendingRequestsCount, loadData,
-    deactivateUser, activateUser, forceResetUser,
+    deactivateUser, activateUser, forceResetUser, addStaff,
     branchSummary, branchSummaryLoading,
     report, reportLoading, reportError,
     selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
@@ -79,10 +79,10 @@ export default function FranchiseeDashboard() {
         return <FranchiseeRequests requests={requests} updateRequestStatus={updateRequestStatus} onRefresh={loadData} setToast={setToast} />;
       case 'staff':
         if (loading) return <DashboardSkeleton statCount={1} showTable={true} />;
-        return <FranchiseeStaff staff={staff} appointManager={appointManager} setToast={setToast} onDeactivate={deactivateUser} onActivate={activateUser} onForceReset={forceResetUser} />;
+        return <FranchiseeStaff staff={staff} appointManager={appointManager} addStaff={addStaff} setToast={setToast} onDeactivate={deactivateUser} onActivate={activateUser} onForceReset={forceResetUser} />;
       case 'expenses':
         if (loading) return <SkeletonTable rows={5} cols={5} />;
-        return <FranchiseeExpenses expenses={expenses} deleteExpense={deleteExpense} onRefresh={refreshExpenses} setToast={setToast} />;
+        return <FranchiseeExpenses expenses={expenses} logExpense={logExpense} deleteExpense={deleteExpense} onRefresh={refreshExpenses} setToast={setToast} />;
       case 'reports':
         if (loading) return <DashboardSkeleton statCount={3} showTable={false} />;
         return (

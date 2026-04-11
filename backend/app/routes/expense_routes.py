@@ -149,6 +149,13 @@ def delete_expense(expense_id: int) -> tuple[dict, int]:
     if isinstance(result, tuple):
         return result
 
+    current_user = getattr(g, "current_user", None)
+    current_role = getattr(g, "current_role", None)
+
+    if current_user and current_role and current_role.role == "MANAGER":
+        if expense.logged_by_user_id != current_user.user_id:
+            return jsonify({"error": "Managers can only delete expenses logged by themselves."}), HTTPStatus.FORBIDDEN
+
     db.session.delete(expense)
     db.session.commit()
     return jsonify({"message": "Expense deleted."}), HTTPStatus.OK

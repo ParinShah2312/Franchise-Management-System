@@ -161,9 +161,17 @@ export default function AdminCatalog({
     await loadRecipe(productId);
     setToast({ message: 'Ingredient added.', variant: 'success' });
     
-    // Invalidate the stock item reverse lookup cache if necessary
+    // Refresh the stock item reverse lookup cache if it's currently expanded
     if (expandedStockItemId === data.stock_item_id) {
-        handleExpandStockItem(data.stock_item_id);
+      try {
+        const productsUsingIt = await fetchStockItemProducts(data.stock_item_id);
+        setIngredientsByItem(prev => ({
+          ...prev,
+          [data.stock_item_id]: productsUsingIt,
+        }));
+      } catch {
+        // Silent — the expanded row will just show stale data
+      }
     }
   };
 

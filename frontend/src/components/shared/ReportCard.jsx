@@ -2,13 +2,7 @@ import StatCard from '../ui/StatCard';
 import Table from '../ui/Table';
 import { formatINR, formatINRDecimal } from '../../utils/formatters';
 
-const MONTH_NAMES = [
-  'January', 'February', 'March', 'April', 'May', 'June',
-  'July', 'August', 'September', 'October', 'November', 'December',
-];
-
-const currentYear = new Date().getFullYear();
-const YEAR_OPTIONS = [currentYear, currentYear - 1, currentYear - 2];
+import { MONTH_NAMES, YEAR_OPTIONS } from '../../utils/constants';
 
 import React from 'react';
 import { PDFDownloadLink } from '@react-pdf/renderer';
@@ -101,6 +95,7 @@ export default function ReportCard({
                 selectedYear={selectedYear} 
                 showRoyalty={showRoyalty} 
                 generatedBy={generatedBy} 
+                isFranchisee={isFranchisee}
               />
             }
             fileName={report.filename ? `${report.filename}.pdf` : `Relay_Report_${selectedYear}_${String(selectedMonth).padStart(2, '0')}.pdf`}

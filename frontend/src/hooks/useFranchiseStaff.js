@@ -48,5 +48,11 @@ export function useFranchiseStaff(branchId) {
         await api.put(`/users/${userId}/force-reset`);
     };
 
-    return { staff, loading, error, appointManager, refreshStaff: fetchStaff, deactivateUser, activateUser, forceResetUser };
+    const addStaff = async (staffData) => {
+        const payload = { ...staffData, branch_id: branchId };
+        await api.post('/auth/register-staff', payload);
+        await fetchStaff();
+    };
+
+    return { staff, loading, error, appointManager, addStaff, refreshStaff: fetchStaff, deactivateUser, activateUser, forceResetUser };
 }

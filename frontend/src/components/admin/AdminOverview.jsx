@@ -7,6 +7,7 @@ import { API_ORIGIN } from '../../api';
 export default function AdminOverview({
   metrics,
   primaryFranchise,
+  updateFranchise,
   menuUploading,
   onMenuButtonClick,
   onMenuFileChange,
@@ -14,6 +15,8 @@ export default function AdminOverview({
   onNavigateToApplications,
 }) {
   const [dismissed, setDismissed] = useState(false);
+  const [isEditingName, setIsEditingName] = useState(false);
+  const [franchiseNameInput, setFranchiseNameInput] = useState('');
 
   useEffect(() => {
     if (metrics?.pending_apps > 0) {
@@ -60,6 +63,68 @@ export default function AdminOverview({
           accent="neutral"
         />
       </div>
+
+      <section className="card">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <h2 className="text-lg font-semibold text-gray-900">Franchise Profile</h2>
+            <p className="text-sm text-gray-500">
+              Manage your brand name and customer-facing identity.
+            </p>
+          </div>
+          {!isEditingName && primaryFranchise && (
+            <button
+              type="button"
+              onClick={() => {
+                setFranchiseNameInput(primaryFranchise.franchise_name || '');
+                setIsEditingName(true);
+              }}
+              className="text-sm px-4 py-2 font-semibold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50 transition-colors"
+            >
+              Edit Name
+            </button>
+          )}
+        </div>
+
+        <div className="mt-4">
+          {isEditingName ? (
+            <div className="flex items-center gap-3">
+              <input
+                type="text"
+                value={franchiseNameInput}
+                onChange={(e) => setFranchiseNameInput(e.target.value)}
+                className="w-full max-w-sm px-3 py-2 text-sm border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+                placeholder="Enter franchise name"
+                autoFocus
+              />
+              <button
+                type="button"
+                onClick={async () => {
+                  if (franchiseNameInput.trim()) {
+                    await updateFranchise?.(primaryFranchise?.franchise_id, franchiseNameInput);
+                  }
+                  setIsEditingName(false);
+                }}
+                className="px-4 py-2 text-sm font-semibold bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition"
+              >
+                Save
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsEditingName(false)}
+                className="px-4 py-2 text-sm font-semibold text-gray-600 border border-gray-300 rounded-lg hover:bg-gray-50 transition"
+              >
+                Cancel
+              </button>
+            </div>
+          ) : (
+             <div className="flex flex-col">
+              <span className="text-xs text-gray-500 uppercase font-semibold tracking-wider">Brand Name</span>
+              <span className="text-xl font-bold text-gray-800 mt-1">{primaryFranchise?.franchise_name || '—'}</span>
+            </div>
+          )}
+        </div>
+      </section>
 
       <section className="card">
         <div className="flex flex-wrap items-center justify-between gap-3">

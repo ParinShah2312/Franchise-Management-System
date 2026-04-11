@@ -1,4 +1,4 @@
-﻿"""Branch-level helper routes for manager and owner workflows."""
+"""Branch-level helper routes for manager and owner workflows."""
 
 from __future__ import annotations
 
@@ -77,6 +77,7 @@ def list_branch_staff() -> tuple[list[dict[str, object]], int]:
         payload.append(
             {
                 "id": branch.manager.user_id,
+                "user_id": branch.manager.user_id,
                 "name": branch.manager.name,
                 "email": branch.manager.email,
                 "phone": branch.manager.phone,
@@ -89,6 +90,7 @@ def list_branch_staff() -> tuple[list[dict[str, object]], int]:
         payload.append(
             {
                 "id": branch.branch_owner.user_id,
+                "user_id": branch.branch_owner.user_id,
                 "name": branch.branch_owner.name,
                 "email": branch.branch_owner.email,
                 "phone": branch.branch_owner.phone,
@@ -104,6 +106,7 @@ def list_branch_staff() -> tuple[list[dict[str, object]], int]:
         payload.append(
             {
                 "id": assignment.user.user_id,
+                "user_id": assignment.user.user_id,
                 "name": assignment.user.name,
                 "email": assignment.user.email,
                 "phone": assignment.user.phone,

@@ -96,9 +96,9 @@ export default function FranchiseeOverview({ metrics, sales, onRefresh, branchSu
                                 </tr>
                             ) : (
                                 sales.slice(0, 10).map((sale) => (
-                                    <tr key={sale.sale_id || sale.id}>
+                                    <tr key={sale.sale_id}>
                                         <td className="px-4 py-3 text-sm text-gray-700">
-                                            {formatDateTime(sale.sale_datetime || sale.sale_date) || '—'}
+                                            {formatDateTime(sale.sale_datetime) || '—'}
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-900 text-right">
                                             {formatINRDecimal(sale.total_amount)}

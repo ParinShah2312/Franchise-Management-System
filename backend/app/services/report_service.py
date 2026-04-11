@@ -161,7 +161,7 @@ def get_branch_product_sales_breakdown(
     if not branch_ids:
         return {}
     
-    from ..models import Sale, SaleItem, Product
+    from ..models import SaleItem, Product
     rows = (
         db.session.query(
             Sale.branch_id,

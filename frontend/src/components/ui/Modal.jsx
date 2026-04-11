@@ -21,8 +21,8 @@ export default function Modal({ isOpen, onClose, title, description, children, m
     if (!isOpen) return null;
 
     return createPortal(
-        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
-            <div className={`w-full ${maxWidth} overflow-hidden rounded-xl bg-white shadow-2xl max-h-[90dvh] flex flex-col mx-2`}>
+        <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4" onClick={onClose}>
+            <div className={`w-full ${maxWidth} overflow-hidden rounded-xl bg-white shadow-2xl max-h-[90dvh] flex flex-col mx-2`} onClick={(e) => e.stopPropagation()}>
                 {(title || description || onClose) && (
                     <header className="flex items-center justify-between border-b border-gray-100 px-4 sm:px-6 py-5 shrink-0">
                         <div>

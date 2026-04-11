@@ -33,7 +33,8 @@ describe('RegisterFranchisor Integration Flow', () => {
     it('submits the form successfully with valid inputs', async () => {
         api.post.mockResolvedValue({
             token: 'mock-token',
-            user: { id: 1, email: 'admin@brand.com', role: 'FRANCHISOR', must_reset_password: false },
+            role: 'FRANCHISOR',
+            user: { id: 1, email: 'admin@brand.com', must_reset_password: false },
         });
 
         renderComponent();

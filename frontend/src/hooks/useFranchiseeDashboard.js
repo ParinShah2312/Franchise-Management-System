@@ -11,8 +11,8 @@ export function useFranchiseeDashboard(branchId) {
   const { metrics, loading: metricsLoading, error: metricsError, refreshMetrics } = useFranchiseMetrics(branchId);
   const { sales, loading: salesLoading, error: salesError, logSale, refreshSales } = useSales(branchId);
   const { requests, loading: reqLoading, error: reqError, updateRequestStatus, refreshRequests } = useRequests(branchId);
-  const { staff, loading: staffLoading, error: staffError, appointManager, refreshStaff, deactivateUser, activateUser, forceResetUser } = useFranchiseStaff(branchId);
-  const { expenses, loading: expLoading, error: expError, deleteExpense, refreshExpenses } = useExpenses(branchId);
+  const { staff, loading: staffLoading, error: staffError, appointManager, addStaff, refreshStaff, deactivateUser, activateUser, forceResetUser } = useFranchiseStaff(branchId);
+  const { expenses, loading: expLoading, error: expError, logExpense, deleteExpense, refreshExpenses } = useExpenses(branchId);
 
   const {
     branchSummary,
@@ -25,7 +25,7 @@ export function useFranchiseeDashboard(branchId) {
     report, reportLoading, reportError,
     selectedMonth, selectedYear, setSelectedMonth, setSelectedYear,
     generateReport,
-  } = useReport();
+  } = useReport(branchId);
 
   // Fetch branch royalty summary automatically when branchId is ready
   useEffect(() => {
@@ -66,8 +66,8 @@ export function useFranchiseeDashboard(branchId) {
     requests, reqLoading, reqError, 
     updateRequestStatus: updateRequestStatusAndRefresh, 
     refreshRequests,
-    expenses, expLoading, expError, deleteExpense, refreshExpenses,
-    staff, staffLoading, staffError, appointManager, refreshStaff, deactivateUser, activateUser, forceResetUser,
+    expenses, expLoading, expError, logExpense, deleteExpense, refreshExpenses,
+    staff, staffLoading, staffError, appointManager, addStaff, refreshStaff, deactivateUser, activateUser, forceResetUser,
     loading, error, pendingRequestsCount, loadData, logSale: logSaleAndRefresh,
     branchSummary, branchSummaryLoading, branchSummaryError, fetchBranchSummary,
     // Reports

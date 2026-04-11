@@ -1,13 +1,37 @@
+import { useState } from 'react';
 import { API_ORIGIN } from '../../api';
 import Modal from '../ui/Modal';
-import { formatDate, formatINR } from '../../utils';
+import { formatDate, formatINR, STORAGE_KEYS } from '../../utils';
 
 export default function ApplicationModal({ application, onClose, onApprove, onReject, actionState }) {
+  const [docLoading, setDocLoading] = useState(false);
+
   if (!application) return null;
 
   const documentHref = application.document_url
     ? `${API_ORIGIN}${application.document_url}`
     : null;
+
+  const handleViewDocument = async () => {
+    if (!documentHref || docLoading) return;
+    setDocLoading(true);
+    try {
+      const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
+      const res = await fetch(documentHref, {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+      });
+      if (!res.ok) throw new Error('Failed to fetch document');
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      window.open(url, '_blank', 'noopener,noreferrer');
+      // Revoke after a delay so the new tab has time to load
+      setTimeout(() => URL.revokeObjectURL(url), 60000);
+    } catch {
+      alert('Could not open the document. Please try again.');
+    } finally {
+      setDocLoading(false);
+    }
+  };
 
   const isProcessingApprove =
     actionState?.id === application.application_id && actionState?.type === 'approve';
@@ -72,14 +96,14 @@ export default function ApplicationModal({ application, onClose, onApprove, onRe
           <div>
             <p className="label mb-2">Supporting document</p>
             {documentHref ? (
-              <a
-                href={documentHref}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100"
+              <button
+                type="button"
+                onClick={handleViewDocument}
+                disabled={docLoading}
+                className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-4 py-2 text-sm font-semibold text-blue-700 transition hover:bg-blue-100 disabled:opacity-60"
               >
-                📄 View document
-              </a>
+                {docLoading ? '⏳ Opening…' : '📄 View document'}
+              </button>
             ) : (
               <p className="text-sm text-gray-500">No document uploaded.</p>
             )}

@@ -25,7 +25,7 @@ def test_create_sale(client, setup_franchise_branch, db_session):
         "tax_amount": 1.0,
         "discount_amount": 0,
         "total_amount": 12.98,
-        "payment_method": "CASH",
+        "payment_mode": "CREDIT",
     }
     response = client.post("/api/sales", json=sale_payload, headers=branch_auth_headers)
     assert response.status_code == 201
@@ -33,3 +33,4 @@ def test_create_sale(client, setup_franchise_branch, db_session):
     data = response.get_json()
     assert "sale_id" in data
     assert "total_amount" in data
+    assert data.get("payment_mode") == "CREDIT"

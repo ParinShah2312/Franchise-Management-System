@@ -1,6 +1,6 @@
 import { useState, useMemo } from 'react';
-import { createPortal } from 'react-dom';
 import { formatNumber } from '../../utils';
+import Modal from '../ui/Modal';
 
 const initialInventoryForm = {
     stock_item_id: '',
@@ -190,21 +190,11 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                 </div>
             </div>
 
-            {showInventoryModal ? createPortal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-4 sm:p-6 space-y-6 max-h-[90dvh] overflow-y-auto mx-2">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-xl font-semibold text-gray-800">Add Inventory Item</h3>
-                            <button
-                                type="button"
-                                onClick={() => !inventorySubmitting && setShowInventoryModal(false)}
-                                className="text-gray-400 hover:text-gray-600"
-                                aria-label="Close inventory modal"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
+            <Modal
+                isOpen={showInventoryModal}
+                onClose={() => { if (!inventorySubmitting) setShowInventoryModal(false); }}
+                title="Add Inventory Item"
+            >
                         <form className="space-y-4" onSubmit={handleAddInventory}>
                             <div>
                                 <label className="label" htmlFor="manager_inventory_stock_item">
@@ -282,25 +272,13 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            , document.body) : null}
+            </Modal>
 
-            {showDeliveryModal ? createPortal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-lg w-full p-4 sm:p-6 space-y-6 max-h-[90dvh] overflow-y-auto mx-2">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-xl font-semibold text-gray-800">Record Stock Delivery</h3>
-                            <button
-                                type="button"
-                                onClick={closeDeliveryModal}
-                                className="text-gray-400 hover:text-gray-600"
-                                aria-label="Close delivery modal"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
+            <Modal
+                isOpen={showDeliveryModal}
+                onClose={closeDeliveryModal}
+                title="Record Stock Delivery"
+            >
                         <form className="space-y-4" onSubmit={submitDelivery}>
                             <div>
                                 <label className="label" htmlFor="delivery_stock_item">
@@ -375,9 +353,7 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            , document.body) : null}
+            </Modal>
         </div>
     );
 }

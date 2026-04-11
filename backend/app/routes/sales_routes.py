@@ -292,6 +292,8 @@ def list_products() -> tuple[list[dict[str, object]], int]:
 
     payload = [
         {
+            "product_id": product.product_id,
+            "product_name": product.name,
             "id": product.product_id,
             "name": product.name,
             "base_price": float(product.base_price),

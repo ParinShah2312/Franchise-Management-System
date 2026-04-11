@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { createPortal } from 'react-dom';
 import { PAYMENT_MODES, getNowString, formatDateTime, formatINRDecimal } from '../../utils';
+import Modal from '../ui/Modal';
 
 const createInitialSaleForm = () => ({
     sale_date: getNowString(),
@@ -125,9 +125,9 @@ export default function ManagerSales({ sales, products, logSale, refreshSales, s
                                 </tr>
                             ) : (
                                 sales.map((sale) => (
-                                    <tr key={sale.sale_id || sale.id}>
+                                    <tr key={sale.sale_id}>
                                         <td className="px-4 py-3 text-sm text-gray-800">
-                                            {formatDateTime(sale.sale_datetime || sale.sale_date) || '—'}
+                                            {formatDateTime(sale.sale_datetime) || '—'}
                                         </td>
                                         <td className="px-4 py-3 text-sm text-gray-900 text-right">
                                             {formatINRDecimal(sale.total_amount)}
@@ -141,21 +141,12 @@ export default function ManagerSales({ sales, products, logSale, refreshSales, s
                 </div>
             </div>
 
-            {showSalesModal ? createPortal(
-                <div className="fixed inset-0 z-[100] flex items-center justify-center bg-gray-900/50 backdrop-blur-sm px-4">
-                    <div className="bg-white rounded-xl shadow-2xl max-w-2xl w-full p-4 sm:p-6 space-y-6 max-h-[90dvh] overflow-y-auto mx-2">
-                        <div className="flex items-center justify-between">
-                            <h3 className="text-xl font-semibold text-gray-800">Log New Sale</h3>
-                            <button
-                                type="button"
-                                onClick={closeSaleModal}
-                                className="text-gray-400 hover:text-gray-600"
-                                aria-label="Close sale modal"
-                            >
-                                ✕
-                            </button>
-                        </div>
-
+            <Modal
+                isOpen={showSalesModal}
+                onClose={closeSaleModal}
+                title="Log New Sale"
+                maxWidth="max-w-2xl"
+            >
                         <form className="space-y-4" onSubmit={submitSale}>
                             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                 <div>
@@ -289,9 +280,7 @@ export default function ManagerSales({ sales, products, logSale, refreshSales, s
                                 </button>
                             </div>
                         </form>
-                    </div>
-                </div>
-            , document.body) : null}
+            </Modal>
         </div>
     );
 }
