@@ -1,31 +1,19 @@
 import { useState } from 'react';
-import { API_ORIGIN } from '../../api';
+import { viewAuthenticatedFile } from '../../api';
 import Modal from '../ui/Modal';
-import { formatDate, formatINR, STORAGE_KEYS } from '../../utils';
+import { formatDate, formatINR } from '../../utils';
 
 export default function ApplicationModal({ application, onClose, onApprove, onReject, actionState }) {
   const [docLoading, setDocLoading] = useState(false);
 
   if (!application) return null;
 
-  const documentHref = application.document_url
-    ? `${API_ORIGIN}${application.document_url}`
-    : null;
 
   const handleViewDocument = async () => {
-    if (!documentHref || docLoading) return;
+    if (!application.document_url || docLoading) return;
     setDocLoading(true);
     try {
-      const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-      const res = await fetch(documentHref, {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
-      });
-      if (!res.ok) throw new Error('Failed to fetch document');
-      const blob = await res.blob();
-      const url = URL.createObjectURL(blob);
-      window.open(url, '_blank', 'noopener,noreferrer');
-      // Revoke after a delay so the new tab has time to load
-      setTimeout(() => URL.revokeObjectURL(url), 60000);
+      await viewAuthenticatedFile(application.document_url);
     } catch {
       alert('Could not open the document. Please try again.');
     } finally {
@@ -95,7 +83,7 @@ export default function ApplicationModal({ application, onClose, onApprove, onRe
         <section className="flex flex-wrap items-center justify-between gap-4">
           <div>
             <p className="label mb-2">Supporting document</p>
-            {documentHref ? (
+            {application.document_url ? (
               <button
                 type="button"
                 onClick={handleViewDocument}

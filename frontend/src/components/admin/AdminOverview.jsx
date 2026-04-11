@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import StatCard from '../ui/StatCard';
 import AlertBanner from '../ui/AlertBanner';
 import { formatINR } from '../../utils';
-import { API_ORIGIN } from '../../api';
+import { viewAuthenticatedFile } from '../../api';
 
 export default function AdminOverview({
   metrics,
@@ -23,6 +23,21 @@ export default function AdminOverview({
       setDismissed(false);
     }
   }, [metrics?.pending_apps]);
+
+  const [menuViewLoading, setMenuViewLoading] = useState(false);
+
+  const handleViewMenu = async (e) => {
+    e.preventDefault();
+    if (menuViewLoading || !primaryFranchise?.menu_file_url) return;
+    setMenuViewLoading(true);
+    try {
+      await viewAuthenticatedFile(primaryFranchise.menu_file_url);
+    } catch {
+      alert('Could not open the menu. Please try again.');
+    } finally {
+      setMenuViewLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6">
@@ -147,14 +162,13 @@ export default function AdminOverview({
         <div className="mt-4 flex flex-wrap items-center gap-4 text-sm text-gray-600">
           <span className="font-medium text-gray-700">Current menu:</span>
           {primaryFranchise?.menu_file_url ? (
-            <a
-              href={`${API_ORIGIN}${primaryFranchise.menu_file_url}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 font-semibold text-blue-700 transition hover:bg-blue-100"
+            <button
+              onClick={handleViewMenu}
+              disabled={menuViewLoading}
+              className="inline-flex items-center gap-2 rounded-lg border border-blue-200 bg-blue-50 px-3 py-1.5 font-semibold text-blue-700 transition hover:bg-blue-100 disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              📄 View menu
-            </a>
+              📄 {menuViewLoading ? 'Loading…' : 'View menu'}
+            </button>
           ) : (
             <span className="text-gray-500">No menu uploaded yet.</span>
           )}

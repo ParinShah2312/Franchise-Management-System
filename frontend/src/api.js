@@ -113,3 +113,25 @@ export const api = {
     request(path, { method: 'PUT', body: prepareBody(body), ...options }),
   delete: (path, options) => request(path, { method: 'DELETE', ...options }),
 };
+
+/**
+ * Convenience method to securely load and display a file 
+ * in a new tab using the current authentication context.
+ */
+export async function viewAuthenticatedFile(urlPath) {
+  const url = urlPath.startsWith('http') ? urlPath : `${API_ORIGIN}${urlPath}`;
+  const headers = new Headers();
+  if (authToken) {
+    headers.set('Authorization', `Bearer ${authToken}`);
+  }
+  
+  const response = await fetch(url, { headers });
+  if (!response.ok) {
+    throw new Error('Failed to fetch the file.');
+  }
+  const blob = await response.blob();
+  const blobUrl = URL.createObjectURL(blob);
+  window.open(blobUrl, '_blank', 'noopener,noreferrer');
+  // Revoke to prevent memory leaks
+  setTimeout(() => URL.revokeObjectURL(blobUrl), 60000);
+}
