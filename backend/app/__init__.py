@@ -24,6 +24,10 @@ def create_app(
     _backend_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
     app = Flask(__name__, instance_path=_backend_dir, instance_relative_config=True)
 
+    # Ensure debug mode is set when running in development
+    if os.environ.get("FLASK_ENV") == "development":
+        app.debug = True
+
     flask_secret = os.environ.get("SECRET_KEY", "dev-flask-secret")
     if flask_secret == "dev-flask-secret" and not app.debug:
         raise RuntimeError(

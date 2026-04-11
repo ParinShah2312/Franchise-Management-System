@@ -23,6 +23,7 @@ from ..models import (
     TransactionType,
 )
 from ..utils.security import token_required
+from ..utils.branch_helpers import _current_role
 
 
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
@@ -86,7 +87,7 @@ def get_branch_metrics() -> tuple[dict[str, object], int]:
     """Aggregate metrics for a branch owner or manager, scoped to their branch."""
 
     branch_id_param = request.args.get("branch_id", type=int)
-    role = getattr(g, "current_role", None)
+    role = _current_role()
 
     if not role or role.scope_type != "BRANCH":
         return jsonify({"error": "Branch-scoped role required."}), HTTPStatus.FORBIDDEN
@@ -97,7 +98,11 @@ def get_branch_metrics() -> tuple[dict[str, object], int]:
 
     total_revenue = (
         db.session.query(func.coalesce(func.sum(Sale.total_amount), 0))
-        .filter(Sale.branch_id == branch_id)
+        .join(SaleStatus, Sale.status_id == SaleStatus.sale_status_id)
+        .filter(
+            Sale.branch_id == branch_id,
+            SaleStatus.status_name == "PAID",
+        )
         .scalar()
         or 0
     )

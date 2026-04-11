@@ -11,6 +11,7 @@ from sqlalchemy.orm import joinedload
 
 from ..extensions import db
 from ..models import (
+    Branch,
     Franchise,
     Product,
     ProductCategory,
@@ -18,9 +19,43 @@ from ..models import (
     StockItem,
 )
 from ..utils.security import token_required
+from ..utils.branch_helpers import _current_role
 
 
 catalog_bp = Blueprint("catalog", __name__, url_prefix="/api/catalog")
+
+
+@catalog_bp.route("/branch-products", methods=["GET"])
+@token_required({"BRANCH_OWNER"})
+def list_branch_catalog_products() -> tuple[list[dict[str, object]], int]:
+    """Read-only product listing for branch owners, scoped to their franchise."""
+    role = _current_role()
+    if role.scope_type != "BRANCH":
+        return jsonify({"error": "Branch-scoped role required."}), HTTPStatus.FORBIDDEN
+
+    branch = db.session.get(Branch, role.scope_id)
+    if not branch:
+        return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
+
+    products = (
+        Product.query.options(joinedload(Product.category))
+        .filter_by(franchise_id=branch.franchise_id, is_active=True)
+        .order_by(Product.name.asc())
+        .all()
+    )
+
+    payload = [
+        {
+            "product_id": p.product_id,
+            "name": p.name,
+            "description": p.description,
+            "base_price": float(p.base_price) if p.base_price is not None else 0.0,
+            "category_name": p.category.name if p.category else None,
+        }
+        for p in products
+    ]
+
+    return jsonify(payload), HTTPStatus.OK
 
 
 @catalog_bp.route("/products", methods=["GET"])

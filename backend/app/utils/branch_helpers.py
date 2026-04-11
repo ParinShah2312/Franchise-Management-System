@@ -21,6 +21,17 @@ def _current_role():
         raise PermissionError("No role scope attached to request.")
     return role
 
+
+def get_role_name(role=None) -> str | None:
+    """Safely extract the role name string from a role object.
+
+    If *role* is ``None`` the function attempts to read ``g.current_role``.
+    Returns ``None`` when the role or its nested ``.role.name`` is absent.
+    """
+    if role is None:
+        role = getattr(g, "current_role", None)
+    return getattr(getattr(role, "role", None), "name", None)
+
 def _get_role_by_name(role_name: str) -> Role:
     """Look up a role by its canonical name or raise LookupError."""
     role = Role.query.filter_by(name=role_name).first()

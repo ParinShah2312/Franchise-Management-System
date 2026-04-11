@@ -774,7 +774,7 @@ def seed_database() -> None:
                         expense_id=expense_id,
                         branch_id=branch.branch_id,
                         logged_by_user_id=manager.user_id,
-                        expense_date=exp_dt,
+                        expense_date=exp_dt.date(),
                         category=category,
                         description=f"Monthly {category}",
                         amount=amount

@@ -1,4 +1,4 @@
-﻿"""User management routes for activation and deactivation."""
+"""User management routes for activation and deactivation."""
 
 from __future__ import annotations
 
@@ -9,6 +9,7 @@ from flask import Blueprint, g, jsonify
 from ..models import User, UserRole
 from ..extensions import db
 from ..utils.security import token_required
+from ..utils.branch_helpers import _current_role
 
 user_bp = Blueprint("users", __name__, url_prefix="/api/users")
 
@@ -18,7 +19,7 @@ user_bp = Blueprint("users", __name__, url_prefix="/api/users")
 def deactivate_user(user_id: int) -> tuple[dict[str, object], int]:
     """Deactivate a staff member or manager belonging to the caller's branch."""
 
-    role = getattr(g, "current_role", None)
+    role = _current_role()
     current_user = getattr(g, "current_user", None)
 
     if not role or role.scope_type != "BRANCH" or not current_user:
@@ -85,7 +86,7 @@ def deactivate_user(user_id: int) -> tuple[dict[str, object], int]:
 def activate_user(user_id: int) -> tuple[dict[str, object], int]:
     """Reactivate a deactivated staff member or manager belonging to the caller's branch."""
 
-    role = getattr(g, "current_role", None)
+    role = _current_role()
     current_user = getattr(g, "current_user", None)
 
     if not role or role.scope_type != "BRANCH" or not current_user:
@@ -152,7 +153,7 @@ def activate_user(user_id: int) -> tuple[dict[str, object], int]:
 def force_reset_password(user_id: int) -> tuple[dict[str, object], int]:
     """Force a user to reset their password on their next login."""
 
-    role = getattr(g, "current_role", None)
+    role = _current_role()
     current_user = getattr(g, "current_user", None)
 
     if not role or role.scope_type != "BRANCH" or not current_user:

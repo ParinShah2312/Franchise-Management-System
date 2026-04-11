@@ -17,7 +17,7 @@ export default function LowStockBanner({ items, onDismiss }) {
             const name = item.stock_item_name || item.item_name || 'Unknown item';
             const quantity = item.quantity || 0;
             return (
-              <span key={item.stock_item_id || item.id || index}>
+              <span key={item.stock_item_id || index}>
                 {name} ({quantity} remaining){index < items.length - 1 ? ', ' : ''}
               </span>
             );

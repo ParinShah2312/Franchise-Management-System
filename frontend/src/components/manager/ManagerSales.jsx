@@ -211,10 +211,10 @@ export default function ManagerSales({ sales, products, logSale, refreshSales, s
                                                 <option value="">Select product</option>
                                                 {products.map((product) => (
                                                     <option
-                                                        key={product.product_id || product.id}
-                                                        value={product.product_id || product.id}
+                                                        key={product.product_id}
+                                                        value={product.product_id}
                                                     >
-                                                        {product.product_name || product.name}
+                                                        {product.product_name}
                                                     </option>
                                                 ))}
                                             </select>

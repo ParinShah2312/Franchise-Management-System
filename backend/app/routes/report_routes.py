@@ -12,6 +12,7 @@ from ..models import Report, ReportData, Branch, Franchise
 from ..services.report_service import get_authorized_branch_ids, build_report_summary
 from ..utils.security import token_required
 from ..utils.db_helpers import month_bounds
+from ..utils.branch_helpers import _current_role, get_role_name
 
 
 report_bp = Blueprint("reports", __name__, url_prefix="/api/reports")
@@ -35,7 +36,7 @@ def _month_year() -> tuple[int, int]:
 def _filter_branch_ids(
     requested_branch_id: int | None,
 ) -> tuple[list[int], tuple[dict[str, object], int] | None]:
-    allowed = get_authorized_branch_ids(getattr(g, 'current_role', None))
+    allowed = get_authorized_branch_ids(_current_role())
 
     if requested_branch_id is not None:
         if allowed and requested_branch_id not in allowed:
@@ -64,8 +65,8 @@ def report_summary() -> tuple[dict[str, object], int]:
 
     start_date, end_date = month_bounds(date(year, month, 1))
 
-    _role = getattr(g, "current_role", None)
-    role_name = getattr(getattr(_role, "role", None), "name", None)
+    _role = _current_role()
+    role_name = get_role_name(_role)
     current_user = getattr(g, "current_user", None)
 
     # ── Build summary data ──────────────────────────────────────────────────

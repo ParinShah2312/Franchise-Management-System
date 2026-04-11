@@ -49,7 +49,7 @@ export function useRoyalty(setToast) {
     } finally {
       setConfigLoading(false);
     }
-  }, []);
+  }, [setToast]);
 
   useEffect(() => {
     refreshConfig();

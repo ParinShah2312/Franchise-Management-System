@@ -12,6 +12,7 @@ from ..models import (
 )
 from ..utils.security import token_required
 from ..utils.db_helpers import serialize_dt
+from ..utils.branch_helpers import _current_role, get_role_name
 
 application_bp = Blueprint("applications", __name__, url_prefix="/api/franchises")
 
@@ -72,9 +73,9 @@ def list_pending_applications() -> tuple[list[dict[str, object]], int]:
         joinedload(FranchiseApplication.status),
     ).filter(FranchiseApplication.status_id == pending_status.status_id)
 
-    role = getattr(g, "current_role", None)
+    role = _current_role()
     current_user = getattr(g, "current_user", None)
-    role_name = getattr(getattr(role, "role", None), "name", None)
+    role_name = get_role_name(role)
 
     if role_name == "FRANCHISOR":
         franchisor_id = getattr(current_user, "franchisor_id", None)

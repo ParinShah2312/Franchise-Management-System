@@ -216,7 +216,7 @@ def create_sale() -> tuple[dict[str, object], int]:
 
     db.session.commit()
 
-    # Best-effort royalty recording — sale is already committed at this point
+    # Best-effort royalty recording — uses a savepoint so the sale stays committed
     try:
         from ..services.royalty_service import (
             get_active_royalty_config,
@@ -225,21 +225,21 @@ def create_sale() -> tuple[dict[str, object], int]:
         )
         royalty_config = get_active_royalty_config(branch.franchise_id)
         if royalty_config:
-            franchisor_amount, branch_owner_amount = calculate_royalty_split(
-                sale.total_amount, royalty_config
-            )
-            record_sale_royalty(
-                sale_id=sale.sale_id,
-                config=royalty_config,
-                franchisor_amount=franchisor_amount,
-                branch_owner_amount=branch_owner_amount,
-            )
+            with db.session.begin_nested():
+                franchisor_amount, branch_owner_amount = calculate_royalty_split(
+                    sale.total_amount, royalty_config
+                )
+                record_sale_royalty(
+                    sale_id=sale.sale_id,
+                    config=royalty_config,
+                    franchisor_amount=franchisor_amount,
+                    branch_owner_amount=branch_owner_amount,
+                )
             db.session.commit()
     except Exception as exc:
         current_app.logger.warning(
             "Royalty recording failed for sale %s: %s", sale.sale_id, exc
         )
-        db.session.rollback()
 
     sale = db.session.get(
         Sale, sale.sale_id,
@@ -253,11 +253,7 @@ def create_sale() -> tuple[dict[str, object], int]:
 def list_sales() -> tuple[list[dict[str, object]], int]:
     branch_id_param = request.args.get("branch_id", type=int)
 
-    role = getattr(g, "current_role", None)
-    if not role:
-        return jsonify(
-            {"error": "No role scope attached to request."}
-        ), HTTPStatus.FORBIDDEN
+    role = _current_role()
 
     query = Sale.query.options(
         joinedload(Sale.items).joinedload(SaleItem.product)
@@ -294,8 +290,6 @@ def list_products() -> tuple[list[dict[str, object]], int]:
         {
             "product_id": product.product_id,
             "product_name": product.name,
-            "id": product.product_id,
-            "name": product.name,
             "base_price": float(product.base_price),
         }
         for product in products

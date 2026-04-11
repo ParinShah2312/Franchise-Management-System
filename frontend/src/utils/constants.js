@@ -1,3 +1,8 @@
+// Validation error messages — kept in sync with backend validators.py
+export const PASSWORD_ERROR = 'Password must be 8+ chars with uppercase, lowercase, and a number.';
+export const EMAIL_ERROR = 'Please enter a valid email address.';
+export const PHONE_ERROR = 'Please enter a valid phone number.';
+
 export const PAYMENT_MODES = ['Cash', 'Card', 'UPI', 'Other'];
 
 export const ROLE_REDIRECTS = {

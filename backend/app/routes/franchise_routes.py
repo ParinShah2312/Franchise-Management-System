@@ -8,6 +8,7 @@ from sqlalchemy.orm import joinedload
 from ..extensions import db
 from ..models import Branch, BranchStatus, Franchise
 from ..utils.security import token_required
+from ..utils.branch_helpers import _current_role, get_role_name
 
 franchise_bp = Blueprint("franchises", __name__, url_prefix="/api/franchises")
 
@@ -62,9 +63,9 @@ def upload_franchise_menu(franchise_id: int) -> tuple[dict[str, object], int]:
     if not franchise:
         return jsonify({"error": "Franchise not found."}), HTTPStatus.NOT_FOUND
 
-    role = getattr(g, "current_role", None)
+    role = _current_role()
     current_user = getattr(g, "current_user", None)
-    role_name = getattr(getattr(role, "role", None), "name", None)
+    role_name = get_role_name(role)
 
     if role_name == "FRANCHISOR":
         franchisor_id = getattr(current_user, "franchisor_id", None)
@@ -119,9 +120,9 @@ def update_franchise(franchise_id: int) -> tuple[dict[str, object], int]:
     if not franchise:
         return jsonify({"error": "Franchise not found."}), HTTPStatus.NOT_FOUND
 
-    role = getattr(g, "current_role", None)
+    role = _current_role()
     current_user = getattr(g, "current_user", None)
-    role_name = getattr(getattr(role, "role", None), "name", None)
+    role_name = get_role_name(role)
 
     if role_name == "FRANCHISOR":
         franchisor_id = getattr(current_user, "franchisor_id", None)
@@ -157,9 +158,9 @@ def list_franchise_network() -> tuple[list[dict[str, object]], int]:
         joinedload(Franchise.branches).joinedload(Branch.status),
     )
 
-    role = getattr(g, "current_role", None)
+    role = _current_role()
     current_user = getattr(g, "current_user", None)
-    role_name = getattr(getattr(role, "role", None), "name", None)
+    role_name = get_role_name(role)
 
     if role_name == "FRANCHISOR":
         franchisor_id = getattr(current_user, "franchisor_id", None)

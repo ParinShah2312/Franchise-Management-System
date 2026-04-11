@@ -25,13 +25,23 @@ export function useExpenses(branchId) {
     }, [fetchExpenses]);
 
     const logExpense = async (data) => {
-        await api.post(`/expenses${branchId ? `?branch_id=${branchId}` : ''}`, data);
-        await fetchExpenses();
+        try {
+            await api.post(`/expenses${branchId ? `?branch_id=${branchId}` : ''}`, data);
+            await fetchExpenses();
+        } catch (err) {
+            setError(err.message || 'Failed to log expense.');
+            throw err;
+        }
     };
 
     const deleteExpense = async (expenseId) => {
-        await api.delete(`/expenses/${expenseId}`);
-        await fetchExpenses();
+        try {
+            await api.delete(`/expenses/${expenseId}`);
+            await fetchExpenses();
+        } catch (err) {
+            setError(err.message || 'Failed to delete expense.');
+            throw err;
+        }
     };
 
     return { expenses, loading, error, logExpense, deleteExpense, refreshExpenses: fetchExpenses };

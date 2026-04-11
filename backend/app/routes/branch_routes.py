@@ -10,12 +10,13 @@ from sqlalchemy.orm import joinedload
 from ..extensions import db
 from ..models import Branch, BranchStatus, BranchStaff, User, UserRole
 from ..utils.security import token_required
+from ..utils.branch_helpers import _current_role
 
 branch_bp = Blueprint("branch", __name__, url_prefix="/api/branch")
 
 
 def _branch_scope() -> Branch | tuple[dict[str, object], int]:
-    role = getattr(g, "current_role", None)
+    role = _current_role()
     current_user = getattr(g, "current_user", None)
 
     if not role or role.scope_type != "BRANCH" or not current_user:

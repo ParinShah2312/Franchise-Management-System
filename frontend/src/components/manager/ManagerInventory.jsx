@@ -170,7 +170,7 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
 
                                     return (
                                         <tr
-                                            key={item.branch_inventory_id || item.id}
+                                            key={item.branch_inventory_id || item.stock_item_id}
                                             className={isLow ? 'bg-amber-50' : ''}
                                         >
                                             <td className="px-4 py-3 text-sm text-gray-800">{item.stock_item_name || item.item_name}</td>
@@ -212,8 +212,8 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                                 >
                                     <option value="">Select item</option>
                                     {stockItems.map((item) => (
-                                        <option key={item.id} value={item.id}>
-                                            {item.name}
+                                        <option key={item.stock_item_id} value={item.stock_item_id}>
+                                            {item.stock_item_name}
                                         </option>
                                     ))}
                                 </select>
@@ -295,8 +295,8 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                                 >
                                     <option value="">Select item</option>
                                     {stockItems.map((item) => (
-                                        <option key={item.stock_item_id || item.id} value={item.stock_item_id || item.id}>
-                                            {item.name || item.stock_item_name}
+                                        <option key={item.stock_item_id} value={item.stock_item_id}>
+                                            {item.stock_item_name}
                                         </option>
                                     ))}
                                 </select>

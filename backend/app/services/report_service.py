@@ -14,7 +14,7 @@ from decimal import Decimal
 from sqlalchemy import func
 
 from ..extensions import db
-from ..models import Branch, Expense, Sale
+from ..models import Branch, Expense, Sale, SaleStatus
 
 
 def get_sales_total(
@@ -36,7 +36,10 @@ def get_sales_total(
     """
     query = db.session.query(
         func.coalesce(func.sum(Sale.total_amount), 0)
+    ).join(
+        SaleStatus, Sale.status_id == SaleStatus.sale_status_id
     ).filter(
+        SaleStatus.status_name == "PAID",
         Sale.sale_datetime >= start_date,
         Sale.sale_datetime < end_date,
     )
@@ -79,7 +82,14 @@ def get_branch_sales_breakdown(
             & (Sale.sale_datetime >= start_date)
             & (Sale.sale_datetime < end_date),
         )
-        .filter(Branch.branch_id.in_(branch_ids))
+        .outerjoin(
+            SaleStatus,
+            Sale.status_id == SaleStatus.sale_status_id,
+        )
+        .filter(
+            Branch.branch_id.in_(branch_ids),
+            db.or_(SaleStatus.status_name == "PAID", SaleStatus.status_name.is_(None)),
+        )
         .group_by(Branch.branch_id, Branch.name)
         .order_by(Branch.name.asc())
         .all()
@@ -169,9 +179,11 @@ def get_branch_product_sales_breakdown(
             func.sum(SaleItem.quantity).label("total_quantity"),
             func.sum(SaleItem.line_total).label("total_revenue"),
         )
+        .join(SaleStatus, Sale.status_id == SaleStatus.sale_status_id)
         .join(SaleItem, Sale.sale_id == SaleItem.sale_id)
         .join(Product, SaleItem.product_id == Product.product_id)
         .filter(
+            SaleStatus.status_name == "PAID",
             Sale.branch_id.in_(branch_ids),
             Sale.sale_datetime >= start_date,
             Sale.sale_datetime < end_date,

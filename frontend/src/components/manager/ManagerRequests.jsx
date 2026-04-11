@@ -137,8 +137,8 @@ export default function ManagerRequests({ requests, stockItems, createRequest, r
                                 >
                                     <option value="">Select item</option>
                                     {stockItems.map((item) => (
-                                        <option key={item.id} value={item.id}>
-                                            {item.name}
+                                        <option key={item.stock_item_id} value={item.stock_item_id}>
+                                            {item.stock_item_name}
                                         </option>
                                     ))}
                                 </select>

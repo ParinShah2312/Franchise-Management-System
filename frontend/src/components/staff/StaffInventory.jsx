@@ -130,7 +130,7 @@ export default function StaffInventory({ inventoryItems, stockItems, recordDeliv
                                     return (
                                         <tr
                                             key={item.branch_inventory_id || `${item.branch_id}-${item.stock_item_id}`}
-                                            className={`${isLow ? 'bg-amber-50' : ''} ${updatingItemId === Number(item.stock_item_id || item.id) ? 'animate-pulse bg-gray-100' : 'hover:bg-gray-50/50 transition-colors'}`}
+                                            className={`${isLow ? 'bg-amber-50' : ''} ${updatingItemId === Number(item.stock_item_id) ? 'animate-pulse bg-gray-100' : 'hover:bg-gray-50/50 transition-colors'}`}
                                         >
                                             <td className="px-4 py-3 text-sm font-medium text-gray-800">
                                                 {item.stock_item_name || item.item_name || '—'}
@@ -174,8 +174,8 @@ export default function StaffInventory({ inventoryItems, stockItems, recordDeliv
                                 >
                                     <option value="">Select item</option>
                                     {stockItems.map((item) => (
-                                        <option key={item.stock_item_id || item.id} value={item.stock_item_id || item.id}>
-                                            {item.name || item.stock_item_name}
+                                        <option key={item.stock_item_id} value={item.stock_item_id}>
+                                            {item.stock_item_name}
                                         </option>
                                     ))}
                                 </select>

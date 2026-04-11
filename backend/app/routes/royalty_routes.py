@@ -17,13 +17,14 @@ from ..services.royalty_service import (
 )
 from ..utils.security import token_required
 from ..utils.db_helpers import serialize_dt
+from ..utils.branch_helpers import _current_role
 
 
 royalty_bp = Blueprint("royalty", __name__, url_prefix="/api/royalty")
 
 
 def _get_franchisor_franchise() -> tuple[Franchisor | None, Franchise | None]:
-    """Return (franchisor, franchise) for the current FRANCHISOR user, or raise."""
+    """Return (franchisor, franchise) for the current FRANCHISOR user, or (None, None)."""
     franchisor = getattr(g, "current_user", None)
     if not franchisor:
         return None, None
@@ -158,9 +159,7 @@ def royalty_summary() -> tuple[dict[str, object], int]:
 @royalty_bp.route("/branch-summary", methods=["GET"])
 @token_required({"BRANCH_OWNER"})
 def royalty_branch_summary() -> tuple[dict[str, object], int]:
-    role = getattr(g, "current_role", None)
-    if not role:
-        return jsonify({"error": "No role scope attached to request."}), HTTPStatus.FORBIDDEN
+    role = _current_role()
 
     branch_id_param = request.args.get("branch_id", type=int)
 
