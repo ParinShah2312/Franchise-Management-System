@@ -341,7 +341,7 @@ def get_product_ingredients(product_id: int) -> tuple[list[dict[str, object]], i
 
     payload = [
         {
-            "ingredient_id": ingredient.ingredient_id,
+            "product_ingredient_id": ingredient.product_ingredient_id,
             "product_id": ingredient.product_id,
             "stock_item_id": ingredient.stock_item_id,
             "stock_item_name": ingredient.stock_item.name,
@@ -409,10 +409,10 @@ def add_product_ingredient(product_id: int) -> tuple[dict[str, object], int]:
 
     refreshed_ingredient = db.session.query(ProductIngredient).options(
         joinedload(ProductIngredient.stock_item).joinedload(StockItem.unit)
-    ).filter(ProductIngredient.ingredient_id == ingredient.ingredient_id).first()
+    ).filter(ProductIngredient.product_ingredient_id == ingredient.product_ingredient_id).first()
 
     return jsonify({
-        "ingredient_id": refreshed_ingredient.ingredient_id,
+        "product_ingredient_id": refreshed_ingredient.product_ingredient_id,
         "product_id": refreshed_ingredient.product_id,
         "stock_item_id": refreshed_ingredient.stock_item_id,
         "stock_item_name": refreshed_ingredient.stock_item.name,
@@ -421,9 +421,9 @@ def add_product_ingredient(product_id: int) -> tuple[dict[str, object], int]:
     }), HTTPStatus.CREATED
 
 
-@catalog_bp.route("/products/<int:product_id>/ingredients/<int:ingredient_id>", methods=["DELETE"])
+@catalog_bp.route("/products/<int:product_id>/ingredients/<int:product_ingredient_id>", methods=["DELETE"])
 @token_required({"FRANCHISOR"})
-def remove_product_ingredient(product_id: int, ingredient_id: int) -> tuple[dict[str, object], int]:
+def remove_product_ingredient(product_id: int, product_ingredient_id: int) -> tuple[dict[str, object], int]:
     franchisor = getattr(g, "current_user", None)
     if not franchisor:
         return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
@@ -436,7 +436,7 @@ def remove_product_ingredient(product_id: int, ingredient_id: int) -> tuple[dict
     if not product or product.franchise_id != franchise.franchise_id:
         return jsonify({"error": "Product not found or unauthorized."}), HTTPStatus.FORBIDDEN
 
-    ingredient = db.session.get(ProductIngredient, ingredient_id)
+    ingredient = db.session.get(ProductIngredient, product_ingredient_id)
     if not ingredient or ingredient.product_id != product_id:
         return jsonify({"error": "Ingredient not found."}), HTTPStatus.NOT_FOUND
 

@@ -117,11 +117,11 @@ def test_add_and_remove_ingredient(client, db_session):
         headers=headers,
     )
     assert add_resp.status_code == 201
-    ingredient_id = add_resp.get_json()["ingredient_id"]
+    product_ingredient_id = add_resp.get_json()["product_ingredient_id"]
 
     # Remove ingredient
     del_resp = client.delete(
-        f"/api/catalog/products/{product_id}/ingredients/{ingredient_id}",
+        f"/api/catalog/products/{product_id}/ingredients/{product_ingredient_id}",
         headers=headers,
     )
     assert del_resp.status_code == 200

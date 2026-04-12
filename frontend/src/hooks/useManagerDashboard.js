@@ -13,7 +13,7 @@ export function useManagerDashboard(branchId) {
   const { requests, loading: reqLoading, error: reqError, createRequest, refreshRequests } = useRequests(branchId);
   const { expenses, loading: expLoading, error: expError, logExpense, deleteExpense, refreshExpenses } = useExpenses(branchId);
 
-  const loading = !branchId ? false : (staffLoading || invLoading || salesLoading || reqLoading || expLoading);
+  const loading = !branchId || (staffLoading || invLoading || salesLoading || reqLoading || expLoading);
   const error = !branchId ? 'No branch is assigned to your account. Please contact your branch owner.' : (staffError || invError || salesError || reqError || expError || '');
 
   const loadData = useCallback(() => {
@@ -47,7 +47,7 @@ export function useManagerDashboard(branchId) {
   const todaySalesTotal = useMemo(() => {
     const today = getTodayString();
     return sales
-      .filter((sale) => (sale.sale_datetime || sale.sale_date || '').slice(0, 10) === today)
+      .filter((sale) => sale.sale_datetime && new Date(sale.sale_datetime).toLocaleDateString('en-CA') === today)
       .reduce((total, sale) => total + Number(sale.total_amount || 0), 0);
   }, [sales]);
 

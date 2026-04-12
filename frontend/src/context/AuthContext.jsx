@@ -95,7 +95,7 @@ export function AuthProvider({ children }) {
     login,
     logout,
     updateUser,
-    isAuthenticated: Boolean(user && token),
+    isAuthenticated: Boolean(user && token && !isTokenExpired(token)),
     getBranchId: () => (scope?.type === 'BRANCH' ? scope.id ?? null : null),
   }), [user, token, scope, loading, login, logout, updateUser]);
 

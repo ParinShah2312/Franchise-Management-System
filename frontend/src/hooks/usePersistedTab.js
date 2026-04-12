@@ -1,8 +1,8 @@
 import { useState } from 'react';
 
 /**
- * Like useState but persists the value in sessionStorage for the session.
- * Resets to defaultTab when the component unmounts (page unload clears sessionStorage automatically).
+ * Like useState but persists the value in sessionStorage for the browser session.
+ * Tab selection is remembered across re-renders and navigations within the session.
  * @param {string} storageKey - unique key per dashboard
  * @param {string} defaultTab - tab to use when no persisted value exists
  */

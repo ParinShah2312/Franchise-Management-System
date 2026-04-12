@@ -19,34 +19,13 @@ from ..models import (
 )
 from ..services.inventory_service import deduct_ingredients_for_sale, get_transaction_type_id, InsufficientStockError
 from ..utils.security import token_required
-from ..utils.branch_helpers import _current_role
+from ..utils.branch_helpers import _current_role, resolve_branch_id_from_request
 
 
 sales_bp = Blueprint("sales", __name__, url_prefix="/api/sales")
 
 
-def _ensure_branch_scope(branch_id: int | None) -> int | tuple[dict[str, object], int]:
-    try:
-        role = _current_role()
-    except PermissionError as exc:
-        return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
 
-    if role.scope_type == "BRANCH":
-        return role.scope_id
-
-    if role.scope_type == "FRANCHISE":
-        if branch_id is None:
-            return jsonify(
-                {"error": "branch_id is required for this operation."}
-            ), HTTPStatus.BAD_REQUEST
-        branch = db.session.get(Branch, branch_id)
-        if not branch or branch.franchise_id != role.scope_id:
-            return jsonify(
-                {"error": "Branch not accessible for this franchise scope."}
-            ), HTTPStatus.FORBIDDEN
-        return branch.branch_id
-
-    return jsonify({"error": "Role scope is not branch aware."}), HTTPStatus.FORBIDDEN
 
 
 def _parse_datetime(value: object) -> datetime:
@@ -117,9 +96,12 @@ def create_sale() -> tuple[dict[str, object], int]:
                 {"error": "branch_id must be numeric."}
             ), HTTPStatus.BAD_REQUEST
 
-    branch_id_result = _ensure_branch_scope(branch_id_param)
-    if isinstance(branch_id_result, tuple):
-        return branch_id_result
+    try:
+        branch_id_result = resolve_branch_id_from_request(branch_id_param)
+    except PermissionError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
 
     branch = db.session.get(
         Branch, branch_id_result,
@@ -133,10 +115,10 @@ def create_sale() -> tuple[dict[str, object], int]:
     except ValueError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
 
-    items_payload = payload.get("sale_items") or payload.get("items") or []
+    items_payload = payload.get("items")
     if not isinstance(items_payload, list) or not items_payload:
         return jsonify(
-            {"error": "sale_items must be a non-empty list."}
+            {"error": "items must be a non-empty list."}
         ), HTTPStatus.BAD_REQUEST
 
     status_id = _sale_status_paid_id()
@@ -235,7 +217,6 @@ def create_sale() -> tuple[dict[str, object], int]:
                     franchisor_amount=franchisor_amount,
                     branch_owner_amount=branch_owner_amount,
                 )
-            db.session.commit()
     except Exception as exc:
         current_app.logger.warning(
             "Royalty recording failed for sale %s: %s", sale.sale_id, exc
@@ -249,7 +230,7 @@ def create_sale() -> tuple[dict[str, object], int]:
 
 
 @sales_bp.route("", methods=["GET"])
-@token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
+@token_required({"FRANCHISOR", "BRANCH_OWNER", "MANAGER", "STAFF"})
 def list_sales() -> tuple[list[dict[str, object]], int]:
     branch_id_param = request.args.get("branch_id", type=int)
 
@@ -259,9 +240,12 @@ def list_sales() -> tuple[list[dict[str, object]], int]:
         joinedload(Sale.items).joinedload(SaleItem.product)
     ).order_by(Sale.sale_datetime.desc())
 
-    branch_result = _ensure_branch_scope(branch_id_param)
-    if isinstance(branch_result, tuple):
-        return branch_result
+    try:
+        branch_result = resolve_branch_id_from_request(branch_id_param)
+    except PermissionError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
     query = query.filter(Sale.branch_id == branch_result)
 
     records = query.all()
@@ -269,12 +253,15 @@ def list_sales() -> tuple[list[dict[str, object]], int]:
 
 
 @sales_bp.route("/products", methods=["GET"])
-@token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
+@token_required({"FRANCHISOR", "BRANCH_OWNER", "MANAGER", "STAFF"})
 def list_products() -> tuple[list[dict[str, object]], int]:
     branch_id_param = request.args.get("branch_id", type=int)
-    branch_result = _ensure_branch_scope(branch_id_param)
-    if isinstance(branch_result, tuple):
-        return branch_result
+    try:
+        branch_result = resolve_branch_id_from_request(branch_id_param)
+    except PermissionError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
 
     branch = db.session.get(Branch, branch_result)
     if not branch:

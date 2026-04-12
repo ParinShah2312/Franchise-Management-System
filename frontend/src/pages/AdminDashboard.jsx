@@ -59,7 +59,7 @@ export default function AdminDashboard() {
     openApplication, closeModal,
     handleMenuButtonClick, handleMenuFileChange,
     setToast, fileInputRef,
-    products, productsLoading, refreshProducts,
+    products, productsLoading, refreshProducts, refreshCatalog,
     categories, categoriesLoading, createCategory, createProduct, updateProduct,
     stockItems, stockItemsLoading, stockItemsError,
     units, unitsLoading,
@@ -160,6 +160,7 @@ export default function AdminDashboard() {
         onYearChange={setSelectedYear}
         onGenerate={generateReport}
         generatedBy={user?.name || null}
+        branches={flattenedBranches}
       />
     );
     }
@@ -180,7 +181,10 @@ export default function AdminDashboard() {
           <div className="flex items-center gap-2 flex-wrap">
             <button
               type="button"
-              onClick={fetchDashboard}
+              onClick={() => {
+                if (activeTab === 'catalog') refreshCatalog();
+                else fetchDashboard();
+              }}
               className="px-4 py-2 text-sm font-semibold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50"
             >
               Refresh Data

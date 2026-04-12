@@ -103,9 +103,11 @@ def setup_franchise_branch(client, db_session):
         db_session.add(franchisor)
         db_session.commit()
 
-    franchise = Franchise(franchisor_id=franchisor.franchisor_id, name="Test Franchise")
-    db_session.add(franchise)
-    db_session.commit()
+    franchise = db_session.query(Franchise).filter_by(franchisor_id=franchisor.franchisor_id).first()
+    if not franchise:
+        franchise = Franchise(franchisor_id=franchisor.franchisor_id, name="Test Franchise")
+        db_session.add(franchise)
+        db_session.commit()
 
     user = User(
         name="Branch Owner Test",
@@ -170,6 +172,7 @@ def _seed_reference_data():
         Unit(unit_id=1, unit_name="kg"),
         Unit(unit_id=2, unit_name="liter"),
         Unit(unit_id=3, unit_name="pcs"),
+        Unit(unit_id=4, unit_name="box"),
     ]
     db.session.add_all(statuses)
 

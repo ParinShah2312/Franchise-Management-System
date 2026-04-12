@@ -166,3 +166,35 @@ def _ensure_franchise_for_franchisor(franchisor: Franchisor) -> Franchise | None
             getattr(exc, "orig", exc),
         )
         return Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
+
+
+def resolve_branch_id_from_request(explicit_branch_id: int | None) -> int:
+    """Return the branch ID the caller is authorized to access, or raise.
+
+    Supports BRANCH, FRANCHISE, and GLOBAL scope types.
+    """
+    role = _current_role()
+
+    if role.scope_type == "BRANCH":
+        branch_id = role.scope_id
+        if explicit_branch_id is not None and explicit_branch_id != branch_id:
+            raise PermissionError("Unauthorized branch access.")
+        return branch_id
+
+    if role.scope_type == "FRANCHISE":
+        if explicit_branch_id is None:
+            raise ValueError("branch_id is required.")
+        branch = db.session.get(Branch, explicit_branch_id)
+        if not branch or branch.franchise_id != role.scope_id:
+            raise PermissionError("Branch not accessible for this franchise scope.")
+        return explicit_branch_id
+
+    if role.scope_type == "GLOBAL":
+        if explicit_branch_id is None:
+            raise ValueError("branch_id is required for this operation.")
+        branch = db.session.get(Branch, explicit_branch_id)
+        if not branch:
+            raise PermissionError("Branch not found.")
+        return explicit_branch_id
+
+    raise PermissionError(f"Unsupported role scope: {role.scope_type}")

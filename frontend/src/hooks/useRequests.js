@@ -31,6 +31,9 @@ export function useRequests(branchId) {
     };
 
     const updateRequestStatus = async (requestId, action) => {
+        if (!['approve', 'reject'].includes(action)) {
+            throw new Error('Invalid action. Must be "approve" or "reject".');
+        }
         await api.put(`/requests/${requestId}/${action}`);
         await fetchRequests();
     };

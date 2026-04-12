@@ -19,7 +19,7 @@ export function useAdminDashboard() {
     stockItems, stockItemsLoading, stockItemsError, refreshStockItems,
     units, unitsLoading,
     categories, categoriesLoading, categoriesError, refreshCategories,
-    products, productsLoading, refreshProducts,
+    products, productsLoading, refreshProducts, refreshCatalog,
     createStockItem, createCategory, createProduct, updateProduct,
     fetchIngredients, addIngredient, removeIngredient, fetchStockItemProducts,
   } = useCatalog();
@@ -28,7 +28,7 @@ export function useAdminDashboard() {
     config, configLoading, configured, refreshConfig,
     summary, summaryLoading, summaryError, fetchSummary,
     saveConfig, saving, saveError,
-  } = useRoyalty(setToast);
+  } = useRoyalty();
 
   const {
     report, reportLoading, reportError,
@@ -211,7 +211,7 @@ export function useAdminDashboard() {
   return {
     metrics, network, applications, loading, error, toast,
     products, productsLoading,
-    categories, categoriesLoading, categoriesError, refreshCategories, refreshProducts,
+    categories, categoriesLoading, categoriesError, refreshCategories, refreshProducts, refreshCatalog,
     createCategory, createProduct, updateProduct,
     stockItems, stockItemsLoading, stockItemsError, refreshStockItems,
     units, unitsLoading,

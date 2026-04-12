@@ -11,12 +11,11 @@ export function useFranchiseStaff(branchId) {
         setLoading(true);
         setError(null);
         try {
-            const response = await api.get('/auth/profile');
-            const payload = response || {};
-            setStaff({
-                manager: payload.manager || null,
-                team: Array.isArray(payload.staff) ? payload.staff : [],
-            });
+            const response = await api.get(`/branch/staff?branch_id=${branchId}`);
+            const payload = Array.isArray(response) ? response : [];
+            const manager = payload.find(u => u.role === 'MANAGER') || null;
+            const team = payload.filter(u => u.role !== 'MANAGER' && u.role !== 'BRANCH_OWNER');
+            setStaff({ manager, team });
         } catch (err) {
             setError(err.message || 'Failed to load franchisee staff profile.');
         } finally {

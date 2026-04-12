@@ -188,8 +188,7 @@ def _select_primary_role(user: User) -> Optional[UserRole]:
         "FRANCHISOR": 1,
         "BRANCH_OWNER": 2,
         "MANAGER": 3,
-        "STAFF": 4,
-        "PENDING_APPLICANT": 5
+        "STAFF": 4
     }
 
     def _priority(ur):

@@ -375,6 +375,8 @@ Work through these tests in order to see every feature in the system.
 
 ## 6. Running the Test Suite
 
+**Total Verified: 100 automated tests across backend and frontend (58 backend + 42 frontend).**
+
 ### Backend Tests (58 tests)
 ```bash
 cd backend

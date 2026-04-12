@@ -1,4 +1,4 @@
-import { useState, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 
 import { useAuth } from '../context/AuthContext';
@@ -9,9 +9,16 @@ export default function Login() {
   const navigate = useNavigate();
   const { login } = useAuth();
   const submittingRef = useRef(false);
+  const isMountedRef = useRef(true);
   const [formState, setFormState] = useState({ email: '', password: '' });
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
+  
+  useEffect(() => {
+    return () => {
+      isMountedRef.current = false;
+    };
+  }, []);
   const [showPassword, setShowPassword] = useState(false);
   const [showForgotModal, setShowForgotModal] = useState(false);
 
@@ -38,9 +45,13 @@ export default function Login() {
       const role = (session.role || '').toUpperCase();
       navigate(ROLE_REDIRECTS[role] || '/', { replace: true });
     } catch (err) {
-      setError(err.message || 'Unable to sign in.');
+      if (isMountedRef.current) {
+        setError(err.message || 'Unable to sign in.');
+      }
     } finally {
-      setSubmitting(false);
+      if (isMountedRef.current) {
+        setSubmitting(false);
+      }
       submittingRef.current = false;
     }
   };

@@ -171,21 +171,12 @@ def register_franchisee() -> tuple[dict[str, object], int]:
         return jsonify({"error": "Franchise not found."}), HTTPStatus.BAD_REQUEST
 
     try:
-        blob = save_file_to_db(application_file)
-    except ValueError as exc:
-        return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
-
-    db.session.add(blob)
-    db.session.flush()
-
-    try:
         investment_capacity = (
             Decimal(investment_capacity_raw)
             if investment_capacity_raw not in (None, "")
             else Decimal("0")
         )
     except (InvalidOperation, TypeError):
-        db.session.rollback()
         return jsonify(
             {"error": "Investment capacity must be numeric."}
         ), HTTPStatus.BAD_REQUEST
@@ -194,11 +185,18 @@ def register_franchisee() -> tuple[dict[str, object], int]:
     if not status:
         status = db.session.get(ApplicationStatus, 1)
     if not status:
-        db.session.rollback()
         return (
             jsonify({"error": "Application status configuration missing."}),
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
+
+    try:
+        blob = save_file_to_db(application_file)
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
+
+    db.session.add(blob)
+    db.session.flush()
 
     try:
         user = User(

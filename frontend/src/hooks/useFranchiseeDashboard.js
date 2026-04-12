@@ -30,11 +30,10 @@ export function useFranchiseeDashboard(branchId) {
   // Fetch branch royalty summary automatically when branchId is ready
   useEffect(() => {
     if (!branchId) return;
-    const now = new Date();
-    fetchBranchSummary(branchId, now.getMonth() + 1, now.getFullYear());
+    fetchBranchSummary(branchId);
   }, [branchId, fetchBranchSummary]);
 
-  const loading = !branchId ? false : (metricsLoading || salesLoading || reqLoading || staffLoading || expLoading);
+  const loading = !branchId || (metricsLoading || salesLoading || reqLoading || staffLoading || expLoading);
   const error = !branchId ? 'No branch is currently assigned to your account. Please contact support.' : (metricsError || salesError || reqError || staffError || expError || '');
 
   const loadData = useCallback(() => {

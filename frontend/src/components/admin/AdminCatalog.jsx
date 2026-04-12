@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import CatalogStockItems from './CatalogStockItems';
 import CatalogProductRecipes from './CatalogProductRecipes';
 import CatalogAddStockItemModal from './CatalogAddStockItemModal';
@@ -46,6 +46,12 @@ export default function AdminCatalog({
   
   const [ingredientsByItem, setIngredientsByItem] = useState({});
   const [recipesByProduct, setRecipesByProduct] = useState({});
+  
+  // Invalidate caches when underlying catalog data changes to prevent stale UI
+  useEffect(() => {
+    setIngredientsByItem({});
+    setRecipesByProduct({});
+  }, [products, stockItems]);
   
   const [toast, setToast] = useState(null);
 

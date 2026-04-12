@@ -25,37 +25,13 @@ from ..services.inventory_service import (
 )
 from ..utils.security import token_required
 from ..utils.db_helpers import serialize_dt
-from ..utils.branch_helpers import _current_role
+from ..utils.branch_helpers import resolve_branch_id_from_request, _current_role
 
 
 inventory_bp = Blueprint("inventory", __name__, url_prefix="/api/inventory")
 
 
-def _allowed_branch_id(
-    explicit_branch_id: int | None,
-) -> int:
-    """Return the branch ID the caller is authorized to access, or raise."""
-    role = _current_role()
 
-    if role.scope_type == "BRANCH":
-        branch_id = role.scope_id
-    elif role.scope_type == "FRANCHISE":
-        branch_id = explicit_branch_id
-    else:
-        branch_id = explicit_branch_id
-
-    if branch_id is None:
-        raise ValueError("branch_id is required.")
-
-    if role.scope_type == "FRANCHISE":
-        branch = db.session.get(Branch, branch_id)
-        if not branch or branch.franchise_id != role.scope_id:
-            raise PermissionError("Branch not accessible for this franchise scope.")
-    else:
-        if branch_id != role.scope_id:
-            raise PermissionError("Unauthorized branch access.")
-
-    return branch_id
 
 
 def _serialize_inventory(record: BranchInventory) -> dict[str, object]:
@@ -63,7 +39,7 @@ def _serialize_inventory(record: BranchInventory) -> dict[str, object]:
         "branch_inventory_id": record.branch_inventory_id,
         "branch_id": record.branch_id,
         "stock_item_id": record.stock_item_id,
-        "stock_item_name": record.stock_item.name if record.stock_item else None,
+        "name": record.stock_item.name if record.stock_item else None,
         "unit_name": record.stock_item.unit.unit_name
         if record.stock_item and record.stock_item.unit
         else None,
@@ -79,7 +55,7 @@ def _serialize_inventory(record: BranchInventory) -> dict[str, object]:
 def list_inventory() -> tuple[list[dict[str, object]], int]:
     branch_id_param = request.args.get("branch_id", type=int)
     try:
-        branch_id = _allowed_branch_id(branch_id_param)
+        branch_id = resolve_branch_id_from_request(branch_id_param)
     except PermissionError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
     except ValueError as exc:
@@ -104,7 +80,7 @@ def list_inventory() -> tuple[list[dict[str, object]], int]:
 def record_stock_delivery() -> tuple[dict[str, object], int]:
     branch_id_param = request.args.get("branch_id", type=int)
     try:
-        branch_id = _allowed_branch_id(branch_id_param)
+        branch_id = resolve_branch_id_from_request(branch_id_param)
     except PermissionError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
     except ValueError as exc:
@@ -195,7 +171,7 @@ def list_stock_items() -> tuple[list[dict[str, object]], int]:
     payload = [
         {
             "stock_item_id": item.stock_item_id,
-            "stock_item_name": item.name,
+            "name": item.name,
             "description": item.description,
         }
         for item in items
@@ -219,7 +195,7 @@ def create_branch_inventory() -> tuple[dict[str, object], int]:
             ), HTTPStatus.BAD_REQUEST
 
     try:
-        branch_id = _allowed_branch_id(branch_id_param)
+        branch_id = resolve_branch_id_from_request(branch_id_param)
     except PermissionError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
     except ValueError as exc:

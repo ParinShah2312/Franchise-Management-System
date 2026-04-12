@@ -13,7 +13,7 @@ from ..extensions import db
 from ..models import Branch, Expense
 from ..utils.security import token_required
 from ..utils.db_helpers import serialize_dt
-from ..utils.branch_helpers import _current_role
+from ..utils.branch_helpers import _current_role, resolve_branch_id_from_request
 
 expense_bp = Blueprint("expenses", __name__, url_prefix="/api/expenses")
 
@@ -23,25 +23,7 @@ VALID_CATEGORIES = [
 ]
 
 
-def _resolve_branch_id(explicit_branch_id: int | None) -> int:
-    """Return the branch ID the caller is authorized to access, or raise."""
-    role = _current_role()
 
-    if role.scope_type == "BRANCH":
-        branch_id = role.scope_id
-        if explicit_branch_id is not None and explicit_branch_id != branch_id:
-            raise PermissionError("Unauthorized branch access.")
-        return branch_id
-
-    if role.scope_type == "FRANCHISE":
-        if explicit_branch_id is None:
-            raise ValueError("branch_id is required.")
-        branch = db.session.get(Branch, explicit_branch_id)
-        if not branch or branch.franchise_id != role.scope_id:
-            raise PermissionError("Branch not accessible for this franchise scope.")
-        return explicit_branch_id
-
-    raise PermissionError("Unsupported role scope.")
 
 
 def _serialize_expense(expense: Expense) -> dict:
@@ -63,7 +45,7 @@ def _serialize_expense(expense: Expense) -> dict:
 def list_expenses() -> tuple[list[dict], int]:
     branch_id_param = request.args.get("branch_id", type=int)
     try:
-        branch_id = _resolve_branch_id(branch_id_param)
+        branch_id = resolve_branch_id_from_request(branch_id_param)
     except PermissionError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
     except ValueError as exc:
@@ -85,7 +67,7 @@ def create_expense() -> tuple[dict, int]:
     branch_id_param = request.args.get("branch_id", type=int) or payload.get("branch_id")
 
     try:
-        branch_id = _resolve_branch_id(branch_id_param)
+        branch_id = resolve_branch_id_from_request(branch_id_param)
     except PermissionError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
     except ValueError as exc:
@@ -152,7 +134,7 @@ def delete_expense(expense_id: int) -> tuple[dict, int]:
         return jsonify({"error": "Expense not found."}), HTTPStatus.NOT_FOUND
 
     try:
-        _resolve_branch_id(expense.branch_id)
+        resolve_branch_id_from_request(expense.branch_id)
     except PermissionError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
     except ValueError as exc:
@@ -161,7 +143,7 @@ def delete_expense(expense_id: int) -> tuple[dict, int]:
     current_user = getattr(g, "current_user", None)
     current_role = _current_role()
 
-    if current_user and current_role and current_role.role == "MANAGER":
+    if current_user and current_role and current_role.role.name == "MANAGER":
         if expense.logged_by_user_id != current_user.user_id:
             return jsonify({"error": "Managers can only delete expenses logged by themselves."}), HTTPStatus.FORBIDDEN
 

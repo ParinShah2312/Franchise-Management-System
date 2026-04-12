@@ -38,12 +38,11 @@ export default function CatalogProductRecipes({
         stock_item_id: parseInt(selectedStockId, 10),
         quantity_required: qtyNum,
       });
-      // Reset form on success
-      setSelectedStockId('');
-      setQuantity('');
     } catch (err) {
       setFormError(err.message || 'Failed to add ingredient');
     } finally {
+      setSelectedStockId('');
+      setQuantity('');
       setAddingIngredientId(null);
     }
   };

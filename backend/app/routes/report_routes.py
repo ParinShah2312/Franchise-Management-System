@@ -78,20 +78,37 @@ def report_summary() -> tuple[dict[str, object], int]:
         ).first()
         if not franchise:
             return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
-        branch_ids = [
-            b.branch_id
-            for b in Branch.query.filter_by(franchise_id=franchise.franchise_id).all()
-        ]
+
+        branch_id_param = request.args.get("branch_id", type=int)
+        
+        if branch_id_param is not None:
+            branch = db.session.get(Branch, branch_id_param)
+            if not branch or branch.franchise_id != franchise.franchise_id:
+                return jsonify({"error": "Unauthorized branch access."}), HTTPStatus.FORBIDDEN
+            branch_ids = [branch.branch_id]
+            report_branch_id = branch.branch_id
+            report_type = "BRANCH"
+        else:
+            branch_ids = [
+                b.branch_id
+                for b in Branch.query.filter_by(franchise_id=franchise.franchise_id).all()
+            ]
+            report_branch_id = None
+            report_type = "MASTER"
+
         month_name = calendar.month_name[month]
         summary_data = build_report_summary(
             branch_ids, month, year, start_date, end_date,
             include_royalty=True, franchise_id=franchise.franchise_id,
         )
-        report_title = f"{franchise.name} - Report - {month_name} {year}"
+
+        if report_branch_id:
+            report_title = f"{franchise.name} - {branch.name} - {month_name} {year}"
+        else:
+            report_title = f"{franchise.name} - Report - {month_name} {year}"
+
         franchisor_id = current_user.franchisor_id
         generated_by_user_id = None
-        report_type = "MASTER"
-        report_branch_id = None
     else:
         branch_id_param = request.args.get("branch_id", type=int)
         branch_ids, error = _filter_branch_ids(branch_id_param)

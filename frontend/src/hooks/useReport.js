@@ -9,16 +9,20 @@ export function useReport(branchId) {
   const [selectedMonth, setSelectedMonth] = useState(() => new Date().getMonth() + 1);
   const [selectedYear, setSelectedYear] = useState(() => new Date().getFullYear());
 
-  const generateReport = async () => {
+  const generateReport = async (overrideBranchId) => {
     setReportLoading(true);
     setReportError(null);
     try {
       let url = `/reports/summary?month=${selectedMonth}&year=${selectedYear}`;
-      if (branchId) {
-        url += `&branch_id=${branchId}`;
+      const isEvent = overrideBranchId && typeof overrideBranchId === 'object' && overrideBranchId.nativeEvent;
+      const cleanOverride = isEvent ? undefined : overrideBranchId;
+      const finalBranchId = cleanOverride !== undefined ? cleanOverride : branchId;
+      
+      if (finalBranchId) {
+        url += `&branch_id=${finalBranchId}`;
       }
       const result = await api.get(url);
-      setReport(result);
+      setReport({ ...result, _isBranchSpecific: !!finalBranchId });
     } catch (err) {
       setReportError(err.message || 'Failed to generate report.');
     } finally {

@@ -6,7 +6,7 @@ export function useStaffDashboard(branchId) {
   const { inventoryItems, stockItems, loading: invLoading, error: invError, recordDelivery, refreshInventory } = useInventory(branchId);
   const { sales, products, loading: salesLoading, error: salesError, logSale, refreshSales } = useSales(branchId);
 
-  const loading = !branchId ? false : (invLoading || salesLoading);
+  const loading = !branchId || (invLoading || salesLoading);
   const error = !branchId ? 'No branch assigned. Please contact your manager.' : (invError || salesError || '');
 
   const loadData = useCallback(() => {

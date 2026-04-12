@@ -1,12 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { api } from '../api';
 
-export function useRoyalty(setToast) {
-  const { currentMonth, currentYear } = useMemo(() => {
-    const now = new Date();
-    return { currentMonth: now.getMonth() + 1, currentYear: now.getFullYear() };
-  }, []);
-
+export function useRoyalty() {
   // --- Config state ---
   const [config, setConfig] = useState(null);
   const [configLoading, setConfigLoading] = useState(true);
@@ -40,27 +35,27 @@ export function useRoyalty(setToast) {
       if (err.status !== 403) {
         const errorMsg = err.message || 'Failed to load royalty configuration.';
         setConfigError(errorMsg);
-        if (setToast) {
-            setToast({ message: errorMsg, variant: 'error' });
-        }
       }
       setConfigured(false);
       setConfig(null);
     } finally {
       setConfigLoading(false);
     }
-  }, [setToast]);
+  }, []);
 
   useEffect(() => {
     refreshConfig();
   }, [refreshConfig]);
 
   // Fetch franchisor royalty summary on demand
-  const fetchSummary = useCallback(async (month = currentMonth, year = currentYear) => {
+  const fetchSummary = useCallback(async (month, year) => {
+    const now = new Date();
+    const finalMonth = month || now.getMonth() + 1;
+    const finalYear = year || now.getFullYear();
     setSummaryLoading(true);
     setSummaryError('');
     try {
-      const data = await api.get(`/royalty/summary?month=${month}&year=${year}`);
+      const data = await api.get(`/royalty/summary?month=${finalMonth}&year=${finalYear}`);
       setSummary(data);
     } catch (err) {
       setSummaryError(err.message || 'Failed to load royalty summary.');
@@ -68,16 +63,19 @@ export function useRoyalty(setToast) {
     } finally {
       setSummaryLoading(false);
     }
-  }, [currentMonth, currentYear]);
+  }, []);
 
   // Fetch branch royalty summary on demand
-  const fetchBranchSummary = useCallback(async (branchId, month = currentMonth, year = currentYear) => {
+  const fetchBranchSummary = useCallback(async (branchId, month, year) => {
     if (!branchId) return;
+    const now = new Date();
+    const finalMonth = month || now.getMonth() + 1;
+    const finalYear = year || now.getFullYear();
     setBranchSummaryLoading(true);
     setBranchSummaryError('');
     try {
       const data = await api.get(
-        `/royalty/branch-summary?branch_id=${branchId}&month=${month}&year=${year}`
+        `/royalty/branch-summary?branch_id=${branchId}&month=${finalMonth}&year=${finalYear}`
       );
       setBranchSummary(data);
     } catch (err) {
@@ -86,7 +84,7 @@ export function useRoyalty(setToast) {
     } finally {
       setBranchSummaryLoading(false);
     }
-  }, [currentMonth, currentYear]);
+  }, []);
 
   // Save royalty config
   const saveConfig = useCallback(async ({ franchisor_cut_pct, effective_from }) => {

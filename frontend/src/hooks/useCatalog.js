@@ -66,12 +66,18 @@ export function useCatalog() {
     }
   }, []);
 
-  useEffect(() => {
-    fetchUnits();
-    refreshStockItems();
-    refreshCategories();
-    refreshProducts();
+  const refreshCatalog = useCallback(async () => {
+    await Promise.all([
+      fetchUnits(),
+      refreshStockItems(),
+      refreshCategories(),
+      refreshProducts()
+    ]);
   }, [fetchUnits, refreshStockItems, refreshCategories, refreshProducts]);
+
+  useEffect(() => {
+    refreshCatalog();
+  }, [refreshCatalog]);
 
   const createStockItem = async (data) => {
     await api.post('/inventory/stock-items', data);
@@ -85,14 +91,12 @@ export function useCatalog() {
 
   const createProduct = async (data) => {
     await api.post('/catalog/products', data);
-    await refreshProducts();
-    await refreshCategories();
+    await Promise.all([refreshProducts(), refreshCategories()]);
   };
 
   const updateProduct = async (productId, data) => {
     await api.put(`/catalog/products/${productId}`, data);
-    await refreshProducts();
-    await refreshCategories();
+    await Promise.all([refreshProducts(), refreshCategories()]);
   };
 
   const fetchIngredients = async (productId) => {
@@ -102,14 +106,12 @@ export function useCatalog() {
 
   const addIngredient = async (productId, data) => {
     await api.post(`/catalog/products/${productId}/ingredients`, data);
-    await refreshProducts();
-    await refreshStockItems();
+    await Promise.all([refreshProducts(), refreshStockItems()]);
   };
 
   const removeIngredient = async (productId, ingredientId) => {
     await api.delete(`/catalog/products/${productId}/ingredients/${ingredientId}`);
-    await refreshProducts();
-    await refreshStockItems();
+    await Promise.all([refreshProducts(), refreshStockItems()]);
   };
 
   const fetchStockItemProducts = async (stockItemId) => {
@@ -118,6 +120,7 @@ export function useCatalog() {
   };
 
   return {
+    refreshCatalog,
     stockItems,
     stockItemsLoading,
     stockItemsError,

@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { ReportCard } from '../shared';
 
 export default function AdminReports({
@@ -10,7 +11,10 @@ export default function AdminReports({
   onYearChange,
   onGenerate,
   generatedBy,
+  branches,
 }) {
+  const [selectedBranchId, setSelectedBranchId] = useState('');
+
   return (
     <div className="space-y-6">
       <div>
@@ -30,6 +34,9 @@ export default function AdminReports({
         onGenerate={onGenerate}
         generatedBy={generatedBy}
         showRoyalty={true}
+        branches={branches}
+        selectedBranchId={selectedBranchId}
+        onBranchChange={setSelectedBranchId}
       />
     </div>
   );

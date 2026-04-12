@@ -22,8 +22,12 @@ export default function ReportCard({
   generatedBy,
   showRoyalty,
   isFranchisee = false,
+  branches,
+  selectedBranchId,
+  onBranchChange,
 }) {
   const showRoyaltyColumns = showRoyalty && report?.royalty_configured === true;
+  const effectiveIsFranchisee = isFranchisee || !!report?._isBranchSpecific;
 
   const tableHeaders = showRoyaltyColumns
     ? ['Branch', 'Total Sales', 'Franchisor Earned', 'Branch Owner Earned', 'Cut %', '']
@@ -33,6 +37,25 @@ export default function ReportCard({
     <div className="space-y-6">
       {/* Controls Row */}
       <div className="flex flex-wrap items-center gap-3">
+        {branches && branches.length > 0 && (
+          <div className="flex items-center gap-2">
+            <label htmlFor="report-branch" className="text-sm font-medium text-gray-600">
+              Branch
+            </label>
+            <select
+              id="report-branch"
+              value={selectedBranchId || ''}
+              onChange={(e) => onBranchChange(e.target.value)}
+              className="rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm text-gray-700 shadow-sm focus:border-blue-400 focus:outline-none focus:ring-2 focus:ring-blue-100"
+            >
+              <option value="">All Branches</option>
+              {branches.map(b => (
+                <option key={b.branchId} value={b.branchId}>{b.branchName}</option>
+              ))}
+            </select>
+          </div>
+        )}
+
         <div className="flex items-center gap-2">
           <label htmlFor="report-month" className="text-sm font-medium text-gray-600">
             Month
@@ -72,7 +95,7 @@ export default function ReportCard({
         <button
           type="button"
           id="report-generate-btn"
-          onClick={onGenerate}
+          onClick={() => onGenerate(selectedBranchId)}
           disabled={loading}
           className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
         >
@@ -95,7 +118,7 @@ export default function ReportCard({
                 selectedYear={selectedYear} 
                 showRoyalty={showRoyalty} 
                 generatedBy={generatedBy} 
-                isFranchisee={isFranchisee}
+                isFranchisee={effectiveIsFranchisee}
               />
             }
             fileName={report.filename ? `${report.filename}.pdf` : `Relay_Report_${selectedYear}_${String(selectedMonth).padStart(2, '0')}.pdf`}
@@ -152,7 +175,7 @@ export default function ReportCard({
           </div>
 
           {/* Chart Section (Admin Only) */}
-          {!isFranchisee && report && report.branches && report.branches.length > 0 && (
+          {!effectiveIsFranchisee && report && report.branches && report.branches.length > 0 && (
             <div>
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-500 mt-8">
                 Sales by Branch
@@ -199,7 +222,7 @@ export default function ReportCard({
           )}
 
           {/* Branch Breakdown / Product Sales Breakdown */}
-          {isFranchisee ? (
+          {effectiveIsFranchisee ? (
             <div className="mt-8">
               <h3 className="mb-3 text-sm font-semibold uppercase tracking-wider text-gray-500">
                 Product Sales Breakdown
@@ -235,7 +258,7 @@ export default function ReportCard({
             <div className="space-y-4">
               {report.branches?.map((branch, idx) => (
                 <div key={`exp-${branch.branch_id ?? idx}`} className="bg-white border text-sm border-gray-200 rounded-lg overflow-hidden">
-                  {!isFranchisee && (
+                  {!effectiveIsFranchisee && (
                     <div className="bg-gray-50 px-4 py-2 border-b border-gray-200 font-medium text-gray-700">
                       {branch.branch_name}
                     </div>

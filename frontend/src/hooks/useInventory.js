@@ -40,6 +40,7 @@ export function useInventory(branchId) {
 
     const addInventory = async (data) => {
         const payload = {
+            branch_id: branchId ? Number(branchId) : undefined,
             stock_item_id: data.stock_item_id ? Number(data.stock_item_id) : null,
             quantity: Number(data.quantity || 0),
             reorder_level: Number(data.reorder_level || 0),
@@ -52,6 +53,7 @@ export function useInventory(branchId) {
 
     const recordDelivery = async (data) => {
         const payload = {
+            branch_id: branchId ? Number(branchId) : undefined,
             stock_item_id: data.stock_item_id ? Number(data.stock_item_id) : null,
             quantity: Number(data.quantity || 0),
             note: data.note || undefined,

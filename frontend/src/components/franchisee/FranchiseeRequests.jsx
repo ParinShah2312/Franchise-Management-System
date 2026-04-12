@@ -18,15 +18,15 @@ export default function FranchiseeRequests({ requests, updateRequestStatus, onRe
                 message: `Request ${action === 'approve' ? 'approved' : 'rejected'} successfully.`,
                 variant: 'success',
             });
+            if (onRefresh) await onRefresh();
         } catch (err) {
-            // Revert on failure
+            setToast({ message: err.message || 'Failed to update request.', variant: 'error' });
+        } finally {
             setOptimisticStatuses(prev => {
                 const next = { ...prev };
                 delete next[requestId];
                 return next;
             });
-            setToast({ message: err.message || 'Failed to update request.', variant: 'error' });
-        } finally {
             setRequestAction({ id: null, type: null });
         }
     };

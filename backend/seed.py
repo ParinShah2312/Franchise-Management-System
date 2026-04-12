@@ -443,7 +443,7 @@ def seed_database() -> None:
         for pname, ingredients in mcd_recipes:
             for stock_name, qty in ingredients:
                 db.session.add(ProductIngredient(
-                    ingredient_id=ingr_id,
+                    product_ingredient_id=ingr_id,
                     product_id=mcd_products[pname].product_id,
                     stock_item_id=mcd_stock[stock_name].stock_item_id,
                     quantity_required=qty,
@@ -464,7 +464,7 @@ def seed_database() -> None:
         for pname, ingredients in ajy_recipes:
             for stock_name, qty in ingredients:
                 db.session.add(ProductIngredient(
-                    ingredient_id=ingr_id,
+                    product_ingredient_id=ingr_id,
                     product_id=ajy_products[pname].product_id,
                     stock_item_id=ajy_stock[stock_name].stock_item_id,
                     quantity_required=qty,

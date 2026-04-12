@@ -111,7 +111,10 @@ export const api = {
     request(path, { method: 'POST', body: prepareBody(body), ...options }),
   put: (path, body, options = {}) =>
     request(path, { method: 'PUT', body: prepareBody(body), ...options }),
-  delete: (path, options) => request(path, { method: 'DELETE', ...options }),
+  patch: (path, body, options = {}) =>
+    request(path, { method: 'PATCH', body: prepareBody(body), ...options }),
+  delete: (path, body, options = {}) =>
+    request(path, { method: 'DELETE', body: body ? prepareBody(body) : undefined, ...options }),
 };
 
 /**

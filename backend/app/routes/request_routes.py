@@ -20,35 +20,10 @@ from ..models import (
 from ..services.inventory_service import apply_inventory_transaction, get_transaction_type_id
 from ..utils.security import token_required
 from ..utils.db_helpers import serialize_dt
-from ..utils.branch_helpers import _current_role
+from ..utils.branch_helpers import resolve_branch_id_from_request
 
 
 request_bp = Blueprint("requests", __name__, url_prefix="/api/requests")
-
-
-def _resolve_branch_id(explicit_branch_id: int | None) -> int:
-    role = _current_role()
-
-    if role.scope_type == "BRANCH":
-        branch_id = role.scope_id
-        if explicit_branch_id is not None and explicit_branch_id != branch_id:
-            raise PermissionError("Unauthorized branch access.")
-    elif role.scope_type == "FRANCHISE":
-        if explicit_branch_id is None:
-            raise ValueError("branch_id is required for this operation.")
-        branch = db.session.get(Branch, explicit_branch_id)
-        if not branch or branch.franchise_id != role.scope_id:
-            raise PermissionError("Branch not accessible for this franchise scope.")
-        branch_id = branch.branch_id
-    else:
-        if explicit_branch_id is None:
-            raise ValueError("branch_id is required for this operation.")
-        branch_id = explicit_branch_id
-
-    if branch_id is None:
-        raise ValueError("branch_id is required for this operation.")
-
-    return branch_id
 
 
 def _get_status_id(name: str) -> int:
@@ -100,7 +75,7 @@ def create_request() -> tuple[dict[str, object], int]:
     )
 
     try:
-        branch_id = _resolve_branch_id(branch_id_param)
+        branch_id = resolve_branch_id_from_request(branch_id_param)
     except (PermissionError, ValueError) as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN if isinstance(
             exc, PermissionError
@@ -201,19 +176,11 @@ def _ensure_request_access(
     request_obj: StockPurchaseRequest,
 ) -> tuple[dict[str, object], int] | None:
     try:
-        role = _current_role()
+        resolve_branch_id_from_request(request_obj.branch_id)
     except PermissionError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
-
-    if role.scope_type == "BRANCH" and request_obj.branch_id != role.scope_id:
-        return jsonify({"error": "Unauthorized branch access."}), HTTPStatus.FORBIDDEN
-
-    if role.scope_type == "FRANCHISE":
-        branch = db.session.get(Branch, request_obj.branch_id)
-        if not branch or branch.franchise_id != role.scope_id:
-            return jsonify(
-                {"error": "Unauthorized branch access."}
-            ), HTTPStatus.FORBIDDEN
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
 
     return None
 
@@ -224,7 +191,7 @@ def list_requests() -> tuple[list[dict[str, object]], int]:
     branch_id_param = request.args.get("branch_id", type=int)
 
     try:
-        branch_id = _resolve_branch_id(branch_id_param)
+        branch_id = resolve_branch_id_from_request(branch_id_param)
     except PermissionError as exc:
         return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
     except ValueError as exc:

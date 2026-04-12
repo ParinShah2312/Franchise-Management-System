@@ -116,9 +116,7 @@ class ProductIngredient(TimestampMixin, db.Model):
     __tablename__ = "product_ingredients"
 
     # NOTE: The schema document names this column 'product_ingredient_id'.
-    # We use 'ingredient_id' throughout the codebase for brevity. The
-    # column is functionally identical; this is a documented deviation.
-    ingredient_id: Mapped[int] = mapped_column(
+    product_ingredient_id: Mapped[int] = mapped_column(
         BigInteger().with_variant(Integer, "sqlite"),
         primary_key=True,
         autoincrement=True,
