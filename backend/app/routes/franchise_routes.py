@@ -18,11 +18,10 @@ def list_brands() -> tuple[list[dict[str, object]], int]:
 
     franchises = Franchise.query.order_by(Franchise.name.asc()).all()
     payload = [
-        {"id": franchise.franchise_id, "name": franchise.name}
+        {"franchise_id": franchise.franchise_id, "franchise_name": franchise.name}
         for franchise in franchises
     ]
     return jsonify(payload), HTTPStatus.OK
-
 
 @franchise_bp.route("/active-branches", methods=["GET"])
 def list_active_branches() -> tuple[list[dict[str, object]], int]:
@@ -43,8 +42,8 @@ def list_active_branches() -> tuple[list[dict[str, object]], int]:
 
     payload = [
         {
-            "id": branch.branch_id,
-            "name": branch.name,
+            "branch_id": branch.branch_id,
+            "branch_name": branch.name,
             "franchise_id": branch.franchise_id,
             "franchise_name": branch.franchise.name if branch.franchise else None,
             "location": branch.address.city
@@ -54,7 +53,6 @@ def list_active_branches() -> tuple[list[dict[str, object]], int]:
         for branch in branches
     ]
     return jsonify(payload), HTTPStatus.OK
-
 
 @franchise_bp.route("/<int:franchise_id>/menu", methods=["POST"])
 @token_required({"FRANCHISOR"})
@@ -111,7 +109,6 @@ def upload_franchise_menu(franchise_id: int) -> tuple[dict[str, object], int]:
         HTTPStatus.CREATED,
     )
 
-
 @franchise_bp.route("/<int:franchise_id>", methods=["PATCH"])
 @token_required({"FRANCHISOR"})
 def update_franchise(franchise_id: int) -> tuple[dict[str, object], int]:
@@ -133,7 +130,7 @@ def update_franchise(franchise_id: int) -> tuple[dict[str, object], int]:
             )
 
     data = request.get_json(silent=True) or {}
-    new_name = data.get("name")
+    new_name = data.get("franchise_name")
     
     if new_name is not None:
         new_name = new_name.strip()
@@ -143,8 +140,7 @@ def update_franchise(franchise_id: int) -> tuple[dict[str, object], int]:
 
     db.session.commit()
 
-    return jsonify({"message": "Franchise updated successfully", "name": franchise.name}), HTTPStatus.OK
-
+    return jsonify({"message": "Franchise updated successfully", "franchise_name": franchise.name}), HTTPStatus.OK
 
 @franchise_bp.route("/network", methods=["GET"])
 @token_required({"FRANCHISOR"})
@@ -188,9 +184,9 @@ def list_franchise_network() -> tuple[list[dict[str, object]], int]:
             branches_payload.append(
                 {
                     "branch_id": branch.branch_id,
-                    "name": branch.name,
+                    "branch_name": branch.name,
                     "location": _branch_location(branch),
-                    "owner_name": branch.branch_owner.name
+                    "branch_owner_name": branch.branch_owner.name
                     if branch.branch_owner
                     else None,
                     "manager_name": branch.manager.name if branch.manager else None,
@@ -211,7 +207,6 @@ def list_franchise_network() -> tuple[list[dict[str, object]], int]:
 
     return jsonify(network), HTTPStatus.OK
 
-
 @franchise_bp.route("/branches/<int:branch_id>/status", methods=["PUT"])
 @token_required({"FRANCHISOR"})
 def toggle_branch_status(branch_id: int) -> tuple[dict[str, object], int]:
@@ -228,11 +223,9 @@ def toggle_branch_status(branch_id: int) -> tuple[dict[str, object], int]:
         return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
 
     current_user = getattr(g, "current_user", None)
-    franchise = Franchise.query.filter_by(
-        franchisor_id=current_user.franchisor_id
-    ).first()
+    franchise = db.session.get(Franchise, branch.franchise_id)
 
-    if not franchise or branch.franchise_id != franchise.franchise_id:
+    if not franchise or franchise.franchisor_id != current_user.franchisor_id:
         return (
             jsonify({"error": "You do not have permission to manage this branch."}),
             HTTPStatus.FORBIDDEN,

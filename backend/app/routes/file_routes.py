@@ -13,7 +13,6 @@ from ..utils.security import token_required
 
 file_bp = Blueprint("files", __name__, url_prefix="/api/files")
 
-
 @file_bp.route("/<int:blob_id>", methods=["GET"])
 @token_required()
 def serve_file(blob_id: int) -> Response:
@@ -27,7 +26,7 @@ def serve_file(blob_id: int) -> Response:
         mimetype=blob.mime_type,
         headers={
             "Content-Disposition": f'inline; filename="{blob.original_filename}"',
-            "Content-Length": str(blob.file_size),
+            "Content-Length": str(len(blob.file_data)),
             "Cache-Control": "public, max-age=31536000",
         },
     )

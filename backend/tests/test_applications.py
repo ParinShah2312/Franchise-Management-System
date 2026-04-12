@@ -27,7 +27,7 @@ def _make_franchisor(db_session, suffix=""):
 def test_list_pending_applications_empty(client, db_session):
     """Listing applications when none are pending returns empty list."""
     franchisor, franchise = _make_franchisor(db_session, suffix="1a")
-    token = generate_token(franchisor.franchisor_id, user_type="franchisor")
+    token = generate_token(franchisor.franchisor_id, role="FRANCHISOR")
     headers = {"Authorization": f"Bearer {token}"}
     response = client.get("/api/franchises/applications", headers=headers)
     assert response.status_code == 200
@@ -37,7 +37,7 @@ def test_list_pending_applications_empty(client, db_session):
 def test_approve_application_creates_branch(client, db_session):
     """Approving an application creates a Branch and assigns BRANCH_OWNER role."""
     franchisor, franchise = _make_franchisor(db_session, suffix="2a")
-    token = generate_token(franchisor.franchisor_id, user_type="franchisor")
+    token = generate_token(franchisor.franchisor_id, role="FRANCHISOR")
     headers = {"Authorization": f"Bearer {token}"}
 
     applicant = User(
@@ -84,7 +84,7 @@ def test_approve_application_creates_branch(client, db_session):
 def test_reject_application(client, db_session):
     """Rejecting an application updates status to REJECTED."""
     franchisor, franchise = _make_franchisor(db_session, suffix="3a")
-    token = generate_token(franchisor.franchisor_id, user_type="franchisor")
+    token = generate_token(franchisor.franchisor_id, role="FRANCHISOR")
     headers = {"Authorization": f"Bearer {token}"}
 
     applicant = User(
@@ -122,7 +122,7 @@ def test_reject_application(client, db_session):
 def test_approve_already_approved_application_fails(client, db_session):
     """Approving an already-approved application returns 400."""
     franchisor, franchise = _make_franchisor(db_session, suffix="4a")
-    token = generate_token(franchisor.franchisor_id, user_type="franchisor")
+    token = generate_token(franchisor.franchisor_id, role="FRANCHISOR")
     headers = {"Authorization": f"Bearer {token}"}
 
     applicant = User(

@@ -7,6 +7,7 @@ from decimal import Decimal, InvalidOperation
 from http import HTTPStatus
 
 from flask import Blueprint, g, jsonify, request
+from sqlalchemy.exc import IntegrityError
 
 from ..extensions import db
 from ..models import Branch, Franchise, Franchisor, RoyaltyConfig
@@ -19,9 +20,7 @@ from ..utils.security import token_required
 from ..utils.db_helpers import serialize_dt
 from ..utils.branch_helpers import _current_role
 
-
 royalty_bp = Blueprint("royalty", __name__, url_prefix="/api/royalty")
-
 
 def _get_franchisor_franchise() -> tuple[Franchisor | None, Franchise | None]:
     """Return (franchisor, franchise) for the current FRANCHISOR user, or (None, None)."""
@@ -33,7 +32,6 @@ def _get_franchisor_franchise() -> tuple[Franchisor | None, Franchise | None]:
     ).first()
     return franchisor, franchise
 
-
 def _serialize_config(config: RoyaltyConfig) -> dict[str, object]:
     return {
         "royalty_config_id": config.royalty_config_id,
@@ -43,11 +41,6 @@ def _serialize_config(config: RoyaltyConfig) -> dict[str, object]:
         "effective_from": config.effective_from.isoformat(),
         "created_at": serialize_dt(config.created_at),
     }
-
-
-# ---------------------------------------------------------------------------
-# GET /api/royalty/config
-# ---------------------------------------------------------------------------
 
 @royalty_bp.route("/config", methods=["GET"])
 @token_required({"FRANCHISOR"})
@@ -62,14 +55,9 @@ def get_royalty_config() -> tuple[dict[str, object], int]:
 
     return jsonify({"configured": True, "config": _serialize_config(config)}), HTTPStatus.OK
 
-
-# ---------------------------------------------------------------------------
-# POST /api/royalty/config
-# ---------------------------------------------------------------------------
-
 @royalty_bp.route("/config", methods=["POST"])
 @token_required({"FRANCHISOR"})
-def create_royalty_config() -> tuple[dict, int]:
+def create_royalty_config() -> tuple[dict[str, object], int]:
     franchisor, franchise = _get_franchisor_franchise()
     if not franchise:
         return jsonify({"error": "No franchise found for this franchisor."}), HTTPStatus.NOT_FOUND
@@ -114,14 +102,13 @@ def create_royalty_config() -> tuple[dict, int]:
         created_by_franchisor_id=franchisor.franchisor_id,
     )
     db.session.add(config)
-    db.session.commit()
+    try:
+        db.session.commit()
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"error": "Royalty configuration conflict."}), HTTPStatus.CONFLICT
 
     return jsonify(_serialize_config(config)), HTTPStatus.CREATED
-
-
-# ---------------------------------------------------------------------------
-# GET /api/royalty/summary
-# ---------------------------------------------------------------------------
 
 @royalty_bp.route("/summary", methods=["GET"])
 @token_required({"FRANCHISOR"})
@@ -150,11 +137,6 @@ def royalty_summary() -> tuple[dict[str, object], int]:
             "branches": branches,
         }
     ), HTTPStatus.OK
-
-
-# ---------------------------------------------------------------------------
-# GET /api/royalty/branch-summary
-# ---------------------------------------------------------------------------
 
 @royalty_bp.route("/branch-summary", methods=["GET"])
 @token_required({"BRANCH_OWNER"})

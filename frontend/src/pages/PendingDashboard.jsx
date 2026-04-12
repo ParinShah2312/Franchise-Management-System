@@ -21,7 +21,7 @@ export default function PendingDashboard() {
           </div>
           <h2 className="mt-6 text-3xl font-extrabold text-gray-900">Application Pending</h2>
           <p className="mt-2 text-sm text-gray-600">
-            Hi {user?.name || 'there'}, your franchise application has been successfully submitted and is currently being reviewed by the brand's administration team.
+            Hi {user?.user_name || 'there'}, your franchise application has been successfully submitted and is currently being reviewed by the brand's administration team.
           </p>
         </div>
 

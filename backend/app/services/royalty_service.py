@@ -19,7 +19,6 @@ from ..extensions import db
 from ..models import Branch, RoyaltyConfig, Sale, SaleRoyalty
 from ..utils.db_helpers import month_bounds
 
-
 def get_active_royalty_config(franchise_id: int) -> RoyaltyConfig | None:
     """Return the most recently created RoyaltyConfig for the given franchise, or None."""
     return (
@@ -31,7 +30,6 @@ def get_active_royalty_config(franchise_id: int) -> RoyaltyConfig | None:
         .first()
     )
 
-
 def calculate_royalty_split(
     total_amount: Decimal,
     config: RoyaltyConfig,
@@ -42,7 +40,6 @@ def calculate_royalty_split(
     ).quantize(Decimal("0.01"))
     branch_owner_amount = total_amount - franchisor_amount
     return franchisor_amount, branch_owner_amount
-
 
 def record_sale_royalty(
     sale_id: int,
@@ -61,7 +58,6 @@ def record_sale_royalty(
     db.session.flush()
     return royalty
 
-
 def get_royalty_summary(
     franchise_id: int,
     month: int,
@@ -76,6 +72,11 @@ def get_royalty_summary(
     # Get all branches for this franchise
     branches = Branch.query.filter_by(franchise_id=franchise_id).all()
 
+    # Get active config for display purposes
+    active_config = get_active_royalty_config(franchise_id)
+    franchisor_cut_pct = float(active_config.franchisor_cut_pct) if active_config else 0.0
+    config_id = active_config.royalty_config_id if active_config else None
+
     # Query royalty totals grouped by branch
     rows = (
         db.session.query(
@@ -83,7 +84,6 @@ def get_royalty_summary(
             func.sum(Sale.total_amount).label("total_sales"),
             func.sum(SaleRoyalty.franchisor_amount).label("franchisor_earned"),
             func.sum(SaleRoyalty.branch_owner_amount).label("branch_owner_earned"),
-            SaleRoyalty.royalty_config_id,
         )
         .join(SaleRoyalty, Sale.sale_id == SaleRoyalty.sale_id)
         .join(Branch, Sale.branch_id == Branch.branch_id)
@@ -92,7 +92,7 @@ def get_royalty_summary(
             Sale.sale_datetime >= start_date,
             Sale.sale_datetime < end_date,
         )
-        .group_by(Sale.branch_id, SaleRoyalty.royalty_config_id)
+        .group_by(Sale.branch_id)
         .all()
     )
 
@@ -103,8 +103,6 @@ def get_royalty_summary(
     for branch in branches:
         row = row_by_branch.get(branch.branch_id)
         if row:
-            config = db.session.get(RoyaltyConfig, row.royalty_config_id)
-            franchisor_cut_pct = float(config.franchisor_cut_pct) if config else 0.0
             result.append(
                 {
                     "branch_id": branch.branch_id,
@@ -112,7 +110,7 @@ def get_royalty_summary(
                     "total_sales": float(row.total_sales or 0),
                     "franchisor_earned": float(row.franchisor_earned or 0),
                     "branch_owner_earned": float(row.branch_owner_earned or 0),
-                    "royalty_config_id": row.royalty_config_id,
+                    "royalty_config_id": config_id,
                     "franchisor_cut_pct": franchisor_cut_pct,
                 }
             )
@@ -130,7 +128,6 @@ def get_royalty_summary(
             )
 
     return result
-
 
 def get_branch_royalty_summary(
     branch_id: int,
@@ -182,7 +179,6 @@ def get_branch_royalty_summary(
         "royalty_config_id": None,
         "franchisor_cut_pct": 0.0,
     }
-
 
 __all__ = [
     "get_active_royalty_config",

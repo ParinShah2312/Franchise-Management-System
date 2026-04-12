@@ -37,7 +37,7 @@ def test_create_royalty_config(client, setup_franchise_branch, db_session):
     db_session.add(franchise)
     db_session.commit()
 
-    token = generate_token(franchisor.franchisor_id, user_type="franchisor")
+    token = generate_token(franchisor.franchisor_id, role="FRANCHISOR")
     headers = {"Authorization": f"Bearer {token}"}
 
     payload = {"franchisor_cut_pct": 10.0, "effective_from": "2025-01-01"}
@@ -66,7 +66,7 @@ def test_royalty_config_invalid_pct(client, setup_franchise_branch, db_session):
     db_session.add(franchise)
     db_session.commit()
 
-    token = generate_token(franchisor.franchisor_id, user_type="franchisor")
+    token = generate_token(franchisor.franchisor_id, role="FRANCHISOR")
     headers = {"Authorization": f"Bearer {token}"}
 
     response = client.post("/api/royalty/config", json={"franchisor_cut_pct": 150}, headers=headers)

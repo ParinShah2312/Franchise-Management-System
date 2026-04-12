@@ -25,9 +25,7 @@ from ..models import (
 from ..utils.security import token_required
 from ..utils.branch_helpers import _current_role
 
-
 dashboard_bp = Blueprint("dashboard", __name__, url_prefix="/api/dashboard")
-
 
 @dashboard_bp.route("/franchisor/metrics", methods=["GET"])
 @token_required({"FRANCHISOR"})
@@ -80,7 +78,6 @@ def get_franchisor_metrics() -> tuple[dict[str, object], int]:
 
     return jsonify(payload), HTTPStatus.OK
 
-
 @dashboard_bp.route("/branch/metrics", methods=["GET"])
 @token_required({"BRANCH_OWNER", "MANAGER"})
 def get_branch_metrics() -> tuple[dict[str, object], int]:
@@ -107,6 +104,8 @@ def get_branch_metrics() -> tuple[dict[str, object], int]:
         or 0
     )
 
+    # Total cost of goods received (historical IN transactions × unit_cost).
+    # NOTE: This reflects cumulative purchase cost, not current stock valuation.
     inventory_value = (
         db.session.query(
             func.coalesce(

@@ -34,7 +34,7 @@ export default function CatalogProducts({
           {products.map((prod) => (
             <tr key={prod.product_id} className="hover:bg-gray-50/50">
               <td className="whitespace-nowrap px-6 py-4 font-medium text-gray-900">
-                {prod.name}
+                {prod.product_name}
               </td>
               <td className="whitespace-nowrap px-6 py-4 text-gray-500">
                 {prod.category_name}
@@ -81,7 +81,7 @@ export default function CatalogProducts({
       <ConfirmDialog
         open={!!confirmTarget}
         title="Change Product Status"
-        message={`Set ${confirmTarget?.product?.name || 'this product'} to ${confirmTarget?.action || ''}?`}
+        message={`Set ${confirmTarget?.product?.product_name || 'this product'} to ${confirmTarget?.action || ''}?`}
         confirmLabel="Confirm"
         variant="warning"
         onConfirm={() => {

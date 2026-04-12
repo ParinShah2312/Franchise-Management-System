@@ -13,7 +13,7 @@ from ..extensions import db
 from ..models import Branch, Expense
 from ..utils.security import token_required
 from ..utils.db_helpers import serialize_dt
-from ..utils.branch_helpers import _current_role, resolve_branch_id_from_request
+from ..utils.branch_helpers import get_role_name, resolve_branch_id_from_request
 
 expense_bp = Blueprint("expenses", __name__, url_prefix="/api/expenses")
 
@@ -22,11 +22,7 @@ VALID_CATEGORIES = [
     "Marketing", "Insurance", "Transport", "Other"
 ]
 
-
-
-
-
-def _serialize_expense(expense: Expense) -> dict:
+def _serialize_expense(expense: Expense) -> dict[str, object]:
     return {
         "expense_id": expense.expense_id,
         "branch_id": expense.branch_id,
@@ -39,10 +35,9 @@ def _serialize_expense(expense: Expense) -> dict:
         "created_at": serialize_dt(expense.created_at),
     }
 
-
 @expense_bp.route("", methods=["GET"])
 @token_required({"BRANCH_OWNER", "MANAGER"})
-def list_expenses() -> tuple[list[dict], int]:
+def list_expenses() -> tuple[list[dict[str, object]], int]:
     branch_id_param = request.args.get("branch_id", type=int)
     try:
         branch_id = resolve_branch_id_from_request(branch_id_param)
@@ -59,10 +54,9 @@ def list_expenses() -> tuple[list[dict], int]:
     )
     return jsonify([_serialize_expense(r) for r in records]), HTTPStatus.OK
 
-
 @expense_bp.route("", methods=["POST"])
 @token_required({"BRANCH_OWNER", "MANAGER"})
-def create_expense() -> tuple[dict, int]:
+def create_expense() -> tuple[dict[str, object], int]:
     payload = request.get_json(silent=True) or {}
     branch_id_param = request.args.get("branch_id", type=int) or payload.get("branch_id")
 
@@ -125,10 +119,9 @@ def create_expense() -> tuple[dict, int]:
     )
     return jsonify(_serialize_expense(expense)), HTTPStatus.CREATED
 
-
 @expense_bp.route("/<int:expense_id>", methods=["DELETE"])
 @token_required({"BRANCH_OWNER", "MANAGER"})
-def delete_expense(expense_id: int) -> tuple[dict, int]:
+def delete_expense(expense_id: int) -> tuple[dict[str, object], int]:
     expense = db.session.get(Expense, expense_id, options=[joinedload(Expense.logged_by_user)])
     if not expense:
         return jsonify({"error": "Expense not found."}), HTTPStatus.NOT_FOUND
@@ -141,9 +134,8 @@ def delete_expense(expense_id: int) -> tuple[dict, int]:
         return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
 
     current_user = getattr(g, "current_user", None)
-    current_role = _current_role()
 
-    if current_user and current_role and current_role.role.name == "MANAGER":
+    if current_user and get_role_name() == "MANAGER":
         if expense.logged_by_user_id != current_user.user_id:
             return jsonify({"error": "Managers can only delete expenses logged by themselves."}), HTTPStatus.FORBIDDEN
 

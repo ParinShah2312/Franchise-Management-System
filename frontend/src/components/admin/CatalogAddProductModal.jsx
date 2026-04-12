@@ -64,7 +64,7 @@ export default function CatalogAddProductModal({ isOpen, onClose, onSubmit, cate
             <option value="">Select a category</option>
             {categories?.map((c) => (
               <option key={c.category_id} value={c.category_id}>
-                {c.name}
+                {c.category_name}
               </option>
             ))}
           </select>

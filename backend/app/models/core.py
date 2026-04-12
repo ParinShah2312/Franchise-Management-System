@@ -25,7 +25,6 @@ if TYPE_CHECKING:
     from .reference import BranchStatus
     from .users import BranchStaff, User
 
-
 class TimestampMixin:
     """Reusable timestamp columns."""
 
@@ -38,7 +37,6 @@ class TimestampMixin:
         onupdate=lambda: datetime.now(timezone.utc),
         nullable=False,
     )
-
 
 class Franchisor(TimestampMixin, db.Model):
     __tablename__ = "franchisors"
@@ -64,7 +62,6 @@ class Franchisor(TimestampMixin, db.Model):
         back_populates="decision_by_franchisor",
         foreign_keys="FranchiseApplication.decision_by_franchisor_id",
     )
-
 
 class Franchise(TimestampMixin, db.Model):
     __tablename__ = "franchises"
@@ -107,7 +104,6 @@ class Franchise(TimestampMixin, db.Model):
         "RoyaltyConfig", back_populates="franchise", cascade="all, delete-orphan"
     )
 
-
 class Address(db.Model):
     __tablename__ = "addresses"
     address_id: Mapped[int] = mapped_column(
@@ -122,7 +118,6 @@ class Address(db.Model):
     pincode: Mapped[str] = mapped_column(String(20), nullable=False)
 
     branches: Mapped[list["Branch"]] = relationship("Branch", back_populates="address")
-
 
 class Branch(TimestampMixin, db.Model):
     __tablename__ = "branches"

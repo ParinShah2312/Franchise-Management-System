@@ -14,7 +14,6 @@ from ..utils.branch_helpers import _current_role
 
 branch_bp = Blueprint("branch", __name__, url_prefix="/api/branch")
 
-
 def _branch_scope() -> Branch | tuple[dict[str, object], int]:
     role = _current_role()
     current_user = getattr(g, "current_user", None)
@@ -40,7 +39,6 @@ def _branch_scope() -> Branch | tuple[dict[str, object], int]:
 
     return branch
 
-
 def _resolve_branch_role(user: User, branch_id: int) -> str | None:
     for assignment in user.user_roles:
         if (
@@ -50,7 +48,6 @@ def _resolve_branch_role(user: User, branch_id: int) -> str | None:
         ):
             return assignment.role.name
     return None
-
 
 @branch_bp.route("/staff", methods=["GET"])
 @token_required({"BRANCH_OWNER", "MANAGER"})
@@ -77,8 +74,8 @@ def list_branch_staff() -> tuple[list[dict[str, object]], int]:
     if branch.manager:
         payload.append(
             {
-                "id": branch.manager.user_id,
-                "name": branch.manager.name,
+                "user_id": branch.manager.user_id,
+                "user_name": branch.manager.name,
                 "email": branch.manager.email,
                 "phone": branch.manager.phone,
                 "role": "MANAGER",
@@ -89,8 +86,8 @@ def list_branch_staff() -> tuple[list[dict[str, object]], int]:
     if branch.branch_owner:
         payload.append(
             {
-                "id": branch.branch_owner.user_id,
-                "name": branch.branch_owner.name,
+                "user_id": branch.branch_owner.user_id,
+                "user_name": branch.branch_owner.name,
                 "email": branch.branch_owner.email,
                 "phone": branch.branch_owner.phone,
                 "role": "BRANCH_OWNER",
@@ -104,8 +101,8 @@ def list_branch_staff() -> tuple[list[dict[str, object]], int]:
         role_name = _resolve_branch_role(assignment.user, branch.branch_id) or "STAFF"
         payload.append(
             {
-                "id": assignment.user.user_id,
-                "name": assignment.user.name,
+                "user_id": assignment.user.user_id,
+                "user_name": assignment.user.name,
                 "email": assignment.user.email,
                 "phone": assignment.user.phone,
                 "role": role_name,
@@ -117,7 +114,7 @@ def list_branch_staff() -> tuple[list[dict[str, object]], int]:
     seen: set[int] = set()
     deduped: list[dict[str, object]] = []
     for entry in payload:
-        user_id = entry.get("id")
+        user_id = entry.get("user_id")
         if user_id in seen:
             continue
         seen.add(user_id)

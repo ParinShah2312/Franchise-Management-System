@@ -19,7 +19,7 @@ def _franchisor_and_token(db_session, suffix=""):
     franchise = Franchise(franchisor_id=franchisor.franchisor_id, name=f"Cat Franchise{suffix}")
     db_session.add(franchise)
     db_session.commit()
-    token = generate_token(franchisor.franchisor_id, user_type="franchisor")
+    token = generate_token(franchisor.franchisor_id, role="FRANCHISOR")
     return {"Authorization": f"Bearer {token}"}, franchise
 
 
@@ -33,7 +33,7 @@ def test_create_category(client, db_session):
     )
     assert response.status_code == 201
     data = response.get_json()
-    assert data["name"] == "Drinks"
+    assert data["category_name"] == "Drinks"
 
 
 def test_create_duplicate_category_fails(client, db_session):
@@ -60,7 +60,7 @@ def test_create_product(client, db_session):
     )
     assert response.status_code == 201
     data = response.get_json()
-    assert data["name"] == "Samosa"
+    assert data["product_name"] == "Samosa"
     assert float(data["base_price"]) == 20.0
 
 
@@ -104,7 +104,7 @@ def test_add_and_remove_ingredient(client, db_session):
     # Create stock item via inventory endpoint
     stock_resp = client.post(
         "/api/inventory/stock-items",
-        json={"name": "Black Lentils", "unit_id": 1},
+        json={"stock_item_name": "Black Lentils", "unit_id": 1},
         headers=headers,
     )
     assert stock_resp.status_code == 201

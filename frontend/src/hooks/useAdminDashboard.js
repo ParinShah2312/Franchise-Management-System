@@ -133,10 +133,10 @@ export function useAdminDashboard() {
         franchiseId: franchise.franchise_id,
         franchiseName: franchise.franchise_name,
         branchId: branch.branch_id,
-        branchName: branch.name,
+        branchName: branch.branch_name,
         location: branch.location,
-        ownerName: branch.ownerName || branch.owner_name,
-        managerName: branch.managerName || branch.manager_name,
+        ownerName: branch.branch_owner_name,
+        managerName: branch.manager_name,
         status: branch.status,
       }))
     );
@@ -157,7 +157,7 @@ export function useAdminDashboard() {
 
   const updateFranchise = async (franchiseId, newName) => {
     try {
-      await api.patch(`/franchises/${franchiseId}`, { name: newName });
+      await api.patch(`/franchises/${franchiseId}`, { franchise_name: newName });
       await fetchDashboard();
       setToast({ message: 'Franchise updated successfully.', variant: 'success' });
     } catch (err) {

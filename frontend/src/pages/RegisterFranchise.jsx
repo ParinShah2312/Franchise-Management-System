@@ -49,7 +49,7 @@ export default function RegisterFranchise() {
         if (!isMounted) return;
 
         const normalizedBrands = Array.isArray(brandsResponse)
-          ? brandsResponse.filter((brand) => brand && brand.id && brand.name)
+          ? brandsResponse.filter((brand) => brand && brand.franchise_id && brand.franchise_name)
           : [];
 
         if (normalizedBrands.length === 0) {
@@ -121,7 +121,7 @@ export default function RegisterFranchise() {
     } else if (
       !loadingBrands &&
       brandOptions.length > 0 &&
-      !brandOptions.some((brand) => String(brand.id) === String(formState.franchise_id))
+      !brandOptions.some((brand) => String(brand.franchise_id) === String(formState.franchise_id))
     ) {
       errors.franchise_id = 'Please choose a valid brand option.';
     }
@@ -257,7 +257,7 @@ export default function RegisterFranchise() {
             reason={formState.reason}
             formErrors={formErrors}
             onChange={handleChange}
-            selectedBrandName={brandOptions.find(b => String(b.id) === String(formState.franchise_id))?.name || null}
+            selectedBrandName={brandOptions.find(b => String(b.franchise_id) === String(formState.franchise_id))?.franchise_name || null}
           />
 
           {error ? (

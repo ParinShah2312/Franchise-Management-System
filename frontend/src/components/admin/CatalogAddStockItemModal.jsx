@@ -36,7 +36,7 @@ export default function CatalogAddStockItemModal({
     
     setError('');
     try {
-      await onSubmit({ name: name.trim(), unit_id: Number(unitId), description: description.trim() });
+      await onSubmit({ stock_item_name: name.trim(), unit_id: Number(unitId), description: description.trim() });
     } catch (err) {
       setError(err.message || 'Failed to create stock item');
     }

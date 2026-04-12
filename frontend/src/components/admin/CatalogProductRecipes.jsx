@@ -77,7 +77,7 @@ export default function CatalogProductRecipes({
                 <React.Fragment key={product.product_id}>
                   <tr className={`border-b border-border hover:bg-gray-50 ${isExpanded ? 'bg-gray-50' : ''}`}>
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {product.name}
+                      {product.product_name}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {formatINR(product.base_price)}
@@ -105,7 +105,7 @@ export default function CatalogProductRecipes({
                     <tr className="bg-gray-50 border-b border-gray-200">
                       <td colSpan={4} className="px-6 pb-6 pt-2">
                         <div className="rounded-md border border-gray-200 bg-white p-4">
-                          <h4 className="mb-3 text-sm font-bold text-gray-700">Ingredients for {product.name}</h4>
+                          <h4 className="mb-3 text-sm font-bold text-gray-700">Ingredients for {product.product_name}</h4>
                           
                           {isLoadingRecipe ? (
                             <p className="text-sm text-gray-500 mb-4">Loading recipe...</p>
@@ -114,7 +114,7 @@ export default function CatalogProductRecipes({
                           ) : (
                             <div className="mb-4 divide-y divide-gray-100">
                               {recipe.map((ingredient) => (
-                                <div key={ingredient.ingredient_id} className="flex items-center justify-between py-2 text-sm">
+                                <div key={ingredient.product_ingredient_id} className="flex items-center justify-between py-2 text-sm">
                                   <div>
                                     <span className="font-medium text-gray-800">{ingredient.stock_item_name}</span>
                                     <span className="text-gray-500 ml-2">
@@ -123,7 +123,7 @@ export default function CatalogProductRecipes({
                                   </div>
                                   <button
                                     type="button"
-                                    onClick={() => onRemoveIngredient(product.product_id, ingredient.ingredient_id)}
+                                    onClick={() => onRemoveIngredient(product.product_id, ingredient.product_ingredient_id)}
                                     className="text-red-500 hover:text-red-700 hover:underline"
                                   >
                                     Remove
@@ -150,7 +150,7 @@ export default function CatalogProductRecipes({
                                   <option value="">Select a stock item...</option>
                                   {availableStockItems.map((item) => (
                                     <option key={item.stock_item_id} value={item.stock_item_id}>
-                                      {item.name} ({item.unit_name})
+                                      {item.stock_item_name} ({item.unit_name})
                                     </option>
                                   ))}
                                 </select>

@@ -14,9 +14,7 @@ export function useReport(branchId) {
     setReportError(null);
     try {
       let url = `/reports/summary?month=${selectedMonth}&year=${selectedYear}`;
-      const isEvent = overrideBranchId && typeof overrideBranchId === 'object' && overrideBranchId.nativeEvent;
-      const cleanOverride = isEvent ? undefined : overrideBranchId;
-      const finalBranchId = cleanOverride !== undefined ? cleanOverride : branchId;
+      const finalBranchId = overrideBranchId !== undefined ? overrideBranchId : branchId;
       
       if (finalBranchId) {
         url += `&branch_id=${finalBranchId}`;

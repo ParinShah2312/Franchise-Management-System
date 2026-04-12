@@ -33,8 +33,8 @@ export default function FranchiseDetailsSection({
           >
             <option value="">{loadingBrands ? 'Loading brands…' : 'Select a franchise brand'}</option>
             {brandOptions.map((brand) => (
-              <option key={brand.id} value={brand.id}>
-                {brand.name}
+              <option key={brand.franchise_id} value={brand.franchise_id}>
+                {brand.franchise_name}
               </option>
             ))}
           </select>

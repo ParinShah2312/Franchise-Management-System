@@ -22,7 +22,6 @@ if TYPE_CHECKING:
         Expense, InventoryTransaction, Sale, StockPurchaseRequest,
     )
 
-
 class User(TimestampMixin, db.Model):
     __tablename__ = "users"
     user_id: Mapped[int] = mapped_column(
@@ -100,7 +99,6 @@ class User(TimestampMixin, db.Model):
         back_populates="logged_by_user",
     )
 
-
 class Role(db.Model):
     __tablename__ = "roles"
     role_id: Mapped[int] = mapped_column(
@@ -114,7 +112,6 @@ class Role(db.Model):
     user_roles: Mapped[list["UserRole"]] = relationship(
         "UserRole", back_populates="role", cascade="all, delete-orphan"
     )
-
 
 class UserRole(db.Model):
     __tablename__ = "user_roles"
@@ -137,7 +134,6 @@ class UserRole(db.Model):
 
     user: Mapped["User"] = relationship("User", back_populates="user_roles")
     role: Mapped["Role"] = relationship("Role", back_populates="user_roles")
-
 
 class BranchStaff(db.Model):
     __tablename__ = "branch_staff"

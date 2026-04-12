@@ -1,4 +1,4 @@
-﻿"""Authentication routes aligned with role-based permissions."""
+"""Authentication routes aligned with role-based permissions."""
 
 from __future__ import annotations
 from ..utils.validators import validate_password_strength, PASSWORD_ERROR
@@ -34,14 +34,14 @@ def login() -> tuple[dict[str, object], int]:
     franchisor = Franchisor.query.filter_by(email=email).first()
     if franchisor and verify_password(password, franchisor.password_hash):
         _ensure_franchise_for_franchisor(franchisor)
-        token = generate_token(franchisor.franchisor_id, user_type="franchisor")
+        token = generate_token(franchisor.franchisor_id, role="FRANCHISOR")
         return (
             jsonify(
                 {
                     "token": token,
                     "user": {
-                        "id": franchisor.franchisor_id,
-                        "name": franchisor.organization_name,
+                        "user_id": franchisor.franchisor_id,
+                        "user_name": franchisor.organization_name,
                         "email": franchisor.email,
                         "must_reset_password": False,
                     },
@@ -71,14 +71,14 @@ def login() -> tuple[dict[str, object], int]:
                 status_id=pending_status.status_id
             ).first()
             if pending_app:
-                token = generate_token(user.user_id, user_type="user")
+                token = generate_token(user.user_id, role="PENDING_APPLICANT")
                 return (
                     jsonify(
                         {
                             "token": token,
                             "user": {
-                                "id": user.user_id,
-                                "name": user.name,
+                                "user_id": user.user_id,
+                                "user_name": user.name,
                                 "email": user.email,
                                 "must_reset_password": False,  # Skip reset for pending
                             },
@@ -93,15 +93,15 @@ def login() -> tuple[dict[str, object], int]:
             {"error": "No role assigned. Contact administrator."}
         ), HTTPStatus.FORBIDDEN
 
-    token = generate_token(user.user_id, user_type="user")
+    token = generate_token(user.user_id, role=user_role.role.name)
 
     return (
         jsonify(
             {
                 "token": token,
                 "user": {
-                    "id": user.user_id,
-                    "name": user.name,
+                    "user_id": user.user_id,
+                    "user_name": user.name,
                     "email": user.email,
                     "must_reset_password": user.must_reset_password,
                 },
@@ -115,14 +115,16 @@ def login() -> tuple[dict[str, object], int]:
         HTTPStatus.OK,
     )
 
-
 @auth_bp.route("/profile", methods=["GET"])
 @token_required({"BRANCH_OWNER", "MANAGER"})
 def get_branch_profile() -> tuple[dict[str, object], int]:
     branch_id_raw = request.args.get("branch_id")
-    branch = _resolve_branch_for_staff(branch_id_raw)
-    if isinstance(branch, tuple):
-        return branch
+    try:
+        branch = _resolve_branch_for_staff(branch_id_raw)
+    except PermissionError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
 
     staff_assignments = (
         BranchStaff.query.options(joinedload(BranchStaff.user))
@@ -136,7 +138,7 @@ def get_branch_profile() -> tuple[dict[str, object], int]:
             return None
         return {
             "user_id": user.user_id,
-            "name": user.name,
+            "user_name": user.name,
             "email": user.email,
             "phone": user.phone,
             "is_active": user.is_active,
@@ -144,15 +146,15 @@ def get_branch_profile() -> tuple[dict[str, object], int]:
 
     payload = {
         "branch": {
-            "id": branch.branch_id,
-            "name": branch.name,
+            "branch_id": branch.branch_id,
+            "branch_name": branch.name,
         },
         "owner": _serialize_user(branch.branch_owner),
         "manager": _serialize_user(branch.manager),
         "staff": [
             {
                 "user_id": assignment.user.user_id if assignment.user else None,
-                "name": assignment.user.name if assignment.user else None,
+                "user_name": assignment.user.name if assignment.user else None,
                 "email": assignment.user.email if assignment.user else None,
                 "phone": assignment.user.phone if assignment.user else None,
                 "is_active": assignment.user.is_active if assignment.user else None,
@@ -165,7 +167,6 @@ def get_branch_profile() -> tuple[dict[str, object], int]:
     }
 
     return jsonify(payload), HTTPStatus.OK
-
 
 @auth_bp.route("/reset-password", methods=["POST"])
 @token_required()

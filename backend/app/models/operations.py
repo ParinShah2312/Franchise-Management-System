@@ -22,7 +22,6 @@ if TYPE_CHECKING:
     from .reference import RequestStatus, SaleStatus, TransactionType
     from .users import User
 
-
 class Sale(TimestampMixin, db.Model):
     __tablename__ = "sales"
     sale_id: Mapped[int] = mapped_column(
@@ -55,7 +54,6 @@ class Sale(TimestampMixin, db.Model):
         "SaleRoyalty", back_populates="sale", uselist=False
     )
 
-
 class SaleItem(db.Model):
     __tablename__ = "sale_items"
     sale_item_id: Mapped[int] = mapped_column(
@@ -78,7 +76,6 @@ class SaleItem(db.Model):
     inventory_transactions: Mapped[list["InventoryTransaction"]] = relationship(
         "InventoryTransaction", back_populates="related_sale_item"
     )
-
 
 class InventoryTransaction(db.Model):
     __tablename__ = "inventory_transactions"
@@ -135,7 +132,6 @@ class InventoryTransaction(db.Model):
         back_populates="approved_inventory_transactions",
     )
 
-
 class StockPurchaseRequest(db.Model):
     __tablename__ = "stock_purchase_requests"
     request_id: Mapped[int] = mapped_column(
@@ -184,7 +180,6 @@ class StockPurchaseRequest(db.Model):
         cascade="all, delete-orphan",
     )
 
-
 class StockPurchaseRequestItem(db.Model):
     __tablename__ = "stock_purchase_request_items"
     request_item_id: Mapped[int] = mapped_column(
@@ -208,7 +203,6 @@ class StockPurchaseRequestItem(db.Model):
     stock_item: Mapped["StockItem"] = relationship(
         "StockItem", back_populates="purchase_request_items"
     )
-
 
 class RoyaltyConfig(db.Model):
     __tablename__ = "royalty_configs"
@@ -241,7 +235,6 @@ class RoyaltyConfig(db.Model):
         "Franchisor", foreign_keys=[created_by_franchisor_id]
     )
 
-
 class SaleRoyalty(db.Model):
     __tablename__ = "sale_royalties"
     sale_royalty_id: Mapped[int] = mapped_column(
@@ -267,7 +260,6 @@ class SaleRoyalty(db.Model):
     sale: Mapped["Sale"] = relationship("Sale", back_populates="royalty")
     royalty_config: Mapped["RoyaltyConfig"] = relationship("RoyaltyConfig")
 
-
 class Expense(TimestampMixin, db.Model):
     __tablename__ = "expenses"
     expense_id: Mapped[int] = mapped_column(
@@ -290,7 +282,6 @@ class Expense(TimestampMixin, db.Model):
     logged_by_user: Mapped[Optional["User"]] = relationship(
         "User", back_populates="expenses_logged", foreign_keys=[logged_by_user_id]
     )
-
 
 class FileBlob(db.Model):
     __tablename__ = "file_blobs"

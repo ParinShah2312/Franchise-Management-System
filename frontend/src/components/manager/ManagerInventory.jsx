@@ -173,7 +173,7 @@ export default function ManagerInventory({ inventoryItems, stockItems, addInvent
                                             key={item.branch_inventory_id || item.stock_item_id}
                                             className={isLow ? 'bg-amber-50' : ''}
                                         >
-                                            <td className="px-4 py-3 text-sm text-gray-800">{item.stock_item_name || item.item_name}</td>
+                                            <td className="px-4 py-3 text-sm text-gray-800">{item.stock_item_name}</td>
                                             <td className="px-4 py-3 text-sm text-gray-500">{item.unit_name || '—'}</td>
                                             <td className="px-4 py-3 text-sm text-gray-900 text-right">
                                                 {formatNumber(quantity)}

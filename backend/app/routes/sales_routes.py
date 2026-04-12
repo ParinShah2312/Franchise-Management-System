@@ -19,14 +19,9 @@ from ..models import (
 )
 from ..services.inventory_service import deduct_ingredients_for_sale, get_transaction_type_id, InsufficientStockError
 from ..utils.security import token_required
-from ..utils.branch_helpers import _current_role, resolve_branch_id_from_request
-
+from ..utils.branch_helpers import resolve_branch_id_from_request
 
 sales_bp = Blueprint("sales", __name__, url_prefix="/api/sales")
-
-
-
-
 
 def _parse_datetime(value: object) -> datetime:
     if value is None:
@@ -36,7 +31,6 @@ def _parse_datetime(value: object) -> datetime:
     except (TypeError, ValueError):
         raise ValueError("sale_date must be ISO formatted.")
 
-
 def _parse_quantity(value: object) -> int:
     try:
         quantity = int(value)
@@ -45,7 +39,6 @@ def _parse_quantity(value: object) -> int:
     if quantity <= 0:
         raise ValueError("quantity must be greater than zero.")
     return quantity
-
 
 def _serialize_sale(sale: Sale) -> dict[str, object]:
     return {
@@ -68,7 +61,6 @@ def _serialize_sale(sale: Sale) -> dict[str, object]:
         ],
     }
 
-
 def _sale_status_paid_id() -> int | tuple[dict[str, object], int]:
     status = SaleStatus.query.filter_by(status_name="PAID").first()
     if not status:
@@ -76,9 +68,6 @@ def _sale_status_paid_id() -> int | tuple[dict[str, object], int]:
             {"error": "Sale status 'PAID' is not configured."}
         ), HTTPStatus.INTERNAL_SERVER_ERROR
     return status.sale_status_id
-
-
-
 
 @sales_bp.route("", methods=["POST"])
 @token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
@@ -127,12 +116,17 @@ def create_sale() -> tuple[dict[str, object], int]:
 
     current_user = getattr(g, "current_user", None)
 
+    VALID_PAYMENT_MODES = {"Cash", "Card", "UPI", "Other"}
+    payment_mode = payload.get("payment_mode", "Cash")
+    if payment_mode not in VALID_PAYMENT_MODES:
+        return jsonify({"error": "Invalid payment_mode."}), HTTPStatus.BAD_REQUEST
+
     sale = Sale(
         branch_id=branch.branch_id,
         sale_datetime=sale_datetime,
         total_amount=Decimal("0"),
         status_id=status_id,
-        payment_mode=payload.get("payment_mode", "Cash"),
+        payment_mode=payment_mode,
         sold_by_user_id=current_user.user_id if current_user else None,
     )
     db.session.add(sale)
@@ -218,9 +212,11 @@ def create_sale() -> tuple[dict[str, object], int]:
                     branch_owner_amount=branch_owner_amount,
                 )
     except Exception as exc:
-        current_app.logger.warning(
+        current_app.logger.error(
             "Royalty recording failed for sale %s: %s", sale.sale_id, exc
         )
+    finally:
+        db.session.commit()
 
     sale = db.session.get(
         Sale, sale.sale_id,
@@ -228,13 +224,10 @@ def create_sale() -> tuple[dict[str, object], int]:
     )
     return jsonify(_serialize_sale(sale)), HTTPStatus.CREATED
 
-
 @sales_bp.route("", methods=["GET"])
 @token_required({"FRANCHISOR", "BRANCH_OWNER", "MANAGER", "STAFF"})
 def list_sales() -> tuple[list[dict[str, object]], int]:
     branch_id_param = request.args.get("branch_id", type=int)
-
-    role = _current_role()
 
     query = Sale.query.options(
         joinedload(Sale.items).joinedload(SaleItem.product)
@@ -250,7 +243,6 @@ def list_sales() -> tuple[list[dict[str, object]], int]:
 
     records = query.all()
     return jsonify([_serialize_sale(record) for record in records]), HTTPStatus.OK
-
 
 @sales_bp.route("/products", methods=["GET"])
 @token_required({"FRANCHISOR", "BRANCH_OWNER", "MANAGER", "STAFF"})

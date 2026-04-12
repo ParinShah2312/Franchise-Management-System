@@ -6,6 +6,7 @@
 export function formatINR(value) {
   if (value === null || value === undefined) return '₹0';
   const num = Number(value);
+  if (isNaN(num)) return '₹0';
   return num.toLocaleString('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -22,6 +23,7 @@ export function formatINR(value) {
 export function formatINRDecimal(value) {
   if (value === null || value === undefined) return '₹0.00';
   const num = Number(value);
+  if (isNaN(num)) return '₹0.00';
   return num.toLocaleString('en-IN', {
     style: 'currency',
     currency: 'INR',
@@ -101,6 +103,7 @@ export function getNowString() {
 export function formatNumber(value) {
   if (value === null || value === undefined) return '0';
   const num = Number(value);
+  if (isNaN(num)) return '0';
   return num.toLocaleString('en-IN');
 }
 

@@ -22,16 +22,13 @@ from ..utils.security import token_required
 from ..utils.db_helpers import serialize_dt
 from ..utils.branch_helpers import resolve_branch_id_from_request
 
-
 request_bp = Blueprint("requests", __name__, url_prefix="/api/requests")
-
 
 def _get_status_id(name: str) -> int:
     status = RequestStatus.query.filter_by(status_name=name).first()
     if not status:
         raise LookupError(f"Request status '{name}' is not configured.")
     return status.request_status_id
-
 
 def _serialize_request(request_obj: StockPurchaseRequest) -> dict[str, object]:
     return {
@@ -58,7 +55,6 @@ def _serialize_request(request_obj: StockPurchaseRequest) -> dict[str, object]:
             for item in request_obj.items
         ],
     }
-
 
 @request_bp.route("", methods=["POST"])
 @token_required({"MANAGER"})
@@ -171,7 +167,6 @@ def create_request() -> tuple[dict[str, object], int]:
 
     return jsonify(_serialize_request(request_record)), HTTPStatus.CREATED
 
-
 def _ensure_request_access(
     request_obj: StockPurchaseRequest,
 ) -> tuple[dict[str, object], int] | None:
@@ -183,7 +178,6 @@ def _ensure_request_access(
         return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
 
     return None
-
 
 @request_bp.route("", methods=["GET"])
 @token_required({"BRANCH_OWNER", "MANAGER"})
@@ -210,7 +204,6 @@ def list_requests() -> tuple[list[dict[str, object]], int]:
     )
 
     return jsonify([_serialize_request(record) for record in records]), HTTPStatus.OK
-
 
 @request_bp.route("/<int:request_id>/approve", methods=["PUT"])
 @token_required({"BRANCH_OWNER"})
@@ -284,7 +277,6 @@ def approve_request(request_id: int) -> tuple[dict[str, object], int]:
     ).filter(StockPurchaseRequest.request_id == record.request_id).first()
 
     return jsonify(_serialize_request(record)), HTTPStatus.OK
-
 
 @request_bp.route("/<int:request_id>/reject", methods=["PUT"])
 @token_required({"BRANCH_OWNER"})

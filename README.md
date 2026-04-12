@@ -59,7 +59,7 @@ Relay is a complete franchise operations ecosystem. It models the full hierarchy
 - **Branch status toggle:** Franchisor can activate or deactivate any branch with a confirmation dialog
   - Status badge turns green (ACTIVE) or gray (INACTIVE)
   - Toggle button flips label: "Deactivate" ↔ "Activate"
-  - Backend enforces franchise ownership — cross-franchise toggling returns `403`
+  - Backend enforces franchise ownership at the branch resolver level — all cross-franchise access returns `403`
 - Menu file upload per franchise (PDF/image) with 5MB file-size limit
 - Files stored as binary blobs in the database (no filesystem dependency)
 

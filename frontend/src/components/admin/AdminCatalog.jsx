@@ -181,9 +181,9 @@ export default function AdminCatalog({
     }
   };
 
-  const handleRemoveIngredient = async (productId, ingredientId) => {
+  const handleRemoveIngredient = async (productId, productIngredientId) => {
     try {
-      await removeIngredient(productId, ingredientId);
+      await removeIngredient(productId, productIngredientId);
       await loadRecipe(productId);
       setToast({ message: 'Ingredient removed.', variant: 'success' });
     } catch (err) {

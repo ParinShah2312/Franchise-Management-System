@@ -52,8 +52,8 @@ export function AuthProvider({ children }) {
     const data = await api.post('/auth/login', { email, password });
 
     const session = {
-      id: data?.user?.id ?? data?.id ?? null,
-      name: data?.user?.name ?? data?.name ?? null,
+      user_id: data?.user?.user_id ?? data?.user_id ?? null,
+      user_name: data?.user?.user_name ?? data?.user_name ?? null,
       email: data?.user?.email ?? data?.email ?? email,
       role: data?.role ?? null,
       mustResetPassword: Boolean(data?.user?.must_reset_password ?? data?.must_reset_password),

@@ -95,7 +95,7 @@ export default function FranchiseeDashboard() {
             onMonthChange={setSelectedMonth}
             onYearChange={setSelectedYear}
             onGenerate={generateReport}
-            generatedBy={user?.name || null}
+            generatedBy={user?.user_name || null}
           />
         );
       case 'overview':
@@ -115,7 +115,7 @@ export default function FranchiseeDashboard() {
       <div className="max-w-6xl mx-auto px-4 sm:px-6 py-4 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Franchisee Dashboard</h1>
-          <p className="hidden sm:block text-gray-500 text-sm">Welcome back, {user?.name || user?.email || 'branch owner'}</p>
+          <p className="hidden sm:block text-gray-500 text-sm">Welcome back, {user?.user_name || user?.email || 'branch owner'}</p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">
             <button

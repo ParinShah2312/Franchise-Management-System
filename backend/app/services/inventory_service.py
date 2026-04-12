@@ -24,7 +24,6 @@ from ..models import (
 )
 from ..utils.db_helpers import get_or_create_inventory
 
-
 class InsufficientStockError(Exception):
     """
     Raised when a sale cannot be completed due to insufficient
@@ -48,7 +47,6 @@ class InsufficientStockError(Exception):
             f"Insufficient stock for {stock_item_name}. "
             f"Required: {required}, Available: {available}"
         )
-
 
 def apply_inventory_transaction(
     *,
@@ -104,7 +102,6 @@ def apply_inventory_transaction(
 
     return transaction, inventory_record
 
-
 def get_transaction_type_id(type_name: str) -> int:
     """
     Look up the transaction_type_id for the given type name.
@@ -124,7 +121,6 @@ def get_transaction_type_id(type_name: str) -> int:
             f"Transaction type '{type_name}' is not configured in the database."
         )
     return transaction_type.transaction_type_id
-
 
 def deduct_ingredients_for_sale(
     *,

@@ -21,9 +21,17 @@ from ..models import (
 from ..utils.security import token_required
 from ..utils.branch_helpers import _current_role
 
-
 catalog_bp = Blueprint("catalog", __name__, url_prefix="/api/catalog")
 
+def _get_franchisor_franchise():
+    """Return the franchisor's franchise or an error response tuple."""
+    franchisor = getattr(g, "current_user", None)
+    if not franchisor:
+        return None, (jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED)
+    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
+    if not franchise:
+        return None, (jsonify({"error": "No franchise found for this franchisor."}), HTTPStatus.NOT_FOUND)
+    return franchise, None
 
 @catalog_bp.route("/branch-products", methods=["GET"])
 @token_required({"BRANCH_OWNER"})
@@ -47,7 +55,7 @@ def list_branch_catalog_products() -> tuple[list[dict[str, object]], int]:
     payload = [
         {
             "product_id": p.product_id,
-            "name": p.name,
+            "product_name": p.name,
             "description": p.description,
             "base_price": float(p.base_price) if p.base_price is not None else 0.0,
             "category_name": p.category.name if p.category else None,
@@ -57,17 +65,12 @@ def list_branch_catalog_products() -> tuple[list[dict[str, object]], int]:
 
     return jsonify(payload), HTTPStatus.OK
 
-
 @catalog_bp.route("/products", methods=["GET"])
 @token_required({"FRANCHISOR"})
 def list_catalog_products() -> tuple[list[dict[str, object]], int]:
-    franchisor = getattr(g, "current_user", None)
-    if not franchisor:
-        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
-
-    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
-    if not franchise:
-        return jsonify({"error": "No franchise found for this franchisor."}), HTTPStatus.NOT_FOUND
+    franchise, error = _get_franchisor_franchise()
+    if error:
+        return error
 
     products = (
         Product.query.options(joinedload(Product.category), joinedload(Product.ingredients))
@@ -79,7 +82,7 @@ def list_catalog_products() -> tuple[list[dict[str, object]], int]:
     payload = [
         {
             "product_id": p.product_id,
-            "name": p.name,
+            "product_name": p.name,
             "description": p.description,
             "base_price": float(p.base_price) if p.base_price is not None else 0.0,
             "category_id": p.category_id,
@@ -92,17 +95,12 @@ def list_catalog_products() -> tuple[list[dict[str, object]], int]:
 
     return jsonify(payload), HTTPStatus.OK
 
-
 @catalog_bp.route("/categories", methods=["GET"])
 @token_required({"FRANCHISOR"})
 def list_catalog_categories() -> tuple[list[dict[str, object]], int]:
-    franchisor = getattr(g, "current_user", None)
-    if not franchisor:
-        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
-    
-    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
-    if not franchise:
-        return jsonify({"error": "No franchise found for this franchisor."}), HTTPStatus.NOT_FOUND
+    franchise, error = _get_franchisor_franchise()
+    if error:
+        return error
 
     categories = (
         ProductCategory.query.options(joinedload(ProductCategory.products))
@@ -114,7 +112,7 @@ def list_catalog_categories() -> tuple[list[dict[str, object]], int]:
     payload = [
         {
             "category_id": c.category_id,
-            "name": c.name,
+            "category_name": c.name,
             "description": c.description,
             "franchise_id": c.franchise_id,
             "product_count": len([p for p in c.products if p.is_active])
@@ -123,17 +121,12 @@ def list_catalog_categories() -> tuple[list[dict[str, object]], int]:
     ]
     return jsonify(payload), HTTPStatus.OK
 
-
 @catalog_bp.route("/categories", methods=["POST"])
 @token_required({"FRANCHISOR"})
 def create_category() -> tuple[dict[str, object], int]:
-    franchisor = getattr(g, "current_user", None)
-    if not franchisor:
-        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
-    
-    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
-    if not franchise:
-        return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
+    franchise, error = _get_franchisor_franchise()
+    if error:
+        return error
 
     payload = request.get_json(silent=True) or {}
     name = (payload.get("name") or "").strip()
@@ -164,23 +157,18 @@ def create_category() -> tuple[dict[str, object], int]:
 
     return jsonify({
         "category_id": category.category_id,
-        "name": category.name,
+        "category_name": category.name,
         "description": category.description,
         "franchise_id": category.franchise_id,
         "product_count": 0
     }), HTTPStatus.CREATED
 
-
 @catalog_bp.route("/products", methods=["POST"])
 @token_required({"FRANCHISOR"})
 def create_product() -> tuple[dict[str, object], int]:
-    franchisor = getattr(g, "current_user", None)
-    if not franchisor:
-        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
-    
-    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
-    if not franchise:
-        return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
+    franchise, error = _get_franchisor_franchise()
+    if error:
+        return error
 
     payload = request.get_json(silent=True) or {}
     name = (payload.get("name") or "").strip()
@@ -190,6 +178,10 @@ def create_product() -> tuple[dict[str, object], int]:
 
     if not name:
         return jsonify({"error": "name is required."}), HTTPStatus.BAD_REQUEST
+    if len(name) > 100:
+        return jsonify({"error": "name cannot exceed 100 characters."}), HTTPStatus.BAD_REQUEST
+    if description and len(description) > 500:
+        return jsonify({"error": "description cannot exceed 500 characters."}), HTTPStatus.BAD_REQUEST
     if not category_id:
         return jsonify({"error": "category_id is required."}), HTTPStatus.BAD_REQUEST
     if base_price_raw is None:
@@ -232,7 +224,7 @@ def create_product() -> tuple[dict[str, object], int]:
 
     return jsonify({
         "product_id": product.product_id,
-        "name": product.name,
+        "product_name": product.name,
         "description": product.description,
         "base_price": float(product.base_price) if product.base_price is not None else 0.0,
         "is_active": product.is_active,
@@ -241,17 +233,12 @@ def create_product() -> tuple[dict[str, object], int]:
         "franchise_id": product.franchise_id
     }), HTTPStatus.CREATED
 
-
 @catalog_bp.route("/products/<int:product_id>", methods=["PUT"])
 @token_required({"FRANCHISOR"})
 def update_product(product_id: int) -> tuple[dict[str, object], int]:
-    franchisor = getattr(g, "current_user", None)
-    if not franchisor:
-        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
-    
-    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
-    if not franchise:
-        return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
+    franchise, error = _get_franchisor_franchise()
+    if error:
+        return error
 
     product = db.session.get(Product, product_id)
     if not product:
@@ -265,6 +252,8 @@ def update_product(product_id: int) -> tuple[dict[str, object], int]:
         name = (payload["name"] or "").strip()
         if not name:
             return jsonify({"error": "name cannot be empty."}), HTTPStatus.BAD_REQUEST
+        if len(name) > 100:
+            return jsonify({"error": "name cannot exceed 100 characters."}), HTTPStatus.BAD_REQUEST
         if name.lower() != product.name.lower():
             existing = Product.query.filter(
                 Product.franchise_id == franchise.franchise_id,
@@ -292,7 +281,10 @@ def update_product(product_id: int) -> tuple[dict[str, object], int]:
         product.base_price = base_price
 
     if "description" in payload:
-        product.description = payload["description"]
+        description = payload["description"]
+        if description and len(description) > 500:
+            return jsonify({"error": "description cannot exceed 500 characters."}), HTTPStatus.BAD_REQUEST
+        product.description = description
 
     if "is_active" in payload:
         product.is_active = bool(payload["is_active"])
@@ -306,7 +298,7 @@ def update_product(product_id: int) -> tuple[dict[str, object], int]:
     category = db.session.get(ProductCategory, product.category_id)
     return jsonify({
         "product_id": product.product_id,
-        "name": product.name,
+        "product_name": product.name,
         "description": product.description,
         "base_price": float(product.base_price) if product.base_price is not None else 0.0,
         "is_active": product.is_active,
@@ -315,17 +307,12 @@ def update_product(product_id: int) -> tuple[dict[str, object], int]:
         "franchise_id": product.franchise_id
     }), HTTPStatus.OK
 
-
 @catalog_bp.route("/products/<int:product_id>/ingredients", methods=["GET"])
 @token_required({"FRANCHISOR"})
 def get_product_ingredients(product_id: int) -> tuple[list[dict[str, object]], int]:
-    franchisor = getattr(g, "current_user", None)
-    if not franchisor:
-        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
-    
-    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
-    if not franchise:
-        return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
+    franchise, error = _get_franchisor_franchise()
+    if error:
+        return error
 
     product = db.session.get(Product, product_id)
     if not product or product.franchise_id != franchise.franchise_id:
@@ -353,17 +340,12 @@ def get_product_ingredients(product_id: int) -> tuple[list[dict[str, object]], i
 
     return jsonify(payload), HTTPStatus.OK
 
-
 @catalog_bp.route("/products/<int:product_id>/ingredients", methods=["POST"])
 @token_required({"FRANCHISOR"})
 def add_product_ingredient(product_id: int) -> tuple[dict[str, object], int]:
-    franchisor = getattr(g, "current_user", None)
-    if not franchisor:
-        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
-    
-    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
-    if not franchise:
-        return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
+    franchise, error = _get_franchisor_franchise()
+    if error:
+        return error
 
     product = db.session.get(Product, product_id)
     if not product or product.franchise_id != franchise.franchise_id:
@@ -420,17 +402,12 @@ def add_product_ingredient(product_id: int) -> tuple[dict[str, object], int]:
         "quantity_required": float(refreshed_ingredient.quantity_required) if refreshed_ingredient.quantity_required is not None else 0.0
     }), HTTPStatus.CREATED
 
-
 @catalog_bp.route("/products/<int:product_id>/ingredients/<int:product_ingredient_id>", methods=["DELETE"])
 @token_required({"FRANCHISOR"})
 def remove_product_ingredient(product_id: int, product_ingredient_id: int) -> tuple[dict[str, object], int]:
-    franchisor = getattr(g, "current_user", None)
-    if not franchisor:
-        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
-    
-    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
-    if not franchise:
-        return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
+    franchise, error = _get_franchisor_franchise()
+    if error:
+        return error
 
     product = db.session.get(Product, product_id)
     if not product or product.franchise_id != franchise.franchise_id:
@@ -450,17 +427,12 @@ def remove_product_ingredient(product_id: int, product_ingredient_id: int) -> tu
 
     return jsonify({"message": "Ingredient removed."}), HTTPStatus.OK
 
-
 @catalog_bp.route("/stock-items/<int:stock_item_id>/products", methods=["GET"])
 @token_required({"FRANCHISOR"})
 def get_stock_item_products(stock_item_id: int) -> tuple[list[dict[str, object]], int]:
-    franchisor = getattr(g, "current_user", None)
-    if not franchisor:
-        return jsonify({"error": "Authentication required."}), HTTPStatus.UNAUTHORIZED
-    
-    franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
-    if not franchise:
-        return jsonify({"error": "No franchise found."}), HTTPStatus.NOT_FOUND
+    franchise, error = _get_franchisor_franchise()
+    if error:
+        return error
 
     stock_item = db.session.get(StockItem, stock_item_id)
     if not stock_item or stock_item.franchise_id != franchise.franchise_id:

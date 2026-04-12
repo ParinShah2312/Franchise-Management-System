@@ -16,7 +16,6 @@ from sqlalchemy import func
 from ..extensions import db
 from ..models import Branch, Expense, Sale, SaleStatus
 
-
 def get_sales_total(
     branch_ids: list[int],
     start_date: date,
@@ -47,7 +46,6 @@ def get_sales_total(
         query = query.filter(Sale.branch_id.in_(branch_ids))
 
     return Decimal(query.scalar() or 0)
-
 
 def get_branch_sales_breakdown(
     branch_ids: list[int],
@@ -104,7 +102,6 @@ def get_branch_sales_breakdown(
         for branch_id, name, total_sales in rows
     ]
 
-
 def get_expenses_total(
     branch_ids: list[int],
     start_date: date,
@@ -123,7 +120,6 @@ def get_expenses_total(
     if branch_ids:
         query = query.filter(Expense.branch_id.in_(branch_ids))
     return Decimal(query.scalar() or 0)
-
 
 def get_branch_expense_breakdown(
     branch_ids: list[int],
@@ -158,7 +154,6 @@ def get_branch_expense_breakdown(
             "amount": float(cat_total or 0)
         })
     return result
-
 
 def get_branch_product_sales_breakdown(
     branch_ids: list[int],
@@ -202,8 +197,6 @@ def get_branch_product_sales_breakdown(
         })
     return result
 
-
-
 def get_authorized_branch_ids(role) -> set[int]:
     """
     Return the set of branch IDs accessible to the given user role.
@@ -233,7 +226,6 @@ def get_authorized_branch_ids(role) -> set[int]:
         return {branch_id for (branch_id,) in branches}
 
     return set()
-
 
 def build_report_summary(
     branch_ids: list[int],

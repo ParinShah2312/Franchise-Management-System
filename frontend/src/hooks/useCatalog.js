@@ -109,8 +109,8 @@ export function useCatalog() {
     await Promise.all([refreshProducts(), refreshStockItems()]);
   };
 
-  const removeIngredient = async (productId, ingredientId) => {
-    await api.delete(`/catalog/products/${productId}/ingredients/${ingredientId}`);
+  const removeIngredient = async (productId, productIngredientId) => {
+    await api.delete(`/catalog/products/${productId}/ingredients/${productIngredientId}`);
     await Promise.all([refreshProducts(), refreshStockItems()]);
   };
 

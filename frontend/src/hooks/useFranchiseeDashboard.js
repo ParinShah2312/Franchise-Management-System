@@ -33,8 +33,9 @@ export function useFranchiseeDashboard(branchId) {
     fetchBranchSummary(branchId);
   }, [branchId, fetchBranchSummary]);
 
-  const loading = !branchId || (metricsLoading || salesLoading || reqLoading || staffLoading || expLoading);
-  const error = !branchId ? 'No branch is currently assigned to your account. Please contact support.' : (metricsError || salesError || reqError || staffError || expError || '');
+  const noBranch = !branchId;
+  const loading = !noBranch && (metricsLoading || salesLoading || reqLoading || staffLoading || expLoading);
+  const error = noBranch ? 'No branch is currently assigned to your account. Please contact support.' : (metricsError || salesError || reqError || staffError || expError || '');
 
   const loadData = useCallback(() => {
     refreshMetrics();

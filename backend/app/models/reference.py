@@ -15,7 +15,6 @@ if TYPE_CHECKING:
     from .core import Branch
     from .operations import InventoryTransaction, Sale, StockPurchaseRequest
 
-
 class ApplicationStatus(db.Model):
     __tablename__ = "application_statuses"
     status_id: Mapped[int] = mapped_column(
@@ -29,7 +28,6 @@ class ApplicationStatus(db.Model):
         "FranchiseApplication", back_populates="status"
     )
 
-
 class BranchStatus(db.Model):
     __tablename__ = "branch_statuses"
     status_id: Mapped[int] = mapped_column(
@@ -40,7 +38,6 @@ class BranchStatus(db.Model):
     status_name: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
 
     branches: Mapped[list["Branch"]] = relationship("Branch", back_populates="status")
-
 
 class TransactionType(db.Model):
     __tablename__ = "transaction_types"
@@ -55,7 +52,6 @@ class TransactionType(db.Model):
         "InventoryTransaction", back_populates="transaction_type"
     )
 
-
 class RequestStatus(db.Model):
     __tablename__ = "request_statuses"
     request_status_id: Mapped[int] = mapped_column(
@@ -69,7 +65,6 @@ class RequestStatus(db.Model):
         "StockPurchaseRequest", back_populates="status"
     )
 
-
 class SaleStatus(db.Model):
     __tablename__ = "sale_statuses"
     sale_status_id: Mapped[int] = mapped_column(
@@ -80,7 +75,6 @@ class SaleStatus(db.Model):
     status_name: Mapped[str] = mapped_column(String(20), unique=True, nullable=False)
 
     sales: Mapped[list["Sale"]] = relationship("Sale", back_populates="status")
-
 
 class Unit(db.Model):
     __tablename__ = "units"

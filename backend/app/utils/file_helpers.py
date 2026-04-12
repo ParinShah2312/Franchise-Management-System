@@ -3,8 +3,13 @@
 from __future__ import annotations
 
 import os
+from typing import TYPE_CHECKING
+
 from werkzeug.utils import secure_filename
 from werkzeug.datastructures import FileStorage
+
+if TYPE_CHECKING:
+    from ..models import FileBlob
 
 DOCUMENT_EXTENSIONS = {".pdf", ".png", ".jpg", ".jpeg"}
 # Currently identical to DOCUMENT_EXTENSIONS, but kept separate for future divergence 
@@ -17,7 +22,6 @@ MIME_MAP = {
     ".jpg": "image/jpeg",
     ".jpeg": "image/jpeg",
 }
-
 
 def save_file_to_db(
     upload: FileStorage,

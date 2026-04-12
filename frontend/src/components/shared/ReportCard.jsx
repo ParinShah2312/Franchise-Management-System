@@ -95,7 +95,7 @@ export default function ReportCard({
         <button
           type="button"
           id="report-generate-btn"
-          onClick={() => onGenerate(selectedBranchId)}
+          onClick={() => onGenerate(selectedBranchId || undefined)}
           disabled={loading}
           className="rounded-lg bg-blue-600 px-5 py-2 text-sm font-semibold text-white shadow-sm hover:bg-blue-700 disabled:cursor-not-allowed disabled:opacity-60 transition-colors"
         >

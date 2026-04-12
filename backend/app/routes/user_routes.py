@@ -13,7 +13,6 @@ from ..utils.branch_helpers import _current_role
 
 user_bp = Blueprint("users", __name__, url_prefix="/api/users")
 
-
 @user_bp.route("/<int:user_id>/deactivate", methods=["PUT"])
 @token_required({"BRANCH_OWNER"})
 def deactivate_user(user_id: int) -> tuple[dict[str, object], int]:
@@ -80,7 +79,6 @@ def deactivate_user(user_id: int) -> tuple[dict[str, object], int]:
         HTTPStatus.OK,
     )
 
-
 @user_bp.route("/<int:user_id>/activate", methods=["PUT"])
 @token_required({"BRANCH_OWNER"})
 def activate_user(user_id: int) -> tuple[dict[str, object], int]:
@@ -146,7 +144,6 @@ def activate_user(user_id: int) -> tuple[dict[str, object], int]:
         ),
         HTTPStatus.OK,
     )
-
 
 @user_bp.route("/<int:user_id>/force-reset", methods=["PUT"])
 @token_required({"BRANCH_OWNER", "MANAGER"})

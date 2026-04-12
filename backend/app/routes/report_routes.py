@@ -14,9 +14,7 @@ from ..utils.security import token_required
 from ..utils.db_helpers import month_bounds
 from ..utils.branch_helpers import _current_role, get_role_name
 
-
 report_bp = Blueprint("reports", __name__, url_prefix="/api/reports")
-
 
 def _month_year() -> tuple[int, int]:
     month = request.args.get("month", type=int)
@@ -31,8 +29,6 @@ def _month_year() -> tuple[int, int]:
 
     return month, year
 
-
-
 def _filter_branch_ids(
     requested_branch_id: int | None,
 ) -> tuple[list[int], tuple[dict[str, object], int] | None]:
@@ -44,6 +40,11 @@ def _filter_branch_ids(
                 jsonify({"error": "Unauthorized branch access."}),
                 HTTPStatus.FORBIDDEN,
             )
+        if not allowed:
+            return [], (
+                jsonify({"error": "No branches available for reporting."}),
+                HTTPStatus.BAD_REQUEST,
+            )
         return [requested_branch_id], None
 
     if allowed:
@@ -53,7 +54,6 @@ def _filter_branch_ids(
         jsonify({"error": "No branches available for reporting."}),
         HTTPStatus.BAD_REQUEST,
     )
-
 
 @report_bp.route("/summary", methods=["GET"])
 @token_required({"FRANCHISOR", "BRANCH_OWNER"})
@@ -108,12 +108,15 @@ def report_summary() -> tuple[dict[str, object], int]:
             report_title = f"{franchise.name} - Report - {month_name} {year}"
 
         franchisor_id = current_user.franchisor_id
+        # Architecturally correct: Franchisors have no FK in the User table, so we leave this None
         generated_by_user_id = None
     else:
         branch_id_param = request.args.get("branch_id", type=int)
         branch_ids, error = _filter_branch_ids(branch_id_param)
         if error:
             return error
+        if not branch_ids:
+            return jsonify({"error": "No branches available."}), HTTPStatus.BAD_REQUEST
         summary_data = build_report_summary(
             branch_ids, month, year, start_date, end_date
         )

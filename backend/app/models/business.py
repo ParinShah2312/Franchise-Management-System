@@ -22,7 +22,6 @@ if TYPE_CHECKING:
     from .reference import ApplicationStatus
     from .users import User
 
-
 class FranchiseApplication(TimestampMixin, db.Model):
     __tablename__ = "franchise_applications"
     application_id: Mapped[int] = mapped_column(
@@ -69,7 +68,6 @@ class FranchiseApplication(TimestampMixin, db.Model):
         "FileBlob", foreign_keys=[document_blob_id]
     )
 
-
 class Report(db.Model):
     __tablename__ = "reports"
     report_id: Mapped[int] = mapped_column(
@@ -107,7 +105,6 @@ class Report(db.Model):
     data_entries: Mapped[list["ReportData"]] = relationship(
         "ReportData", back_populates="report", cascade="all, delete-orphan"
     )
-
 
 class ReportData(db.Model):
     __tablename__ = "report_data"

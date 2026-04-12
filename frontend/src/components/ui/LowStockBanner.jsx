@@ -14,7 +14,7 @@ export default function LowStockBanner({ items, onDismiss }) {
         </h4>
         <p className="text-sm text-amber-700 mt-0.5">
           {items.map((item, index) => {
-            const name = item.stock_item_name || item.item_name || 'Unknown item';
+            const name = item.stock_item_name || 'Unknown item';
             const quantity = item.quantity || 0;
             return (
               <span key={item.stock_item_id || index}>

@@ -132,11 +132,11 @@ export default function StaffInventory({ inventoryItems, stockItems, recordDeliv
                                             key={item.branch_inventory_id || `${item.branch_id}-${item.stock_item_id}`}
                                             className={`${isLow ? 'bg-amber-50' : ''} ${updatingItemId === Number(item.stock_item_id) ? 'animate-pulse bg-gray-100' : 'hover:bg-gray-50/50 transition-colors'}`}
                                         >
-                                            <td className="px-4 py-3 text-sm font-medium text-gray-800">
-                                                {item.stock_item_name || item.item_name || '—'}
+                                            <td className="px-4 py-3 text-sm text-gray-800">
+                                                {item.stock_item_name || '—'}
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-500">
-                                                {item.unit_name || item.unit || '—'}
+                                                {item.unit_name || '—'}
                                             </td>
                                             <td className="px-4 py-3 text-sm text-gray-900 text-right">
                                                 {formatNumber(quantity)}

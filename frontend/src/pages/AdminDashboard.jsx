@@ -159,7 +159,7 @@ export default function AdminDashboard() {
         onMonthChange={setSelectedMonth}
         onYearChange={setSelectedYear}
         onGenerate={generateReport}
-        generatedBy={user?.name || null}
+        generatedBy={user?.user_name || null}
         branches={flattenedBranches}
       />
     );
@@ -175,7 +175,7 @@ export default function AdminDashboard() {
           <div>
             <h1 className="text-2xl font-bold text-gray-800">Franchisor Dashboard</h1>
             <p className="hidden sm:block text-gray-500 text-sm">
-              Welcome back{user?.name ? `, ${user.name}` : ''}! Monitor network health and manage expansion requests.
+              Welcome back{user?.user_name ? `, ${user.user_name}` : ''}! Monitor network health and manage expansion requests.
             </p>
           </div>
           <div className="flex items-center gap-2 flex-wrap">
@@ -183,6 +183,7 @@ export default function AdminDashboard() {
               type="button"
               onClick={() => {
                 if (activeTab === 'catalog') refreshCatalog();
+                else if (activeTab === 'royalty') refreshConfig();
                 else fetchDashboard();
               }}
               className="px-4 py-2 text-sm font-semibold text-blue-600 border border-blue-200 rounded-lg hover:bg-blue-50"

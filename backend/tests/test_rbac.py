@@ -47,7 +47,7 @@ def test_inactive_user_token_rejected(client, db_session):
     ))
     db_session.commit()
 
-    token = generate_token(user.user_id, user_type="user")
+    token = generate_token(user.user_id, role="STAFF")
     headers = {"Authorization": f"Bearer {token}"}
 
     # Deactivate AFTER generating the token
@@ -133,10 +133,10 @@ def test_staff_cannot_access_inventory_admin_routes(client, setup_franchise_bran
         scope_type="BRANCH", scope_id=b_id,
     ))
     db_session.commit()
-    token = generate_token(staff.user_id, user_type="user")
+    token = generate_token(staff.user_id, role="STAFF")
     response = client.post(
         "/api/inventory/stock-items",
-        json={"name": "Illegal Item", "unit_id": 1},
+        json={"stock_item_name": "Illegal Item", "unit_id": 1},
         headers={"Authorization": f"Bearer {token}"},
     )
     assert response.status_code == 403
@@ -197,7 +197,7 @@ def test_user_deactivation_blocks_access(client, setup_franchise_branch, db_sess
     ))
     db_session.commit()
 
-    staff_token = generate_token(staff.user_id, user_type="user")
+    staff_token = generate_token(staff.user_id, role="STAFF")
     staff_headers = {"Authorization": f"Bearer {staff_token}"}
 
     # Staff can access while active

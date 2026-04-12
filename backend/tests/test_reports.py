@@ -27,7 +27,7 @@ def test_franchisor_report_returns_report_id(client, db_session):
     db_session.add(franchise)
     db_session.commit()
 
-    token = generate_token(franchisor.franchisor_id, user_type="franchisor")
+    token = generate_token(franchisor.franchisor_id, role="FRANCHISOR")
     headers = {"Authorization": f"Bearer {token}"}
 
     response = client.get(
@@ -94,7 +94,7 @@ def test_report_summary_preserves_original_fields(client, db_session):
     db_session.add(franchise)
     db_session.commit()
 
-    token = generate_token(franchisor.franchisor_id, user_type="franchisor")
+    token = generate_token(franchisor.franchisor_id, role="FRANCHISOR")
     headers = {"Authorization": f"Bearer {token}"}
 
     response = client.get("/api/reports/summary?month=3&year=2026", headers=headers)
@@ -167,7 +167,7 @@ def test_report_forbidden_for_staff(client, setup_franchise_branch, db_session):
         scope_id=b_id,
     ))
     db_session.commit()
-    token = generate_token(staff_user.user_id, user_type="user")
+    token = generate_token(staff_user.user_id, role="STAFF")
     headers = {"Authorization": f"Bearer {token}"}
     response = client.get(
         f"/api/reports/summary?month=1&year=2026&branch_id={b_id}",

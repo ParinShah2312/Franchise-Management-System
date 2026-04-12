@@ -32,7 +32,7 @@ export function useRoyalty() {
       setConfigured(data.configured ?? false);
       setConfig(data.config ?? null);
     } catch (err) {
-      if (err.status !== 403) {
+      if (!err.message?.toLowerCase().includes('permission')) {
         const errorMsg = err.message || 'Failed to load royalty configuration.';
         setConfigError(errorMsg);
       }

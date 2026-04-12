@@ -108,7 +108,7 @@ export default function ManagerDashboard() {
         <div>
           <h1 className="text-2xl font-bold text-gray-800">Manager Dashboard</h1>
           <p className="hidden sm:block text-gray-500 text-sm">
-            Welcome back{user?.name ? `, ${user.name}` : ''}! Take charge of your branch operations.
+            Welcome back{user?.user_name ? `, ${user.user_name}` : ''}! Take charge of your branch operations.
           </p>
         </div>
         <div className="flex items-center gap-2 flex-wrap">

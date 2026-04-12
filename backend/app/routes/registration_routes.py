@@ -25,7 +25,6 @@ from ..utils.branch_helpers import (
 
 registration_bp = Blueprint("registration", __name__, url_prefix="/api/auth")
 
-
 @registration_bp.route("/register-franchisor", methods=["POST"])
 def register_franchisor() -> tuple[dict[str, object], int]:
     """Register a new franchisor account with basic validations."""
@@ -100,7 +99,6 @@ def register_franchisor() -> tuple[dict[str, object], int]:
         ),
         HTTPStatus.CREATED,
     )
-
 
 @registration_bp.route("/register-franchisee", methods=["POST"])
 def register_franchisee() -> tuple[dict[str, object], int]:
@@ -181,6 +179,11 @@ def register_franchisee() -> tuple[dict[str, object], int]:
             {"error": "Investment capacity must be numeric."}
         ), HTTPStatus.BAD_REQUEST
 
+    if investment_capacity < 0:
+        return jsonify(
+            {"error": "Investment capacity cannot be negative."}
+        ), HTTPStatus.BAD_REQUEST
+
     status = ApplicationStatus.query.filter_by(status_name="PENDING").first()
     if not status:
         status = db.session.get(ApplicationStatus, 1)
@@ -248,12 +251,6 @@ def register_franchisee() -> tuple[dict[str, object], int]:
         HTTPStatus.CREATED,
     )
 
-
-@registration_bp.route("/register-manager", methods=["OPTIONS"])
-def options_register_manager():
-    return current_app.make_default_options_response()
-
-
 @registration_bp.route("/register-manager", methods=["POST"])
 @token_required({"BRANCH_OWNER"})
 def register_manager() -> tuple[dict[str, object], int]:
@@ -283,10 +280,13 @@ def register_manager() -> tuple[dict[str, object], int]:
     if User.query.filter_by(phone=sanitized_phone).first() or Franchisor.query.filter_by(phone=sanitized_phone).first():
         return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
 
-    branch = _resolve_branch_for_staff(branch_id_raw)
-    if isinstance(branch, tuple):
-        return branch
-        
+    try:
+        branch = _resolve_branch_for_staff(branch_id_raw)
+    except PermissionError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
+
     if branch.manager_user_id is not None:
         return jsonify({"error": "This branch already has a manager assigned."}), HTTPStatus.CONFLICT
 
@@ -336,7 +336,6 @@ def register_manager() -> tuple[dict[str, object], int]:
         {"message": "Manager registered successfully."}
     ), HTTPStatus.CREATED
 
-
 @registration_bp.route("/register-staff", methods=["POST"])
 @token_required({"BRANCH_OWNER", "MANAGER"})
 def register_staff() -> tuple[dict[str, object], int]:
@@ -366,9 +365,12 @@ def register_staff() -> tuple[dict[str, object], int]:
     if User.query.filter_by(phone=sanitized_phone).first() or Franchisor.query.filter_by(phone=sanitized_phone).first():
         return jsonify({"error": "Phone number is already registered."}), HTTPStatus.CONFLICT
 
-    branch = _resolve_branch_for_staff(branch_id_raw)
-    if isinstance(branch, tuple):
-        return branch
+    try:
+        branch = _resolve_branch_for_staff(branch_id_raw)
+    except PermissionError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.FORBIDDEN
+    except ValueError as exc:
+        return jsonify({"error": str(exc)}), HTTPStatus.BAD_REQUEST
 
     try:
         user = User(

@@ -45,6 +45,7 @@ export function useFranchiseStaff(branchId) {
 
     const forceResetUser = async (userId) => {
         await api.put(`/users/${userId}/force-reset`);
+        await fetchStaff();
     };
 
     const addStaff = async (staffData) => {

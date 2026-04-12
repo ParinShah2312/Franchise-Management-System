@@ -42,7 +42,7 @@ export default function CatalogStockItems({
                 <React.Fragment key={item.stock_item_id}>
                   <tr className="border-b border-border hover:bg-gray-50">
                     <td className="px-6 py-4 text-sm font-medium text-gray-900">
-                      {item.name}
+                      {item.stock_item_name}
                     </td>
                     <td className="px-6 py-4 text-sm text-gray-500">
                       {item.unit_name}
@@ -68,7 +68,7 @@ export default function CatalogStockItems({
                     <tr className="bg-gray-50">
                       <td colSpan={5} className="px-6 py-4">
                         <div className="rounded-md border border-gray-200 bg-white p-4">
-                          <h4 className="mb-2 text-sm font-bold text-gray-700">Products using {item.name}</h4>
+                          <h4 className="mb-2 text-sm font-bold text-gray-700">Products using {item.stock_item_name}</h4>
                           {isLoadingProducts ? (
                             <p className="text-sm text-gray-500">Loading products...</p>
                           ) : usedInProducts.length === 0 ? (

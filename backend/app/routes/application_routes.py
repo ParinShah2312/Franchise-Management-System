@@ -33,7 +33,6 @@ def _hydrate_address(location: str) -> Address:
         pincode=pincode,
     )
 
-
 def _ensure_supporting_rows() -> dict[str, object]:
     """Helper to fetch required status/role objects."""
     branch_active = BranchStatus.query.filter_by(status_name="ACTIVE").first()
@@ -54,6 +53,24 @@ def _ensure_supporting_rows() -> dict[str, object]:
         "owner_role": owner_role,
     }
 
+def _serialize_application(application: FranchiseApplication) -> dict[str, object]:
+    applicant = application.branch_owner_user
+    return {
+        "application_id": application.application_id,
+        "franchise_id": application.franchise_id,
+        "franchise_name": application.franchise.name if application.franchise else None,
+        "applicant_id": applicant.user_id if applicant else None,
+        "applicant_name": applicant.name if applicant else None,
+        "applicant_email": applicant.email if applicant else None,
+        "applicant_phone": applicant.phone if applicant else None,
+        "proposed_location": application.proposed_location,
+        "investment_capacity": str(application.investment_capacity or "0"),
+        "business_experience": application.business_experience,
+        "reason": application.reason,
+        "document_url": f"/api/files/{application.document_blob_id}" if application.document_blob_id else None,
+        "status": application.status.status_name if application.status else None,
+        "submitted_at": serialize_dt(application.created_at),
+    }
 
 @application_bp.route("/applications", methods=["GET"])
 @token_required({"FRANCHISOR"})
@@ -90,39 +107,9 @@ def list_pending_applications() -> tuple[list[dict[str, object]], int]:
 
     payload: list[dict[str, object]] = []
     for application in applications:
-        applicant = application.branch_owner_user
-        payload.append(
-            {
-                "application_id": application.application_id,
-                "franchise_id": application.franchise_id,
-                "franchise_name": application.franchise.name
-                if application.franchise
-                else None,
-                "applicant_id": applicant.user_id if applicant else None,
-                "applicant_name": applicant.name if applicant else None,
-                "applicant_email": applicant.email if applicant else None,
-                "applicant_phone": applicant.phone if applicant else None,
-                "proposed_location": application.proposed_location,
-                "investment_capacity": str(application.investment_capacity or "0"),
-                "business_experience": application.business_experience,
-                "reason": application.reason,
-                "document_url": f"/api/files/{application.document_blob_id}"
-                if application.document_blob_id
-                else None,
-                "status": application.status.status_name
-                if application.status
-                else None,
-                "submitted_at": serialize_dt(application.created_at),
-            }
-        )
+        payload.append(_serialize_application(application))
 
     return jsonify(payload), HTTPStatus.OK
-
-
-@application_bp.route("/applications", methods=["OPTIONS"])
-def options_pending_applications():
-    return current_app.make_default_options_response()
-
 
 # Changed to PUT to match standard REST conventions for updates
 @application_bp.route("/applications/<int:application_id>/approve", methods=["PUT"])
@@ -226,7 +213,6 @@ def approve_application(application_id: int) -> tuple[dict[str, object], int]:
         ),
         HTTPStatus.OK,
     )
-
 
 @application_bp.route("/applications/<int:application_id>/reject", methods=["PUT"])
 @token_required({"FRANCHISOR"})

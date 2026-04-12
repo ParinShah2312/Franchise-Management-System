@@ -10,7 +10,7 @@ export default function CatalogEditProductModal({ isOpen, onClose, onSubmit, pro
 
   useEffect(() => {
     if (product) {
-      setName(product.name || '');
+      setName(product.product_name || '');
       setCategoryId(product.category_id?.toString() || '');
       setBasePrice(product.base_price?.toString() || '');
       setDescription(product.description || '');
@@ -70,7 +70,7 @@ export default function CatalogEditProductModal({ isOpen, onClose, onSubmit, pro
             <option value="">Select a category</option>
             {categories?.map((c) => (
               <option key={c.category_id} value={c.category_id}>
-                {c.name}
+                {c.category_name}
               </option>
             ))}
           </select>

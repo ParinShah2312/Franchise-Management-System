@@ -8,6 +8,7 @@ from typing import Any
 from flask import Flask
 from flask_cors import CORS
 from dotenv import load_dotenv
+from werkzeug.middleware.proxy_fix import ProxyFix
 
 from .extensions import db, migrate, limiter
 
@@ -27,6 +28,11 @@ def create_app(
     # Ensure debug mode is set when running in development
     if os.environ.get("FLASK_ENV") == "development":
         app.debug = True
+
+    # Use ProxyFix to ensure rate limiter gets correct client IP behind proxy (Task 11)
+    app.wsgi_app = ProxyFix(
+        app.wsgi_app, x_for=1, x_proto=1, x_host=1, x_prefix=1
+    )
 
     flask_secret = os.environ.get("SECRET_KEY", "dev-flask-secret")
     if flask_secret == "dev-flask-secret" and not app.debug:

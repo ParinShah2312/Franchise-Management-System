@@ -13,14 +13,12 @@ from flask import g, jsonify
 from ..extensions import db
 from ..models import Branch, BranchStatus, Franchise, Franchisor, Role
 
-
 def _current_role():
     """Return the current user's role from the request context, or raise."""
     role = getattr(g, "current_role", None)
     if not role:
         raise PermissionError("No role scope attached to request.")
     return role
-
 
 def get_role_name(role=None) -> str | None:
     """Safely extract the role name string from a role object.
@@ -38,7 +36,6 @@ def _get_role_by_name(role_name: str) -> Role:
     if not role:
         raise LookupError(f"Role '{role_name}' is not configured.")
     return role
-
 
 def _require_owner_branch(
     branch_id_param: int | None,
@@ -73,15 +70,18 @@ def _require_owner_branch(
 
     return branch
 
-
 def _resolve_branch_for_staff(
     branch_id_raw: object | None,
-) -> Branch | tuple[dict[str, object], int]:
-    """Resolve the branch for staff/manager registration from the caller's role."""
+) -> Branch:
+    """Resolve the branch for staff/manager registration from the caller's role.
+
+    Raises PermissionError or ValueError on failure, consistent with
+    ``resolve_branch_id_from_request``.
+    """
     role = getattr(g, "current_role", None)
     current_user = getattr(g, "current_user", None)
     if not role or role.scope_type != "BRANCH" or not current_user:
-        return jsonify({"error": "Branch scope required."}), HTTPStatus.FORBIDDEN
+        raise PermissionError("Branch scope required.")
 
     branch_id = role.scope_id
     role_name = getattr(role.role, "name", "") if getattr(role, "role", None) else ""
@@ -92,16 +92,20 @@ def _resolve_branch_for_staff(
             try:
                 branch_id_param = int(branch_id_raw)
             except (TypeError, ValueError):
-                return jsonify(
-                    {"error": "branch_id must be numeric."}
-                ), HTTPStatus.BAD_REQUEST
+                raise ValueError("branch_id must be numeric.")
 
         branch = _require_owner_branch(branch_id_param)
         if isinstance(branch, tuple):
-            return branch
+            # _require_owner_branch still returns tuples — extract the error
+            error_body = branch[0].get_json() if hasattr(branch[0], "get_json") else {}
+            status_code = branch[1]
+            msg = error_body.get("error", "Branch access error.")
+            if status_code == HTTPStatus.FORBIDDEN:
+                raise PermissionError(msg)
+            raise ValueError(msg)
         active_status = BranchStatus.query.filter_by(status_name="ACTIVE").first()
         if not active_status or branch.status_id != active_status.status_id:
-            return jsonify({"error": "Branch is not active."}), HTTPStatus.BAD_REQUEST
+            raise ValueError("Branch is not active.")
         return branch
 
     if role_name == "MANAGER":
@@ -109,30 +113,21 @@ def _resolve_branch_for_staff(
             try:
                 explicit_branch_id = int(branch_id_raw)
             except (TypeError, ValueError):
-                return jsonify(
-                    {"error": "branch_id must be numeric."}
-                ), HTTPStatus.BAD_REQUEST
+                raise ValueError("branch_id must be numeric.")
             if explicit_branch_id != branch_id:
-                return jsonify(
-                    {"error": "You are not authorized to manage this branch."}
-                ), HTTPStatus.FORBIDDEN
+                raise PermissionError("You are not authorized to manage this branch.")
 
         branch = db.session.get(Branch, branch_id)
         if not branch:
-            return jsonify({"error": "Branch not found."}), HTTPStatus.NOT_FOUND
+            raise ValueError("Branch not found.")
         if branch.manager_user_id != getattr(current_user, "user_id", None):
-            return jsonify(
-                {"error": "You are not assigned as manager for this branch."}
-            ), HTTPStatus.FORBIDDEN
+            raise PermissionError("You are not assigned as manager for this branch.")
         active_status = BranchStatus.query.filter_by(status_name="ACTIVE").first()
         if not active_status or branch.status_id != active_status.status_id:
-            return jsonify({"error": "Branch is not active."}), HTTPStatus.BAD_REQUEST
+            raise ValueError("Branch is not active.")
         return branch
 
-    return jsonify(
-        {"error": "Only branch owners or managers can manage staff."}
-    ), HTTPStatus.FORBIDDEN
-
+    raise PermissionError("Only branch owners or managers can manage staff.")
 
 def _ensure_franchise_for_franchisor(franchisor: Franchisor) -> Franchise | None:
     """Guarantee the franchisor has a primary franchise record."""
@@ -167,7 +162,6 @@ def _ensure_franchise_for_franchisor(franchisor: Franchisor) -> Franchise | None
         )
         return Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
 
-
 def resolve_branch_id_from_request(explicit_branch_id: int | None) -> int:
     """Return the branch ID the caller is authorized to access, or raise.
 
@@ -195,6 +189,12 @@ def resolve_branch_id_from_request(explicit_branch_id: int | None) -> int:
         branch = db.session.get(Branch, explicit_branch_id)
         if not branch:
             raise PermissionError("Branch not found.")
+        franchisor = getattr(g, "current_user", None)
+        if not franchisor:
+            raise PermissionError("Authentication required.")
+        franchise = Franchise.query.filter_by(franchisor_id=franchisor.franchisor_id).first()
+        if not franchise or branch.franchise_id != franchise.franchise_id:
+            raise PermissionError("Branch does not belong to your franchise.")
         return explicit_branch_id
 
     raise PermissionError(f"Unsupported role scope: {role.scope_type}")

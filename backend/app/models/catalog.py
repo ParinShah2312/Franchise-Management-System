@@ -21,7 +21,6 @@ if TYPE_CHECKING:
     from .operations import InventoryTransaction, SaleItem, StockPurchaseRequestItem
     from .reference import Unit
 
-
 class ProductCategory(db.Model):
     __tablename__ = "product_categories"
     category_id: Mapped[int] = mapped_column(
@@ -41,7 +40,6 @@ class ProductCategory(db.Model):
     products: Mapped[list["Product"]] = relationship(
         "Product", back_populates="category", cascade="all, delete-orphan"
     )
-
 
 class Product(TimestampMixin, db.Model):
     __tablename__ = "products"
@@ -74,7 +72,6 @@ class Product(TimestampMixin, db.Model):
     ingredients: Mapped[list["ProductIngredient"]] = relationship(
         "ProductIngredient", back_populates="product", cascade="all, delete-orphan"
     )
-
 
 class StockItem(TimestampMixin, db.Model):
     __tablename__ = "stock_items"
@@ -111,11 +108,9 @@ class StockItem(TimestampMixin, db.Model):
         "ProductIngredient", back_populates="stock_item", cascade="all, delete-orphan"
     )
 
-
 class ProductIngredient(TimestampMixin, db.Model):
     __tablename__ = "product_ingredients"
 
-    # NOTE: The schema document names this column 'product_ingredient_id'.
     product_ingredient_id: Mapped[int] = mapped_column(
         BigInteger().with_variant(Integer, "sqlite"),
         primary_key=True,
@@ -133,7 +128,6 @@ class ProductIngredient(TimestampMixin, db.Model):
     stock_item: Mapped["StockItem"] = relationship(
         "StockItem", back_populates="product_ingredients"
     )
-
 
 class BranchInventory(TimestampMixin, db.Model):
     __tablename__ = "branch_inventories"

@@ -26,14 +26,12 @@ from app.models import (
 from decimal import Decimal
 from datetime import datetime, timezone, timedelta
 
-
 class TestConfig:
     TESTING = True
     SQLALCHEMY_DATABASE_URI = "sqlite:///:memory:"
     SQLALCHEMY_TRACK_MODIFICATIONS = False
     SECRET_KEY = "test_secret_key"
     WTF_CSRF_ENABLED = False
-
 
 @pytest.fixture(scope="session")
 def app():
@@ -44,7 +42,6 @@ def app():
 
     with app.app_context():
         yield app
-
 
 @pytest.fixture(scope="function")
 def db_session(app):
@@ -60,11 +57,9 @@ def db_session(app):
     db.session.remove()
     db.drop_all()
 
-
 @pytest.fixture(scope="function")
 def client(app, db_session):
     return app.test_client()
-
 
 @pytest.fixture(scope="function")
 def auth_headers(client, db_session):
@@ -83,7 +78,6 @@ def auth_headers(client, db_session):
     )
     token = login_resp.get_json()["token"]
     return {"Authorization": f"Bearer {token}"}
-
 
 @pytest.fixture(scope="function")
 def setup_franchise_branch(client, db_session):
@@ -140,11 +134,10 @@ def setup_franchise_branch(client, db_session):
     db_session.add(user_role)
     db_session.commit()
 
-    token = generate_token(user.user_id, user_type="user")
+    token = generate_token(user.user_id, role="BRANCH_OWNER")
     branch_auth_headers = {"Authorization": f"Bearer {token}"}
 
     return franchise.franchise_id, branch.branch_id, branch_auth_headers
-
 
 def _seed_reference_data():
     """Seed bare-minimum reference data needed for tests."""
@@ -176,7 +169,6 @@ def _seed_reference_data():
     ]
     db.session.add_all(statuses)
 
-
 @pytest.fixture(scope="function")
 def franchisor_auth_headers(client, db_session):
     """Fixture that creates a franchisor and returns auth headers."""
@@ -199,9 +191,8 @@ def franchisor_auth_headers(client, db_session):
     db_session.add(franchise)
     db_session.commit()
 
-    token = generate_token(franchisor.franchisor_id, user_type="franchisor")
+    token = generate_token(franchisor.franchisor_id, role="FRANCHISOR")
     return {"Authorization": f"Bearer {token}"}, franchisor, franchise
-
 
 @pytest.fixture(scope="function")
 def setup_sale(setup_franchise_branch, db_session):

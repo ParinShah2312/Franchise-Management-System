@@ -80,7 +80,7 @@ export default function FranchiseeStaff({ staff, appointManager, addStaff, setTo
                         {staff.manager ? (
                             <div className="flex justify-between items-start">
                                 <div>
-                                    <p className="text-sm font-semibold text-gray-800">{staff.manager.name}</p>
+                                    <p className="text-sm font-semibold text-gray-800">{staff.manager.user_name}</p>
                                     <p className="text-sm text-gray-600">{staff.manager.email}</p>
                                     <p className="text-sm text-gray-500">{staff.manager.phone || '—'}</p>
                                 </div>
@@ -88,12 +88,12 @@ export default function FranchiseeStaff({ staff, appointManager, addStaff, setTo
                                     type="button"
                                     onClick={() => setConfirmAction({
                                         title: 'Reset Password',
-                                        message: `Force ${staff.manager.name} to reset their password on next login?`,
+                                        message: `Force ${staff.manager.user_name} to reset their password on next login?`,
                                         label: 'Reset Password',
                                         variant: 'warning',
                                         handler: async () => {
                                             await onForceReset(staff.manager.user_id);
-                                            setToast({ message: `${staff.manager.name} will be prompted to reset their password on next login.`, variant: 'success' });
+                                            setToast({ message: `${staff.manager.user_name} will be prompted to reset their password on next login.`, variant: 'success' });
                                         },
                                     })}
                                     className="px-3 py-1 text-xs font-semibold text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50"
@@ -148,7 +148,7 @@ export default function FranchiseeStaff({ staff, appointManager, addStaff, setTo
                                             key={member.user_id}
                                             className={`hover:bg-gray-50/50 transition-colors ${member.is_active === false ? 'bg-gray-50' : ''}`}
                                         >
-                                            <td className={`px-6 py-4 text-sm font-medium text-gray-800${member.is_active === false ? ' opacity-50' : ''}`}>{member.name}</td>
+                                            <td className={`px-6 py-4 text-sm font-medium text-gray-800${member.is_active === false ? ' opacity-50' : ''}`}>{member.user_name}</td>
                                             <td className={`px-6 py-4 text-sm text-gray-600${member.is_active === false ? ' opacity-50' : ''}`}>{member.email}</td>
                                             <td className={`px-6 py-4 text-sm${member.is_active === false ? ' opacity-50' : ''}`}>
                                                 <span className={`inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-semibold ${
@@ -167,12 +167,12 @@ export default function FranchiseeStaff({ staff, appointManager, addStaff, setTo
                                                             type="button"
                                                             onClick={() => setConfirmAction({
                                                                 title: 'Deactivate Staff',
-                                                                message: `Deactivate ${member.name}? They will no longer be able to log in.`,
+                                                                message: `Deactivate ${member.user_name}? They will no longer be able to log in.`,
                                                                 label: 'Deactivate',
                                                                 variant: 'danger',
                                                                 handler: async () => {
                                                                     await onDeactivate(member.user_id);
-                                                                    setToast({ message: `${member.name} has been deactivated.`, variant: 'success' });
+                                                                    setToast({ message: `${member.user_name} has been deactivated.`, variant: 'success' });
                                                                 },
                                                             })}
                                                             className="px-3 py-1 text-xs font-semibold text-red-600 border border-red-200 rounded-lg hover:bg-red-50"
@@ -184,12 +184,12 @@ export default function FranchiseeStaff({ staff, appointManager, addStaff, setTo
                                                             type="button"
                                                             onClick={() => setConfirmAction({
                                                                 title: 'Reactivate Staff',
-                                                                message: `Reactivate ${member.name}? They will be able to log in again.`,
+                                                                message: `Reactivate ${member.user_name}? They will be able to log in again.`,
                                                                 label: 'Reactivate',
                                                                 variant: 'primary',
                                                                 handler: async () => {
                                                                     await onActivate(member.user_id);
-                                                                    setToast({ message: `${member.name} has been reactivated.`, variant: 'success' });
+                                                                    setToast({ message: `${member.user_name} has been reactivated.`, variant: 'success' });
                                                                 },
                                                             })}
                                                             className="px-3 py-1 text-xs font-semibold text-green-600 border border-green-200 rounded-lg hover:bg-green-50"
@@ -201,12 +201,12 @@ export default function FranchiseeStaff({ staff, appointManager, addStaff, setTo
                                                         type="button"
                                                         onClick={() => setConfirmAction({
                                                             title: 'Reset Password',
-                                                            message: `Force ${member.name} to reset their password on next login?`,
+                                                            message: `Force ${member.user_name} to reset their password on next login?`,
                                                             label: 'Reset Password',
                                                             variant: 'warning',
                                                             handler: async () => {
                                                                 await onForceReset(member.user_id);
-                                                                setToast({ message: `${member.name} will be prompted to reset their password on next login.`, variant: 'success' });
+                                                                setToast({ message: `${member.user_name} will be prompted to reset their password on next login.`, variant: 'success' });
                                                             },
                                                         })}
                                                         className="px-3 py-1 text-xs font-semibold text-amber-600 border border-amber-200 rounded-lg hover:bg-amber-50 ml-2"

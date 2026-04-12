@@ -62,7 +62,7 @@ def test_approve_request_adds_to_inventory(client, setup_franchise_branch, db_se
     db_session.commit()
 
     # Manager creates request
-    manager_token = generate_token(manager.user_id, user_type="user")
+    manager_token = generate_token(manager.user_id, role="MANAGER")
     manager_headers = {"Authorization": f"Bearer {manager_token}"}
 
     payload = {
@@ -123,7 +123,7 @@ def test_reject_request(client, setup_franchise_branch, db_session):
     db_session.add(stock)
     db_session.commit()
 
-    manager_token = generate_token(manager.user_id, user_type="user")
+    manager_token = generate_token(manager.user_id, role="MANAGER")
     manager_headers = {"Authorization": f"Bearer {manager_token}"}
 
     payload = {"items": [{"stock_item_id": stock.stock_item_id, "requested_quantity": 10.0}]}
@@ -171,7 +171,7 @@ def test_cannot_approve_already_approved_request(client, setup_franchise_branch,
     db_session.add(stock)
     db_session.commit()
 
-    manager_token = generate_token(manager.user_id, user_type="user")
+    manager_token = generate_token(manager.user_id, role="MANAGER")
     manager_headers = {"Authorization": f"Bearer {manager_token}"}
 
     payload = {"items": [{"stock_item_id": stock.stock_item_id, "requested_quantity": 5.0}]}

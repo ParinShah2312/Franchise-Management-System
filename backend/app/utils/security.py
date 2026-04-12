@@ -21,11 +21,9 @@ from sqlalchemy.orm import joinedload
 from ..extensions import db
 from ..models import Franchisor, User, UserRole
 
-
 def hash_password(password: str) -> str:
     """Return a bcrypt hash of the provided password."""
     return bcrypt.hashpw(password.encode("utf-8"), bcrypt.gensalt()).decode("utf-8")
-
 
 def verify_password(password: str, hashed: str) -> bool:
     """Check if the provided password matches the stored bcrypt hash."""
@@ -33,7 +31,6 @@ def verify_password(password: str, hashed: str) -> bool:
         return bcrypt.checkpw(password.encode("utf-8"), hashed.encode("utf-8"))
     except (ValueError, TypeError):
         return False
-
 
 def _get_jwt_secret() -> bytes:
     """Retrieve the JWT secret key safely from app config.
@@ -45,28 +42,25 @@ def _get_jwt_secret() -> bytes:
         raise RuntimeError("SECRET_KEY must be set in app configuration.")
     return secret.encode("utf-8")
 
-
 def _b64url_encode(data: bytes) -> str:
     return base64.urlsafe_b64encode(data).rstrip(b"=").decode("ascii")
-
 
 def _b64url_decode(data: str) -> bytes:
     padding = "=" * (-len(data) % 4)
     return base64.urlsafe_b64decode(data + padding)
 
-
 def generate_token(
-    user_id: int, *, user_type: str, expires_in_minutes: int = 60 * 24
+    user_id: int, *, role: str, expires_in_minutes: int = 60 * 24
 ) -> str:
     """
-    Generate a signed JWT for the given subject id and declared user type.
+    Generate a signed JWT for the given subject id and declared role.
 
     Args:
         user_id: Primary Key of User or Franchisor.
-        user_type: 'franchisor' or 'user'.
+        role: e.g., 'FRANCHISOR', 'BRANCH_OWNER', 'MANAGER', 'STAFF', 'PENDING_APPLICANT'.
     """
-    if user_type not in {"franchisor", "user"}:
-        raise ValueError("user_type must be either 'franchisor' or 'user'.")
+    if not role:
+        raise ValueError("role must be provided.")
 
     header = {"alg": "HS256", "typ": "JWT"}
     expires_at = datetime.now(tz=timezone.utc) + timedelta(minutes=expires_in_minutes)
@@ -74,7 +68,7 @@ def generate_token(
     payload = {
         "sub": user_id,
         "exp": int(expires_at.timestamp()),
-        "typ": user_type,  # Crucial for distinguishing tables
+        "role": role,  # Crucial for authorization and table routing
     }
 
     header_segment = _b64url_encode(
@@ -90,13 +84,11 @@ def generate_token(
 
     return "".join((header_segment, ".", payload_segment, ".", signature_segment))
 
-
 def _extract_token() -> Optional[str]:
     auth_header = request.headers.get("Authorization", "")
     if auth_header.lower().startswith("bearer "):
         return auth_header.split(" ", 1)[1].strip()
     return None
-
 
 def _decode_token(token: str | None) -> Optional[dict[str, object]]:
     if not token:
@@ -134,20 +126,19 @@ def _decode_token(token: str | None) -> Optional[dict[str, object]]:
 
     return payload
 
-
 def _load_principal_from_token(token: str | None):
     payload = _decode_token(token)
     if not payload:
         return None, None, None, None
 
     user_id = payload.get("sub")
-    user_type = payload.get("typ")
+    role = payload.get("role")
 
-    if not isinstance(user_id, int) or user_type not in {"franchisor", "user"}:
+    if not isinstance(user_id, int) or not role:
         return None, None, None, None
 
     # Path A: Franchisor (Brand Owner)
-    if user_type == "franchisor":
+    if role == "FRANCHISOR":
         principal = db.session.get(Franchisor, user_id)
         if not principal:
             return None, None, None, None
@@ -159,7 +150,7 @@ def _load_principal_from_token(token: str | None):
             scope_id=None,
         )
         setattr(principal, "is_franchisor", True)
-        return principal, role_stub, "FRANCHISOR", user_type
+        return principal, role_stub, "FRANCHISOR", "franchisor"
 
     # Path B: User (Owner, Manager, Staff)
     user = db.session.get(
@@ -174,12 +165,11 @@ def _load_principal_from_token(token: str | None):
         primary_role.role.name if primary_role and primary_role.role else "UNKNOWN"
     )
     setattr(user, "is_franchisor", False)
-    return user, primary_role, role_name, user_type
-
+    return user, primary_role, role_name, "user"
 
 def _select_primary_role(user: User) -> Optional[UserRole]:
     """Pick the most privileged role for this user using a priority map."""
-    roles = UserRole.query.options(joinedload(UserRole.role)).filter(UserRole.user_id == user.user_id).all()
+    roles = user.user_roles  # Already eagerly loaded via joinedload
     if not roles:
         return None
 
@@ -195,7 +185,6 @@ def _select_primary_role(user: User) -> Optional[UserRole]:
         return PRIORITY.get(ur.role.name if ur.role else "", 99)
 
     return min(roles, key=_priority)
-
 
 def token_required(allowed_roles: Iterable[str] | None = None):
     """Decorator ensuring the request has a valid token and optional role restriction."""
@@ -249,11 +238,3 @@ def token_required(allowed_roles: Iterable[str] | None = None):
         return wrapper
 
     return decorator
-
-
-def current_user():
-    """Get the current logged-in user/franchisor."""
-    user = getattr(g, "current_user", None)
-    if not user:
-        raise RuntimeError("No user bound to context. Did you forget @token_required?")
-    return user

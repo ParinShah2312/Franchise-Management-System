@@ -78,7 +78,7 @@ export default function ManagerStaff({ staff, addStaff, setToast, onForceReset }
                     <div className="px-4 py-4">
                         {branchOwner ? (
                             <div>
-                                <p className="text-sm font-semibold text-gray-800">{branchOwner.name}</p>
+                                <p className="text-sm font-semibold text-gray-800">{branchOwner.user_name}</p>
                                 <p className="text-sm text-gray-600">{branchOwner.email}</p>
                                 <p className="text-sm text-gray-500">{branchOwner.phone || '—'}</p>
                             </div>
@@ -114,7 +114,7 @@ export default function ManagerStaff({ staff, addStaff, setToast, onForceReset }
                                 ) : (
                                     team.map((member) => (
                                         <tr key={member.user_id} className="hover:bg-gray-50/50 transition-colors">
-                                            <td className="px-6 py-4 text-sm font-medium text-gray-800">{member.name}</td>
+                                            <td className="px-6 py-4 text-sm font-medium text-gray-800">{member.user_name}</td>
                                             <td className="px-6 py-4 text-sm text-gray-600">{member.email}</td>
                                             <td className="px-6 py-4 text-sm text-gray-500">{member.phone || '—'}</td>
                                             <td className="px-6 py-4 text-sm font-medium text-gray-700">{formatRole(member.role || 'STAFF')}</td>
@@ -242,13 +242,13 @@ export default function ManagerStaff({ staff, addStaff, setToast, onForceReset }
             <ConfirmDialog
                 open={!!resetTarget}
                 title="Reset Password"
-                message={`Force ${resetTarget?.name || 'this user'} to reset their password on next login?`}
+                message={`Force ${resetTarget?.user_name || 'this user'} to reset their password on next login?`}
                 confirmLabel="Reset Password"
                 variant="warning"
                 onConfirm={async () => {
                     try {
                         await onForceReset(resetTarget.user_id);
-                        setToast({ message: `${resetTarget.name} will be prompted to reset their password on next login.`, variant: 'success' });
+                        setToast({ message: `${resetTarget.user_name} will be prompted to reset their password on next login.`, variant: 'success' });
                     } catch (err) {
                         setToast({ message: err.message || 'Failed to set reset flag.', variant: 'error' });
                     } finally {

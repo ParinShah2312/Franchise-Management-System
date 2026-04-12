@@ -27,19 +27,14 @@ from ..utils.security import token_required
 from ..utils.db_helpers import serialize_dt
 from ..utils.branch_helpers import resolve_branch_id_from_request, _current_role
 
-
 inventory_bp = Blueprint("inventory", __name__, url_prefix="/api/inventory")
-
-
-
-
 
 def _serialize_inventory(record: BranchInventory) -> dict[str, object]:
     return {
         "branch_inventory_id": record.branch_inventory_id,
         "branch_id": record.branch_id,
         "stock_item_id": record.stock_item_id,
-        "name": record.stock_item.name if record.stock_item else None,
+        "stock_item_name": record.stock_item.name if record.stock_item else None,
         "unit_name": record.stock_item.unit.unit_name
         if record.stock_item and record.stock_item.unit
         else None,
@@ -71,9 +66,6 @@ def list_inventory() -> tuple[list[dict[str, object]], int]:
     )
 
     return jsonify([_serialize_inventory(record) for record in records]), HTTPStatus.OK
-
-
-
 
 @inventory_bp.route("/stock-in", methods=["POST"])
 @token_required({"BRANCH_OWNER", "MANAGER", "STAFF"})
@@ -171,7 +163,7 @@ def list_stock_items() -> tuple[list[dict[str, object]], int]:
     payload = [
         {
             "stock_item_id": item.stock_item_id,
-            "name": item.name,
+            "stock_item_name": item.name,
             "description": item.description,
         }
         for item in items
@@ -292,15 +284,14 @@ def create_branch_inventory() -> tuple[dict[str, object], int]:
         HTTPStatus.CREATED,
     )
 
-
 @inventory_bp.route("/stock-items", methods=["POST"])
 @token_required({"FRANCHISOR"})
 def create_stock_item() -> tuple[dict[str, object], int]:
     payload = request.get_json(silent=True) or {}
     
-    name = payload.get("name")
+    name = payload.get("stock_item_name")
     if not name or not str(name).strip():
-        return jsonify({"error": "name is required and must be a non-empty string."}), HTTPStatus.BAD_REQUEST
+        return jsonify({"error": "stock_item_name is required and must be a non-empty string."}), HTTPStatus.BAD_REQUEST
     name = str(name).strip()
 
     unit_id = payload.get("unit_id")
@@ -349,13 +340,12 @@ def create_stock_item() -> tuple[dict[str, object], int]:
 
     return jsonify({
         "stock_item_id": stock_item.stock_item_id,
-        "name": stock_item.name,
+        "stock_item_name": stock_item.name,
         "description": stock_item.description,
         "unit_id": stock_item.unit_id,
         "unit_name": unit.unit_name,
         "franchise_id": stock_item.franchise_id
     }), HTTPStatus.CREATED
-
 
 @inventory_bp.route("/units", methods=["GET"])
 @token_required({"FRANCHISOR"})
@@ -369,7 +359,6 @@ def list_units() -> tuple[list[dict[str, object]], int]:
         for unit in units
     ]
     return jsonify(payload), HTTPStatus.OK
-
 
 @inventory_bp.route("/stock-items/all", methods=["GET"])
 @token_required({"FRANCHISOR"})
@@ -392,7 +381,7 @@ def list_all_stock_items() -> tuple[list[dict[str, object]], int]:
     payload = [
         {
             "stock_item_id": item.stock_item_id,
-            "name": item.name,
+            "stock_item_name": item.name,
             "description": item.description,
             "unit_id": item.unit_id,
             "unit_name": item.unit.unit_name if item.unit else None,
@@ -402,4 +391,3 @@ def list_all_stock_items() -> tuple[list[dict[str, object]], int]:
         for item in items
     ]
     return jsonify(payload), HTTPStatus.OK
-

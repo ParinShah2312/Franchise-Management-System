@@ -284,6 +284,7 @@
 | 8.10 | Invalid expense category | Send API request with invalid category | Backend validates category against allowed list |
 | 8.11 | Error boundary | Force a React render error | ErrorBoundary catches the crash and displays a fallback UI |
 | 8.12 | Tab animation | Switch between dashboard tabs | Content fades in smoothly with `animate-fade-in` transition |
+| 8.13 | Product string length | Try adding a product with a name > 100 chars | Validation fails: "name cannot exceed 100 characters." |
 
 ---
 
